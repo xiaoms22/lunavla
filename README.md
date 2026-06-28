@@ -62,6 +62,9 @@ Run the chunk-size ablation:
 
 ```bash
 python trainer/train_act_pusht.py --config configs/act_pusht_ablation_chunk_size.yaml
+python eval_vla.py --checkpoint outputs/act_pusht_ablation_chunk_size/checkpoint.pt --episodes 50 --save-rollouts
+python scripts/summarize_results.py --run-dir outputs/act_pusht_ablation_chunk_size
+python scripts/generate_project_report.py --run-dir outputs/act_pusht_ablation_chunk_size
 python scripts/compare_runs.py --runs outputs/act_pusht_baseline outputs/act_pusht_ablation_chunk_size --out outputs/run_comparison.md
 ```
 

@@ -22,9 +22,10 @@ Deliverable: baseline result table and rollout screenshot.
 
 - Run `configs/act_pusht_ablation_chunk_size.yaml`.
 - Compare the baseline and ablation with `scripts/compare_runs.py`.
+- Read `outputs/run_comparison.md` and inspect at least one rollout from each run.
 - Explain how chunk size changes behavior.
 
-Deliverable: one ablation table and a short conclusion.
+Deliverable: one ablation report with metric deltas and a short conclusion.
 
 ## Week 4: Report And Interview Pack
 
