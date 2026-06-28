@@ -9,6 +9,7 @@ VLA projects cannot be evaluated by training loss alone. A policy can fit demons
 - `rollout_length`: number of steps before success or timeout.
 - `action_smoothness`: average action delta across a rollout.
 - `failure_cases`: labeled failed episodes.
+- `failure_category_counts`: first-pass counts for failure types such as `wrong_direction`, `stuck`, `oscillation`, and `action_clipping`.
 
 ## Current Implementation
 
@@ -22,6 +23,8 @@ VLA projects cannot be evaluated by training loss alone. A policy can fit demons
 
 ## Why Failure Taxonomy Matters
 
-Failure labels help turn a weak result into a useful learning artifact. A failed rollout can reveal wrong direction, boundary clipping, poor coverage, oscillation, or action smoothing issues.
+Failure labels help turn a weak result into a useful learning artifact. A failed rollout can reveal wrong direction, action clipping, poor coverage, oscillation, or action smoothing issues.
+
+Automatic labels are meant to start the inspection, not replace it. Before writing a resume bullet or report conclusion, open the saved rollout JSON or static demo and check whether the label matches the behavior you see.
 
 See `docs/failure_taxonomy.md`.

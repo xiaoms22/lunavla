@@ -72,7 +72,7 @@ def failure_table(failures: list[dict[str, Any]]) -> list[str]:
             "No failure cases were logged for this run. For a stronger report, evaluate more episodes and inspect whether rare failures appear.",
         ]
 
-    lines = ["| episode | category | final distance | note |", "| --- | --- | --- | --- |"]
+    lines = ["| episode | category | final distance | note | next minimal fix |", "| --- | --- | --- | --- | --- |"]
     for failure in failures[:5]:
         lines.append(
             "| "
@@ -82,6 +82,7 @@ def failure_table(failures: list[dict[str, Any]]) -> list[str]:
                     format_value(failure.get("category", "unknown")),
                     format_value(failure.get("final_distance")),
                     format_value(failure.get("note", "")),
+                    format_value(failure.get("next_minimal_fix", "")),
                 ]
             )
             + " |"
@@ -89,6 +90,21 @@ def failure_table(failures: list[dict[str, Any]]) -> list[str]:
     if len(failures) > 5:
         lines.append(f"\nShowing 5 of {len(failures)} logged failures.")
     return lines
+
+
+def failure_category_table(evaluation: dict[str, Any], failures: list[dict[str, Any]]) -> list[str]:
+    counts = evaluation.get("failure_category_counts") or {}
+    if not counts and failures:
+        for failure in failures:
+            category = str(failure.get("category", "unknown"))
+            counts[category] = counts.get(category, 0) + 1
+    if not counts:
+        return ["No failure category counts were recorded for this run."]
+
+    rows = ["| category | count |", "| --- | --- |"]
+    for category, count in sorted(counts.items()):
+        rows.append(f"| `{category}` | `{count}` |")
+    return rows
 
 
 def build_report(run_dir: Path, title: str) -> str:
@@ -166,6 +182,16 @@ def build_report(run_dir: Path, title: str) -> str:
             f"- First saved rollout: `{relative(rollout_path) if rollout_path else 'run eval with --save-rollouts'}`",
             "",
             "## Failure Analysis",
+            "",
+            "### Category Summary",
+            "",
+        ]
+    )
+    lines.extend(failure_category_table(evaluation, failures))
+    lines.extend(
+        [
+            "",
+            "### Logged Cases",
             "",
         ]
     )

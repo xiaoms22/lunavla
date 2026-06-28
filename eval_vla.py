@@ -31,6 +31,66 @@ def make_input(position: np.ndarray, goal: np.ndarray, instruction: str | None) 
     return np.concatenate([observation, _instruction_features(instruction)]).astype(np.float32)
 
 
+def mean_action_norm(frames: list[dict[str, Any]]) -> float:
+    if not frames:
+        return 0.0
+    norms = [float(np.linalg.norm(np.asarray(frame["action"], dtype=np.float32))) for frame in frames]
+    return float(np.mean(norms))
+
+
+def classify_failure(rollout: dict[str, Any], success_distance: float) -> dict[str, Any]:
+    frames = rollout.get("frames", [])
+    distances = [float(frame["distance_to_goal"]) for frame in frames]
+    if not distances:
+        return {
+            "category": "did_not_reach_goal",
+            "note": "No rollout frames were recorded.",
+            "next_minimal_fix": "Check evaluation rollout_steps and checkpoint loading.",
+        }
+
+    initial_distance = float(rollout.get("initial_distance", distances[0]))
+    final_distance = float(rollout["final_distance"])
+    min_distance = min(distances)
+    early_window = distances[: min(3, len(distances))]
+    early_distance_increase = bool(early_window and early_window[-1] > initial_distance + 0.02)
+    last_action_norm = mean_action_norm(frames[-min(5, len(frames)) :])
+    clipped_actions = sum(
+        int(max(abs(float(value)) for value in frame["action"]) >= 0.119)
+        for frame in frames
+    )
+    clipped_ratio = clipped_actions / max(len(frames), 1)
+
+    if early_distance_increase or final_distance > initial_distance + 0.02:
+        return {
+            "category": "wrong_direction",
+            "note": "The rollout moved away from the goal instead of closing distance.",
+            "next_minimal_fix": "Inspect observation/action alignment and the sign of action targets.",
+        }
+    if last_action_norm < 0.015 and final_distance > success_distance:
+        return {
+            "category": "stuck",
+            "note": "The policy produced very small late actions before reaching the goal.",
+            "next_minimal_fix": "Check demonstration coverage near the goal and whether the model underfits.",
+        }
+    if min_distance <= success_distance * 1.8 and rollout["action_smoothness"] > 0.04:
+        return {
+            "category": "oscillation",
+            "note": "The rollout approached the goal but did not settle smoothly.",
+            "next_minimal_fix": "Compare action smoothness and try a different action chunk size.",
+        }
+    if clipped_ratio > 0.5:
+        return {
+            "category": "action_clipping",
+            "note": "Most actions hit the evaluation clip limit.",
+            "next_minimal_fix": "Inspect action scaling and the range of demonstration actions.",
+        }
+    return {
+        "category": "did_not_reach_goal",
+        "note": "The rollout reduced distance but did not cross the success threshold in time.",
+        "next_minimal_fix": "Increase eval episodes, inspect rollout horizon, then tune model capacity or chunk size.",
+    }
+
+
 def rollout_episode(
     policy: MiniVLAPolicy,
     seed: int,
@@ -41,6 +101,8 @@ def rollout_episode(
     rng = np.random.default_rng(seed)
     goal = np.array([0.80, 0.20], dtype=np.float32)
     position = rng.uniform(low=0.05, high=0.95, size=2).astype(np.float32)
+    initial_position = position.copy()
+    initial_distance = float(np.linalg.norm(goal - initial_position))
     frames: list[dict[str, Any]] = []
 
     for timestep in range(rollout_steps):
@@ -68,6 +130,10 @@ def rollout_episode(
         action_deltas.append(float(np.linalg.norm(cur_action - prev_action)))
     return {
         "success": final_distance <= success_distance,
+        "initial_position": [float(initial_position[0]), float(initial_position[1])],
+        "goal": [float(goal[0]), float(goal[1])],
+        "initial_distance": initial_distance,
+        "min_distance": min(float(frame["distance_to_goal"]) for frame in frames),
         "final_distance": final_distance,
         "steps": len(frames),
         "action_smoothness": float(np.mean(action_deltas)) if action_deltas else 0.0,
@@ -93,6 +159,7 @@ def main() -> int:
 
     rollouts: list[dict[str, Any]] = []
     success_count = 0
+    failure_category_counts: dict[str, int] = {}
     for episode_id in range(episodes):
         rollout = rollout_episode(
             policy=policy,
@@ -105,13 +172,18 @@ def main() -> int:
         rollouts.append(rollout)
         success_count += int(rollout["success"])
         if not rollout["success"]:
+            failure = classify_failure(rollout, success_distance)
+            failure_category_counts[failure["category"]] = failure_category_counts.get(failure["category"], 0) + 1
             append_jsonl(
                 failure_path,
                 {
                     "episode_id": episode_id,
                     "final_distance": rollout["final_distance"],
-                    "category": "did_not_reach_goal",
-                    "note": "The predicted first action chunk did not close the distance enough.",
+                    "initial_distance": rollout["initial_distance"],
+                    "min_distance": rollout["min_distance"],
+                    "steps": rollout["steps"],
+                    "action_smoothness": rollout["action_smoothness"],
+                    **failure,
                 },
             )
         if args.save_rollouts:
@@ -126,6 +198,8 @@ def main() -> int:
         "mean_final_distance": round(float(np.mean([r["final_distance"] for r in rollouts])), 6),
         "mean_rollout_length": round(float(np.mean([r["steps"] for r in rollouts])), 4),
         "mean_action_smoothness": round(float(np.mean([r["action_smoothness"] for r in rollouts])), 6),
+        "failure_count": episodes - success_count,
+        "failure_category_counts": failure_category_counts,
         "rollout_steps": rollout_steps,
         "success_distance": success_distance,
     }

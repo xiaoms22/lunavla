@@ -45,6 +45,10 @@ def read_json(path: Path) -> dict[str, Any]:
 def format_value(value: Any) -> str:
     if value is None:
         return "n/a"
+    if isinstance(value, dict):
+        if not value:
+            return "none"
+        return ", ".join(f"{key}:{value}" for key, value in sorted(value.items()))
     if isinstance(value, float):
         return f"{value:.6g}"
     return str(value)
@@ -81,6 +85,8 @@ def run_metrics(run_dir: str) -> dict[str, Any]:
         "success_rate": eval_summary.get("success_rate", "n/a"),
         "mean_final_distance": eval_summary.get("mean_final_distance", "n/a"),
         "mean_action_smoothness": eval_summary.get("mean_action_smoothness", "n/a"),
+        "failure_count": eval_summary.get("failure_count", "n/a"),
+        "failure_categories": eval_summary.get("failure_category_counts", {}),
     }
 
 

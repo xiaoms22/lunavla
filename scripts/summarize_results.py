@@ -21,6 +21,12 @@ def count_jsonl(path: Path) -> int:
     return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
 
 
+def format_category_counts(counts: dict) -> str:
+    if not counts:
+        return "none"
+    return ", ".join(f"{key}:{value}" for key, value in sorted(counts.items()))
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Summarize a MiniMind-VLA run directory.")
     parser.add_argument("--run-dir", required=True, help="Run directory under outputs/ or an absolute path.")
@@ -35,7 +41,7 @@ def main() -> int:
 
     training = read_json(run_dir / "training_summary.json")
     evaluation = read_json(run_dir / "eval_summary.json")
-    failure_count = count_jsonl(run_dir / "failure_cases.jsonl")
+    failure_count = evaluation.get("failure_count", count_jsonl(run_dir / "failure_cases.jsonl"))
 
     table = {
         "project_name": training.get("project_name", "unknown"),
@@ -47,6 +53,7 @@ def main() -> int:
         "mean_rollout_length": evaluation.get("mean_rollout_length", "n/a"),
         "mean_action_smoothness": evaluation.get("mean_action_smoothness", "n/a"),
         "failure_cases": failure_count,
+        "failure_categories": format_category_counts(evaluation.get("failure_category_counts", {})),
     }
 
     csv_path = run_dir / "result_table.csv"

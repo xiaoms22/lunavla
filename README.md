@@ -102,7 +102,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - an ACT-style action chunk policy;
 - config-driven training and checkpoint export;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
-- failure-case logging, result summaries, project reports, README assets, and a static web demo.
+- failure-case logging with first-pass category counts, result summaries, project reports, README assets, and a static web demo.
 
 Mock PushT is the low-cost teaching layer. Its value is helping you understand the data, policy, rollout, evaluation, and reporting loop before moving to heavier robotics stacks.
 
