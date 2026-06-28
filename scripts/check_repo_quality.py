@@ -26,6 +26,7 @@ PUBLIC_TEXT_PATHS = [
     ROOT / "MODEL_CARD.md",
     ROOT / "RELEASE_NOTES.md",
     *sorted((ROOT / "docs").glob("**/*.md")),
+    *sorted((ROOT / ".github").glob("**/*.yml")),
 ]
 
 PUBLIC_TEXT_BLOCKLIST = [

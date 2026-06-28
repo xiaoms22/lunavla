@@ -1,0 +1,60 @@
+name: Experiment Report
+description: Share a reproducible MiniMind-VLA training, evaluation, or ablation result.
+title: "[Experiment] "
+labels: ["experiment"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to share evidence from a public MiniMind-VLA run. Keep claims tied to the reported metrics and artifacts.
+  - type: dropdown
+    id: run_type
+    attributes:
+      label: Run type
+      options:
+        - CPU smoke
+        - Baseline
+        - Chunk-size ablation
+        - Custom beginner extension
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Commands
+      description: Paste the commands used to produce the result.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics
+      description: Paste the main rows from `summary_report.md`, `project_report.md`, or `run_comparison.md`.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Artifacts
+      description: Link or list rollout images, GIFs, reports, or saved outputs.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: interpretation
+    attributes:
+      label: Interpretation
+      description: What did this run show, and what does it not show?
+    validations:
+      required: true
+  - type: checkboxes
+    id: claim_boundary
+    attributes:
+      label: Claim boundary
+      options:
+        - label: My claim is limited to this teaching-scale MiniMind-VLA setup.
+          required: true
+        - label: I inspected at least one saved rollout or generated web demo.
+        - label: I am not claiming real-robot deployment or state-of-the-art robotics performance.

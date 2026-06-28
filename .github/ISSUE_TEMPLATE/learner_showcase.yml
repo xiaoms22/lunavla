@@ -1,0 +1,52 @@
+name: Learner Showcase
+description: Share how you used MiniMind-VLA as a beginner project.
+title: "[Showcase] "
+labels: ["showcase"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share a concise, evidence-backed learning story. This helps other VLA beginners understand what to run, inspect, and report.
+  - type: dropdown
+    id: completion_level
+    attributes:
+      label: Completion level
+      options:
+        - Ran CPU smoke
+        - Finished baseline
+        - Finished ablation
+        - Wrote project report
+        - Used it for interview preparation
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Paste metrics, report links, rollout screenshots, or README assets.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: learned
+    attributes:
+      label: What you learned
+      description: Mention data schema, behavior cloning, ACT chunks, rollout evaluation, or failure analysis.
+    validations:
+      required: true
+  - type: textarea
+    id: next_step
+    attributes:
+      label: Next step
+      description: What will you improve or study next?
+    validations:
+      required: false
+  - type: checkboxes
+    id: honesty
+    attributes:
+      label: Honesty check
+      options:
+        - label: I am sharing a learning result, not claiming production robot capability.
+          required: true
+        - label: I can explain the commands and metrics I used.
+          required: true

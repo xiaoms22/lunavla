@@ -94,6 +94,10 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - `docs/internship_pack/06_4_week_project_path.md`: four-week learning path.
 - `docs/internship_pack/07_advanced_project_path.md`: stronger project path after the baseline works.
 
+## Share A Run
+
+Use GitHub issues to report a bug, share an experiment, or post a learner showcase. Good reports include the exact command, metrics, rollout evidence, and an honest boundary statement.
+
 ## Repository Layout
 
 ```text

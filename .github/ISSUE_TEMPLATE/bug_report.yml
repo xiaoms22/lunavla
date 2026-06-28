@@ -1,0 +1,60 @@
+name: Bug Report
+description: Report a command, install, training, evaluation, or asset-generation problem.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a reproducibility issue. Please keep the report focused on public MiniMind-VLA commands and artifacts.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Install or dependencies
+        - CPU smoke test
+        - Baseline training
+        - Evaluation or rollouts
+        - Report generation
+        - README assets
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: Paste the exact command that failed.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Error output
+      description: Paste the relevant error lines, not the entire terminal if it is very long.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I ran `pip install -r requirements.txt`.
+        - label: I ran `python scripts/check_repo_quality.py`.
+        - label: I ran `python scripts/run_cpu_smoke.py`.
+        - label: I am not reporting a private dataset, private robot setup, or unsupported claim.
