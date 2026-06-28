@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="260" viewBox="0 0 980 260" role="img" aria-label="MiniMind-VLA architecture">
+  <rect width="980" height="260" fill="#f7f3ec"/>
+  <g font-family="Arial, sans-serif" font-size="18" fill="#172026">
+    <rect x="40" y="86" width="170" height="88" rx="8" fill="#ffffff" stroke="#d9d3c8"/>
+    <text x="72" y="122">Observation</text>
+    <text x="72" y="150" font-size="14" fill="#53616b">state + goal</text>
+    <rect x="250" y="86" width="170" height="88" rx="8" fill="#ffffff" stroke="#d9d3c8"/>
+    <text x="284" y="122">Language</text>
+    <text x="284" y="150" font-size="14" fill="#53616b">optional intent</text>
+    <rect x="460" y="72" width="210" height="116" rx="8" fill="#ffffff" stroke="#d9d3c8"/>
+    <text x="506" y="122">MiniVLAPolicy</text>
+    <text x="508" y="150" font-size="14" fill="#53616b">ACT-style chunk</text>
+    <rect x="720" y="86" width="220" height="88" rx="8" fill="#ffffff" stroke="#d9d3c8"/>
+    <text x="776" y="122">Action Chunk</text>
+    <text x="772" y="150" font-size="14" fill="#53616b">rollout + eval</text>
+    <path d="M210 130 H250" stroke="#e0523f" stroke-width="4"/>
+    <path d="M420 130 H460" stroke="#e0523f" stroke-width="4"/>
+    <path d="M670 130 H720" stroke="#e0523f" stroke-width="4"/>
+  </g>
+</svg>

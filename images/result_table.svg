@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="424" viewBox="0 0 860 424">
+<rect width="100%" height="100%" fill="#f7f3ec"/>
+<rect x="32" y="28" width="796" height="52" rx="8" fill="#172026"/>
+<text x="54" y="62" font-family="Arial, sans-serif" font-size="22" fill="#ffffff">MiniMind-VLA baseline result</text>
+<rect x="32" y="92" width="796" height="42" fill="#ffffff" stroke="#d9d3c8"/>
+<text x="54" y="119" font-family="Arial, sans-serif" font-size="17" fill="#53616b">project</text>
+<text x="330" y="119" font-family="Arial, sans-serif" font-size="17" fill="#172026">minimind_vla_act_pusht_baseline</text>
+<rect x="32" y="134" width="796" height="42" fill="#fbfaf7" stroke="#d9d3c8"/>
+<text x="54" y="161" font-family="Arial, sans-serif" font-size="17" fill="#53616b">records</text>
+<text x="330" y="161" font-family="Arial, sans-serif" font-size="17" fill="#172026">4096</text>
+<rect x="32" y="176" width="796" height="42" fill="#ffffff" stroke="#d9d3c8"/>
+<text x="54" y="203" font-family="Arial, sans-serif" font-size="17" fill="#53616b">chunk size</text>
+<text x="330" y="203" font-family="Arial, sans-serif" font-size="17" fill="#172026">8</text>
+<rect x="32" y="218" width="796" height="42" fill="#fbfaf7" stroke="#d9d3c8"/>
+<text x="54" y="245" font-family="Arial, sans-serif" font-size="17" fill="#53616b">final loss</text>
+<text x="330" y="245" font-family="Arial, sans-serif" font-size="17" fill="#172026">6.612e-05</text>
+<rect x="32" y="260" width="796" height="42" fill="#ffffff" stroke="#d9d3c8"/>
+<text x="54" y="287" font-family="Arial, sans-serif" font-size="17" fill="#53616b">success rate</text>
+<text x="330" y="287" font-family="Arial, sans-serif" font-size="17" fill="#172026">1.0</text>
+<rect x="32" y="302" width="796" height="42" fill="#fbfaf7" stroke="#d9d3c8"/>
+<text x="54" y="329" font-family="Arial, sans-serif" font-size="17" fill="#53616b">mean final distance</text>
+<text x="330" y="329" font-family="Arial, sans-serif" font-size="17" fill="#172026">0.092592</text>
+<rect x="32" y="344" width="796" height="42" fill="#ffffff" stroke="#d9d3c8"/>
+<text x="54" y="371" font-family="Arial, sans-serif" font-size="17" fill="#53616b">mean rollout length</text>
+<text x="330" y="371" font-family="Arial, sans-serif" font-size="17" fill="#172026">9.4</text>
+<rect x="32" y="386" width="796" height="42" fill="#fbfaf7" stroke="#d9d3c8"/>
+<text x="54" y="413" font-family="Arial, sans-serif" font-size="17" fill="#53616b">mean action smoothness</text>
+<text x="330" y="413" font-family="Arial, sans-serif" font-size="17" fill="#172026">0.010245</text>
+</svg>

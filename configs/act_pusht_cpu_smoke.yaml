@@ -1,0 +1,34 @@
+model:
+  name: mini_vla
+  policy_type: linear_smoke
+  observation_dim: 4
+  instruction_dim: 8
+  action_dim: 2
+  chunk_size: 2
+project_name: minimind_vla_cpu_smoke
+framework: minimind-vla
+policy:
+  name: act
+  chunk_size: 2
+task: pusht
+dataset:
+  source: mock_pusht
+  num_episodes: 32
+  steps_per_episode: 16
+  seed: 7
+  language_instruction: push the T block to the goal
+training:
+  device: cpu
+  batch_size: 32
+  num_steps: 200
+  learning_rate: 0.04
+  seed: 42
+  log_interval: 25
+eval:
+  episodes: 3
+  rollout_steps: 32
+  success_distance: 0.12
+artifacts:
+  output_dir: outputs/cpu_smoke
+  checkpoint_name: checkpoint.pt
+  report_path: outputs/cpu_smoke/summary_report.md

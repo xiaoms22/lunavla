@@ -1,0 +1,19 @@
+# Failure Taxonomy
+
+Use this document to label failed rollouts before writing a report or resume bullet.
+
+| category | meaning | what to inspect |
+| --- | --- | --- |
+| `did_not_reach_goal` | final distance is above threshold | action magnitude, rollout horizon |
+| `oscillation` | policy moves around the goal without settling | action chunk smoothness |
+| `wrong_direction` | early actions increase distance | observation/action alignment |
+| `stuck` | actions become too small too early | loss, clipping, training data coverage |
+| `out_of_distribution_start` | initial state is unlike training records | dataset sampling range |
+
+Each failure case should include:
+
+- episode id;
+- final distance;
+- short label;
+- one sentence explanation;
+- next minimal fix.
