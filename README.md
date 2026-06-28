@@ -87,6 +87,12 @@ python scripts/generate_project_report.py --run-dir outputs/act_pusht_ablation_c
 python scripts/compare_runs.py --runs outputs/act_pusht_baseline outputs/act_pusht_ablation_chunk_size --out outputs/run_comparison.md
 ```
 
+Build a complete evidence index after running the core paths:
+
+```bash
+python scripts/build_evidence_pack.py --skip-runs
+```
+
 ## What You Build
 
 MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship project should be able to explain:
@@ -125,7 +131,7 @@ minimind-vla/
   docs/                 # learning notes, evaluation guide, and internship pack
   images/               # README-visible rollout, loss, architecture, and result assets
   model/                # tiny policy and ACT-style wrapper
-  scripts/              # dataset inspection, smoke/baseline runners, reports, assets, and web demo generator
+  scripts/              # dataset inspection, evidence runners, reports, assets, and web demo generator
   trainer/              # training entrypoints and shared utilities
   eval_vla.py           # rollout evaluation entrypoint
 ```
