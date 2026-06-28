@@ -24,17 +24,20 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 
 ## Quick Results
 
-The images below are generated from a checked local run:
+The animations and images below are generated from a checked local run:
 
 ```bash
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
 ```
 
-![Rollout demo](images/rollout_demo.png)
+| PushT rollout | ACT action chunk | Training loss |
+| --- | --- | --- |
+| ![PushT rollout animation](images/pusht_rollout.gif) | ![ACT action chunk animation](images/act_action_chunk.gif) | ![Loss curve animation](images/loss_curve.gif) |
 
-![Loss curve](images/loss_curve_baseline.png)
+| Static rollout | Loss curve | Result table |
+| --- | --- | --- |
+| ![Rollout demo](images/rollout_demo.png) | ![Loss curve](images/loss_curve_baseline.png) | ![Result table](images/result_table.svg) |
 
-![Result table](images/result_table.svg)
 
 ## Quick Start
 

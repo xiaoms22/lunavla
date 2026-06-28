@@ -1,6 +1,9 @@
 {
   "run_dir": "outputs/act_pusht_baseline",
   "assets": [
+    "images/pusht_rollout.gif",
+    "images/act_action_chunk.gif",
+    "images/loss_curve.gif",
     "images/rollout_demo.png",
     "images/loss_curve_baseline.png",
     "images/result_table.svg"
