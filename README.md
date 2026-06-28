@@ -19,7 +19,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | Step | Start Here | What You Get |
 | --- | --- | --- |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and static demo artifact. |
-| Understand it | `docs/internship_pack/01_vla_internship_skill_map.md` | The core VLA project concepts behind data, policy, rollout, and metrics. |
+| Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Report it | `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline` | A project report for results, failure cases, and honest claims. |
 | Extend it | `docs/internship_pack/07_advanced_project_path.md` | A safe path for improving the baseline after the runnable loop works. |
 
@@ -48,6 +48,12 @@ python scripts/run_cpu_smoke.py
 ```
 
 This single command runs training, evaluation, summary generation, project report generation, and a static HTML rollout demo. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
+
+Inspect one dataset sample before training:
+
+```bash
+python scripts/inspect_dataset.py
+```
 
 Run the baseline evidence path:
 
@@ -119,7 +125,7 @@ minimind-vla/
   docs/                 # learning notes, evaluation guide, and internship pack
   images/               # README-visible rollout, loss, architecture, and result assets
   model/                # tiny policy and ACT-style wrapper
-  scripts/              # smoke/baseline runners, summaries, reports, assets, and web demo generator
+  scripts/              # dataset inspection, smoke/baseline runners, reports, assets, and web demo generator
   trainer/              # training entrypoints and shared utilities
   eval_vla.py           # rollout evaluation entrypoint
 ```

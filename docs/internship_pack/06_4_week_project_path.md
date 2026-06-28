@@ -4,11 +4,12 @@ This path turns MiniMind-VLA from a runnable repo into a project a VLA beginner 
 
 ## Week 1: Run And Read
 
+- Run `python scripts/inspect_dataset.py`.
 - Run `python scripts/run_cpu_smoke.py`.
 - Read `dataset/pusht_dataset.py`, `model/minivla_policy.py`, and `trainer/train_act_pusht.py`.
 - Write down the shape of one training sample.
 
-Deliverable: one paragraph explaining `observation -> action`.
+Deliverable: one paragraph explaining `observation -> action chunk`.
 
 ## Week 2: Baseline
 

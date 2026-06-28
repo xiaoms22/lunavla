@@ -25,6 +25,14 @@ Each record contains:
 
 The generator is intentionally simple so learners can inspect every step and modify the data distribution without setting up external robotics infrastructure.
 
+Inspect one generated sample:
+
+```bash
+python scripts/inspect_dataset.py
+```
+
+This writes `outputs/dataset_inspection.md` and prints the raw VLA record, model input vector, and flattened action chunk target.
+
 ## Why Rollout Matters
 
 Training loss only checks whether actions match demonstrations one step at a time. Rollout evaluation feeds predicted actions back into the environment state, so it exposes behavior drift, overshooting, and unstable action chunks.
