@@ -53,14 +53,17 @@ def checkpoint_from_config(config_path: Path) -> Path:
     return run_dir / config["artifacts"].get("checkpoint_name", "checkpoint.pt")
 
 
-def expected_run_outputs(run_dir: Path) -> list[Path]:
-    return [
+def expected_run_outputs(run_dir: Path, include_resume: bool = False) -> list[Path]:
+    outputs = [
         run_dir / "checkpoint.pt",
         run_dir / "eval_summary.json",
         run_dir / "summary_report.md",
         run_dir / "project_report.md",
         run_dir / "web_demo.html",
     ]
+    if include_resume:
+        outputs.append(run_dir / "resume_pack.md")
+    return outputs
 
 
 def ensure_outputs(paths: list[Path], label: str) -> None:
@@ -88,7 +91,8 @@ def run_eval_report(config_path: Path, episodes: int) -> Path:
     run([python, "scripts/summarize_results.py", "--run-dir", relative(run_dir)])
     run([python, "scripts/web_demo_vla.py", "--run-dir", relative(run_dir)])
     run([python, "scripts/generate_project_report.py", "--run-dir", relative(run_dir)])
-    ensure_outputs(expected_run_outputs(run_dir), run_dir.name)
+    run([python, "scripts/generate_resume_pack.py", "--run-dir", relative(run_dir)])
+    ensure_outputs(expected_run_outputs(run_dir, include_resume=True), run_dir.name)
     return run_dir
 
 
@@ -120,11 +124,15 @@ def main() -> int:
 
     ablation_dir = run_eval_report(ablation_config, args.episodes)
     run([python, "scripts/compare_runs.py", "--runs", relative(baseline_dir), relative(ablation_dir), "--out", relative(out_path)])
+    run([python, "scripts/generate_resume_pack.py", "--run-dir", relative(baseline_dir), "--comparison", relative(out_path)])
+    run([python, "scripts/generate_resume_pack.py", "--run-dir", relative(ablation_dir), "--comparison", relative(out_path)])
 
     comparison_outputs = [
         out_path,
         out_path.with_suffix(".csv"),
         out_path.with_name(out_path.stem + "_deltas.csv"),
+        baseline_dir / "resume_pack.md",
+        ablation_dir / "resume_pack.md",
     ]
     ensure_outputs(comparison_outputs, "comparison")
     print(f"ablation evidence ready: {out_path}")

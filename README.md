@@ -20,7 +20,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | --- | --- | --- |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and static demo artifact. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
-| Report it | `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline` | A project report for results, failure cases, and honest claims. |
+| Report it | `python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline` | Resume-safe bullets, a two-minute pitch, interview anchors, and honest boundaries. |
 | Extend it | `docs/internship_pack/07_advanced_project_path.md` | A safe path for improving the baseline after the runnable loop works. |
 
 ## Quick Results
@@ -47,7 +47,7 @@ pip install -r requirements.txt
 python scripts/run_cpu_smoke.py
 ```
 
-This single command runs training, evaluation, summary generation, project report generation, and a static HTML rollout demo. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
+This single command runs training, evaluation, summary generation, project report generation, resume-pack generation, and a static HTML rollout demo. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
 
 Inspect one dataset sample before training:
 
@@ -68,6 +68,7 @@ python trainer/train_act_pusht.py --config configs/act_pusht_baseline.yaml
 python eval_vla.py --checkpoint outputs/act_pusht_baseline/checkpoint.pt --episodes 50 --save-rollouts
 python scripts/summarize_results.py --run-dir outputs/act_pusht_baseline
 python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline
+python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
 ```
 
@@ -85,6 +86,7 @@ python eval_vla.py --checkpoint outputs/act_pusht_ablation_chunk_size/checkpoint
 python scripts/summarize_results.py --run-dir outputs/act_pusht_ablation_chunk_size
 python scripts/generate_project_report.py --run-dir outputs/act_pusht_ablation_chunk_size
 python scripts/compare_runs.py --runs outputs/act_pusht_baseline outputs/act_pusht_ablation_chunk_size --out outputs/run_comparison.md
+python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline --comparison outputs/run_comparison.md
 ```
 
 Build a complete evidence index after running the core paths:
@@ -102,7 +104,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - an ACT-style action chunk policy;
 - config-driven training and checkpoint export;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
-- failure-case logging with first-pass category counts, result summaries, project reports, README assets, and a static web demo.
+- failure-case logging with first-pass category counts, result summaries, project reports, resume/interview packs, README assets, and a static web demo.
 
 Mock PushT is the low-cost teaching layer. Its value is helping you understand the data, policy, rollout, evaluation, and reporting loop before moving to heavier robotics stacks.
 
@@ -131,7 +133,7 @@ minimind-vla/
   docs/                 # learning notes, evaluation guide, and internship pack
   images/               # README-visible rollout, loss, architecture, and result assets
   model/                # tiny policy and ACT-style wrapper
-  scripts/              # dataset inspection, evidence runners, reports, assets, and web demo generator
+  scripts/              # dataset inspection, evidence runners, reports, resume packs, assets, and web demo generator
   trainer/              # training entrypoints and shared utilities
   eval_vla.py           # rollout evaluation entrypoint
 ```

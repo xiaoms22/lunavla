@@ -57,12 +57,15 @@ jobs:
           path: |
             outputs/cpu_smoke/summary_report.md
             outputs/cpu_smoke/project_report.md
+            outputs/cpu_smoke/resume_pack.md
             outputs/cpu_smoke/web_demo.html
             outputs/dataset_inspection.md
             outputs/act_pusht_baseline/summary_report.md
             outputs/act_pusht_baseline/project_report.md
+            outputs/act_pusht_baseline/resume_pack.md
             outputs/act_pusht_ablation_chunk_size/summary_report.md
             outputs/act_pusht_ablation_chunk_size/project_report.md
+            outputs/act_pusht_ablation_chunk_size/resume_pack.md
             outputs/run_comparison.md
             outputs/run_comparison.csv
             outputs/run_comparison_deltas.csv

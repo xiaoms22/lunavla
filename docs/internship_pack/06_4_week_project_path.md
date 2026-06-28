@@ -32,7 +32,8 @@ Deliverable: one ablation report with metric deltas and a short conclusion.
 - Run `python scripts/build_evidence_pack.py --skip-runs`.
 - Fill in the project report template.
 - Generate a first draft with `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline`.
+- Generate interview material with `python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline`.
 - Choose a matching resume bullet.
 - Practice the two-minute interview pitch.
 
-Deliverable: evidence index, public project README, report, resume bullet, and interview script.
+Deliverable: evidence index, public project README, report, resume/interview pack, and interview script.

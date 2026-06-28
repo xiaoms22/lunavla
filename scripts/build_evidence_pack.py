@@ -95,12 +95,15 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/dataset_inspection.md", "Understand one VLA sample and action chunk target."),
         artifact_row("outputs/cpu_smoke/summary_report.md", "Confirm the one-command smoke loop works."),
         artifact_row("outputs/cpu_smoke/project_report.md", "Smallest report a learner can inspect."),
+        artifact_row("outputs/cpu_smoke/resume_pack.md", "Smallest resume and interview pack a learner can inspect."),
         artifact_row("outputs/cpu_smoke/web_demo.html", "Static rollout demo from the CPU smoke path."),
         artifact_row("outputs/act_pusht_baseline/summary_report.md", "Baseline metric summary."),
         artifact_row("outputs/act_pusht_baseline/project_report.md", "Baseline project report."),
+        artifact_row("outputs/act_pusht_baseline/resume_pack.md", "Baseline resume and interview pack."),
         artifact_row("outputs/act_pusht_baseline/web_demo.html", "Baseline rollout browser."),
         artifact_row("outputs/act_pusht_ablation_chunk_size/summary_report.md", "Ablation metric summary."),
         artifact_row("outputs/act_pusht_ablation_chunk_size/project_report.md", "Ablation project report."),
+        artifact_row("outputs/act_pusht_ablation_chunk_size/resume_pack.md", "Ablation resume and interview pack."),
         artifact_row("outputs/act_pusht_ablation_chunk_size/web_demo.html", "Ablation rollout browser."),
         artifact_row("outputs/run_comparison.md", "Baseline vs ablation comparison report."),
         artifact_row("outputs/run_comparison.csv", "Machine-readable comparison table."),
@@ -153,8 +156,9 @@ def build_index() -> str:
             "1. Start with `outputs/dataset_inspection.md` to explain the sample format.",
             "2. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
             "3. Use `outputs/run_comparison.md` for the ablation story.",
-            "4. Use the README GIFs and rollout demo as visual evidence.",
-            "5. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "4. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "5. Use the README GIFs and rollout demo as visual evidence.",
+            "6. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
