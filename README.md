@@ -68,6 +68,12 @@ python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --ou
 Run the chunk-size ablation:
 
 ```bash
+python scripts/run_ablation_evidence.py
+```
+
+Or run the same ablation path step by step:
+
+```bash
 python trainer/train_act_pusht.py --config configs/act_pusht_ablation_chunk_size.yaml
 python eval_vla.py --checkpoint outputs/act_pusht_ablation_chunk_size/checkpoint.pt --episodes 50 --save-rollouts
 python scripts/summarize_results.py --run-dir outputs/act_pusht_ablation_chunk_size

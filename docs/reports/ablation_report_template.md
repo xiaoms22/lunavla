@@ -7,10 +7,10 @@ What variable changed, and why?
 Start with an auto-generated comparison:
 
 ```bash
-python scripts/compare_runs.py --runs outputs/act_pusht_baseline outputs/act_pusht_ablation_chunk_size --out outputs/run_comparison.md
+python scripts/run_ablation_evidence.py
 ```
 
-Then inspect rollout behavior and add your own explanation.
+This runs the baseline if needed, runs the chunk-size ablation, generates per-run project reports, and writes `outputs/run_comparison.md`. Then inspect rollout behavior and add your own explanation.
 
 ## Runs
 

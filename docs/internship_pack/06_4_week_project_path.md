@@ -20,8 +20,7 @@ Deliverable: baseline result table and rollout screenshot.
 
 ## Week 3: Ablation
 
-- Run `configs/act_pusht_ablation_chunk_size.yaml`.
-- Compare the baseline and ablation with `scripts/compare_runs.py`.
+- Run `python scripts/run_ablation_evidence.py`.
 - Read `outputs/run_comparison.md` and inspect at least one rollout from each run.
 - Explain how chunk size changes behavior.
 

@@ -41,6 +41,9 @@ jobs:
       - name: Run baseline evidence path
         run: python scripts/run_baseline_evidence.py
 
+      - name: Run ablation evidence path
+        run: python scripts/run_ablation_evidence.py --skip-baseline
+
       - name: Upload generated evidence
         uses: actions/upload-artifact@v4
         with:
@@ -51,6 +54,11 @@ jobs:
             outputs/cpu_smoke/web_demo.html
             outputs/act_pusht_baseline/summary_report.md
             outputs/act_pusht_baseline/project_report.md
+            outputs/act_pusht_ablation_chunk_size/summary_report.md
+            outputs/act_pusht_ablation_chunk_size/project_report.md
+            outputs/run_comparison.md
+            outputs/run_comparison.csv
+            outputs/run_comparison_deltas.csv
             images/pusht_rollout.gif
             images/act_action_chunk.gif
             images/loss_curve.gif

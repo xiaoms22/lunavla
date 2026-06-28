@@ -1,0 +1,135 @@
+from __future__ import annotations
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from trainer.trainer_utils import load_yaml
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run MiniMind-VLA baseline plus chunk-size ablation evidence.")
+    parser.add_argument("--baseline-config", default="configs/act_pusht_baseline.yaml", help="Baseline config path.")
+    parser.add_argument(
+        "--ablation-config",
+        default="configs/act_pusht_ablation_chunk_size.yaml",
+        help="Ablation config path.",
+    )
+    parser.add_argument("--episodes", type=int, default=5, help="Evaluation episodes for each run.")
+    parser.add_argument("--out", default="outputs/run_comparison.md", help="Ablation comparison Markdown path.")
+    parser.add_argument("--asset-dir", default="images", help="Directory for README-visible baseline assets.")
+    parser.add_argument("--skip-baseline", action="store_true", help="Reuse an existing baseline run directory.")
+    return parser.parse_args()
+
+
+def resolve(path: str | Path) -> Path:
+    candidate = Path(path)
+    return candidate if candidate.is_absolute() else ROOT / candidate
+
+
+def relative(path: Path) -> str:
+    return path.relative_to(ROOT).as_posix()
+
+
+def run(command: list[str]) -> None:
+    print("+ " + " ".join(command))
+    subprocess.run(command, cwd=ROOT, check=True)
+
+
+def run_dir_from_config(config_path: Path) -> Path:
+    config = load_yaml(config_path)
+    return resolve(config["artifacts"]["output_dir"])
+
+
+def checkpoint_from_config(config_path: Path) -> Path:
+    config = load_yaml(config_path)
+    run_dir = resolve(config["artifacts"]["output_dir"])
+    return run_dir / config["artifacts"].get("checkpoint_name", "checkpoint.pt")
+
+
+def expected_run_outputs(run_dir: Path) -> list[Path]:
+    return [
+        run_dir / "checkpoint.pt",
+        run_dir / "eval_summary.json",
+        run_dir / "summary_report.md",
+        run_dir / "project_report.md",
+        run_dir / "web_demo.html",
+    ]
+
+
+def ensure_outputs(paths: list[Path], label: str) -> None:
+    missing = [relative(path) for path in paths if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f"Missing {label} artifacts: " + ", ".join(missing))
+
+
+def run_eval_report(config_path: Path, episodes: int) -> Path:
+    run_dir = run_dir_from_config(config_path)
+    checkpoint = checkpoint_from_config(config_path)
+    python = sys.executable
+    run([python, "trainer/train_act_pusht.py", "--config", relative(config_path)])
+    run(
+        [
+            python,
+            "eval_vla.py",
+            "--checkpoint",
+            relative(checkpoint),
+            "--episodes",
+            str(episodes),
+            "--save-rollouts",
+        ]
+    )
+    run([python, "scripts/summarize_results.py", "--run-dir", relative(run_dir)])
+    run([python, "scripts/web_demo_vla.py", "--run-dir", relative(run_dir)])
+    run([python, "scripts/generate_project_report.py", "--run-dir", relative(run_dir)])
+    ensure_outputs(expected_run_outputs(run_dir), run_dir.name)
+    return run_dir
+
+
+def main() -> int:
+    args = parse_args()
+    baseline_config = resolve(args.baseline_config)
+    ablation_config = resolve(args.ablation_config)
+    out_path = resolve(args.out)
+    asset_dir = resolve(args.asset_dir)
+    python = sys.executable
+
+    if args.skip_baseline:
+        baseline_dir = run_dir_from_config(baseline_config)
+        ensure_outputs(expected_run_outputs(baseline_dir), "baseline")
+    else:
+        run(
+            [
+                python,
+                "scripts/run_baseline_evidence.py",
+                "--config",
+                relative(baseline_config),
+                "--episodes",
+                str(args.episodes),
+                "--asset-dir",
+                relative(asset_dir),
+            ]
+        )
+        baseline_dir = run_dir_from_config(baseline_config)
+
+    ablation_dir = run_eval_report(ablation_config, args.episodes)
+    run([python, "scripts/compare_runs.py", "--runs", relative(baseline_dir), relative(ablation_dir), "--out", relative(out_path)])
+
+    comparison_outputs = [
+        out_path,
+        out_path.with_suffix(".csv"),
+        out_path.with_name(out_path.stem + "_deltas.csv"),
+    ]
+    ensure_outputs(comparison_outputs, "comparison")
+    print(f"ablation evidence ready: {out_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
