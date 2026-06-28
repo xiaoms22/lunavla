@@ -19,12 +19,14 @@ def main() -> int:
     run([python, "eval_vla.py", "--checkpoint", "outputs/cpu_smoke/checkpoint.pt", "--episodes", "3", "--save-rollouts"])
     run([python, "scripts/summarize_results.py", "--run-dir", "outputs/cpu_smoke"])
     run([python, "scripts/web_demo_vla.py", "--run-dir", "outputs/cpu_smoke"])
+    run([python, "scripts/generate_project_report.py", "--run-dir", "outputs/cpu_smoke"])
 
     expected = [
         ROOT / "outputs/cpu_smoke/checkpoint.pt",
         ROOT / "outputs/cpu_smoke/eval_summary.json",
         ROOT / "outputs/cpu_smoke/summary_report.md",
         ROOT / "outputs/cpu_smoke/web_demo.html",
+        ROOT / "outputs/cpu_smoke/project_report.md",
     ]
     missing = [str(path) for path in expected if not path.exists()]
     if missing:

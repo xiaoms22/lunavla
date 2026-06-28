@@ -4,6 +4,14 @@
 
 MiniMind-VLA: A Tiny ACT-Style Observation-to-Action Learning Loop
 
+Start with an auto-generated draft:
+
+```bash
+python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline
+```
+
+Then edit the generated report with your own rollout observations and ablation notes.
+
 ## Abstract
 
 Summarize the task, policy, dataset source, training setup, evaluation metrics, and the strongest result in 3-5 sentences.

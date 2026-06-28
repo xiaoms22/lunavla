@@ -19,7 +19,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | --- | --- | --- |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and static demo artifact. |
 | Understand it | `docs/internship_pack/01_vla_internship_skill_map.md` | The core VLA project concepts behind data, policy, rollout, and metrics. |
-| Report it | `docs/internship_pack/04_project_report_template.md` | A project report structure for results, failure cases, and honest claims. |
+| Report it | `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline` | A project report for results, failure cases, and honest claims. |
 | Extend it | `docs/internship_pack/07_advanced_project_path.md` | A safe path for improving the baseline after the runnable loop works. |
 
 ## Quick Results
@@ -43,7 +43,7 @@ pip install -r requirements.txt
 python scripts/run_cpu_smoke.py
 ```
 
-This single command runs training, evaluation, summary generation, and a static HTML rollout demo. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
+This single command runs training, evaluation, summary generation, project report generation, and a static HTML rollout demo. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
 
 Run the baseline manually:
 
@@ -51,6 +51,7 @@ Run the baseline manually:
 python trainer/train_act_pusht.py --config configs/act_pusht_baseline.yaml
 python eval_vla.py --checkpoint outputs/act_pusht_baseline/checkpoint.pt --episodes 50 --save-rollouts
 python scripts/summarize_results.py --run-dir outputs/act_pusht_baseline
+python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
 ```
 
@@ -70,7 +71,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - an ACT-style action chunk policy;
 - config-driven training and checkpoint export;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
-- failure-case logging, result summaries, README assets, and a static web demo.
+- failure-case logging, result summaries, project reports, README assets, and a static web demo.
 
 Mock PushT is the low-cost teaching layer. Its value is helping you understand the data, policy, rollout, evaluation, and reporting loop before moving to heavier robotics stacks.
 
@@ -81,7 +82,7 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - `docs/internship_pack/01_vla_internship_skill_map.md`: what the project teaches.
 - `docs/internship_pack/02_resume_bullets.md`: resume bullets matched to completed work.
 - `docs/internship_pack/03_interview_qa.md`: interview answers for VLA, behavior cloning, ACT, rollout, and failure analysis.
-- `docs/internship_pack/04_project_report_template.md`: experiment report template.
+- `docs/internship_pack/04_project_report_template.md`: experiment report template, or generate a first draft with `scripts/generate_project_report.py`.
 - `docs/internship_pack/05_jd_to_project_mapping.md`: map JD keywords to code evidence.
 - `docs/internship_pack/06_4_week_project_path.md`: four-week learning path.
 - `docs/internship_pack/07_advanced_project_path.md`: stronger project path after the baseline works.

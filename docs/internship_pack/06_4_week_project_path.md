@@ -29,6 +29,7 @@ Deliverable: one ablation table and a short conclusion.
 ## Week 4: Report And Interview Pack
 
 - Fill in the project report template.
+- Generate a first draft with `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline`.
 - Choose a matching resume bullet.
 - Practice the two-minute interview pitch.
 
