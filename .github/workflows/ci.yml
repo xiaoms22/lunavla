@@ -1,0 +1,61 @@
+name: MiniMind-VLA CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Smoke And Public Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile Python files
+        run: python -m compileall -q dataset model scripts trainer eval_vla.py
+
+      - name: Check public repo quality
+        run: python scripts/check_repo_quality.py
+
+      - name: Run CPU smoke loop
+        run: python scripts/run_cpu_smoke.py
+
+      - name: Run baseline evidence path
+        run: |
+          python trainer/train_act_pusht.py --config configs/act_pusht_baseline.yaml
+          python eval_vla.py --checkpoint outputs/act_pusht_baseline/checkpoint.pt --episodes 5 --save-rollouts
+          python scripts/summarize_results.py --run-dir outputs/act_pusht_baseline
+          python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline
+          python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
+
+      - name: Upload generated evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimind-vla-ci-evidence
+          path: |
+            outputs/cpu_smoke/summary_report.md
+            outputs/cpu_smoke/project_report.md
+            outputs/cpu_smoke/web_demo.html
+            outputs/act_pusht_baseline/summary_report.md
+            outputs/act_pusht_baseline/project_report.md
+            images/pusht_rollout.gif
+            images/act_action_chunk.gif
+            images/loss_curve.gif

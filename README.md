@@ -2,6 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-Apache--2.0-green)
+![CI](https://github.com/xiaoms22/minimind-vla/actions/workflows/ci.yml/badge.svg)
 ![CPU Smoke](https://img.shields.io/badge/CPU%20Smoke-passing-brightgreen)
 ![Task](https://img.shields.io/badge/Task-ACT%20%2B%20PushT--style-orange)
 
