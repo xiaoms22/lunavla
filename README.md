@@ -5,9 +5,11 @@
 ![CPU Smoke](https://img.shields.io/badge/CPU%20Smoke-passing-brightgreen)
 ![Task](https://img.shields.io/badge/Task-ACT%20%2B%20PushT--style-orange)
 
-学过 VLA 但缺少一个能写进简历、能在面试里讲清楚的项目？MiniMind-VLA 用一个轻量 imitation-learning 闭环，把 `observation -> action -> rollout -> evaluation` 跑起来。
+**Run a tiny VLA loop: `observation -> action -> rollout -> evaluation`, then turn the result into resume-ready embodied AI project evidence.**
 
-它参考 MiniMind 的思路：低成本、可复现、从代码理解完整链路。这里不追求大模型规模和真实机器人部署，而是提供一个普通电脑也能启动、普通学生也能改懂的具身智能项目起点。
+学过 VLA 但缺少一个能写进简历、能在面试里讲清楚的项目？MiniMind-VLA 用一个轻量 imitation-learning 闭环，帮助你从数据记录、策略训练、rollout 评估到结果展示完整走一遍。
+
+This repo follows the spirit of MiniMind: low cost, reproducible, readable from code, and useful for learners. It focuses on a teaching-scale action-learning baseline, not real-robot deployment, frontier robot foundation model training, or state-of-the-art robotics claims.
 
 ![MiniMind-VLA architecture](images/minimind-vla-architecture.svg)
 
@@ -61,13 +63,15 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
 - failure-case logging, result summaries, README assets, and a static web demo.
 
+Mock PushT is the low-cost teaching layer. Its value is helping you understand the data, policy, rollout, evaluation, and reporting loop before moving to heavier robotics stacks.
+
 ## Internship Pack
 
 If your goal is to turn this into project evidence, start here:
 
 - `docs/internship_pack/01_vla_internship_skill_map.md`: what the project teaches.
 - `docs/internship_pack/02_resume_bullets.md`: resume bullets matched to completed work.
-- `docs/internship_pack/03_interview_qa.md`: interview answers for VLA, BC, ACT, rollout, and failure analysis.
+- `docs/internship_pack/03_interview_qa.md`: interview answers for VLA, behavior cloning, ACT, rollout, and failure analysis.
 - `docs/internship_pack/04_project_report_template.md`: experiment report template.
 - `docs/internship_pack/05_jd_to_project_mapping.md`: map JD keywords to code evidence.
 - `docs/internship_pack/06_4_week_project_path.md`: four-week learning path.
