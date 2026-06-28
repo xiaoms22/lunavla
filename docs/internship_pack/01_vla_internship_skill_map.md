@@ -1,6 +1,8 @@
-# VLA Internship Skill Map
+# Beginner VLA Skill Map
 
-MiniMind-VLA turns common VLA internship keywords into concrete project evidence.
+MiniMind-VLA is designed for learners who know the basic VLA terms but have not yet built a runnable project. It turns common embodied AI project skills into concrete code, metrics, and artifacts.
+
+The baseline path should let a beginner trace one sample through `Dataset -> Policy -> Train -> Eval -> Report` without needing a real robot or a large model.
 
 | Skill | What It Means | Repo Evidence |
 | --- | --- | --- |

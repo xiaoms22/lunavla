@@ -1,6 +1,6 @@
 # Four-Week Project Path
 
-This path turns MiniMind-VLA from a runnable repo into a project you can explain clearly.
+This path turns MiniMind-VLA from a runnable repo into a project a VLA beginner can understand, report, and explain clearly.
 
 ## Week 1: Run And Read
 
@@ -26,10 +26,10 @@ Deliverable: baseline result table and rollout screenshot.
 
 Deliverable: one ablation table and a short conclusion.
 
-## Week 4: Portfolio Pack
+## Week 4: Report And Interview Pack
 
 - Fill in the project report template.
 - Choose a matching resume bullet.
 - Practice the two-minute interview pitch.
 
-Deliverable: GitHub README, report, resume bullet, and interview script.
+Deliverable: public project README, report, resume bullet, and interview script.

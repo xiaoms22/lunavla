@@ -1,17 +1,26 @@
-# MiniMind-VLA: A Tiny VLA Internship Project You Can Run
+# MiniMind-VLA: A Tiny VLA Project Starter You Can Run
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-Apache--2.0-green)
 ![CPU Smoke](https://img.shields.io/badge/CPU%20Smoke-passing-brightgreen)
 ![Task](https://img.shields.io/badge/Task-ACT%20%2B%20PushT--style-orange)
 
-**Run a tiny VLA loop: `observation -> action -> rollout -> evaluation`, then turn the result into resume-ready embodied AI project evidence.**
+**Run a tiny VLA loop: `observation -> action -> rollout -> evaluation`, then turn the result into beginner-friendly embodied AI project evidence.**
 
-学过 VLA 但缺少一个能写进简历、能在面试里讲清楚的项目？MiniMind-VLA 用一个轻量 imitation-learning 闭环，帮助你从数据记录、策略训练、rollout 评估到结果展示完整走一遍。
+给 VLA / 具身智能新手：如果你学过概念但缺少一个能跑、能改、能讲清楚的项目，MiniMind-VLA 用一个轻量 imitation-learning 闭环，帮助你从数据记录、策略训练、rollout 评估到结果展示完整走一遍。
 
 This repo follows the spirit of MiniMind: low cost, reproducible, readable from code, and useful for learners. It focuses on a teaching-scale action-learning baseline, not real-robot deployment, frontier robot foundation model training, or state-of-the-art robotics claims.
 
 ![MiniMind-VLA architecture](images/minimind-vla-architecture.svg)
+
+## Learning Path
+
+| Step | Start Here | What You Get |
+| --- | --- | --- |
+| Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and static demo artifact. |
+| Understand it | `docs/internship_pack/01_vla_internship_skill_map.md` | The core VLA project concepts behind data, policy, rollout, and metrics. |
+| Report it | `docs/internship_pack/04_project_report_template.md` | A project report structure for results, failure cases, and honest claims. |
+| Extend it | `docs/internship_pack/07_advanced_project_path.md` | A safe path for improving the baseline after the runnable loop works. |
 
 ## Quick Results
 
@@ -67,7 +76,7 @@ Mock PushT is the low-cost teaching layer. Its value is helping you understand t
 
 ## Internship Pack
 
-If your goal is to turn this into project evidence, start here:
+If your goal is to turn the runnable loop into learning, resume, or interview evidence, start here:
 
 - `docs/internship_pack/01_vla_internship_skill_map.md`: what the project teaches.
 - `docs/internship_pack/02_resume_bullets.md`: resume bullets matched to completed work.
