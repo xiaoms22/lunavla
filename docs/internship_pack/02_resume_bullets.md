@@ -4,7 +4,7 @@ Use only the bullet that matches what you have actually completed. Keep the lang
 
 ## CPU Smoke Completed
 
-> Built and verified MiniMind-VLA, a lightweight Vision-Language-Action learning scaffold with a one-command CPU smoke test covering training, rollout evaluation, summary generation, and static demo export.
+> Built and verified MiniMind-VLA, a lightweight Vision-Language-Action learning scaffold with a one-command CPU smoke test covering training, rollout evaluation, summary generation, and rollout browser export.
 
 ## Baseline Completed
 

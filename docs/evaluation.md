@@ -25,6 +25,6 @@ VLA projects cannot be evaluated by training loss alone. A policy can fit demons
 
 Failure labels help turn a weak result into a useful learning artifact. A failed rollout can reveal wrong direction, action clipping, poor coverage, oscillation, or action smoothing issues.
 
-Automatic labels are meant to start the inspection, not replace it. Before writing a resume bullet or report conclusion, open the saved rollout JSON or static demo and check whether the label matches the behavior you see.
+Automatic labels are meant to start the inspection, not replace it. Before writing a resume bullet or report conclusion, open the saved rollout JSON or rollout browser and check whether the label matches the behavior you see.
 
 See `docs/failure_taxonomy.md`.

@@ -178,7 +178,7 @@ def build_report(run_dir: Path, title: str) -> str:
             "",
             f"- Loss curve CSV: `{relative(run_dir / 'loss_curve.csv')}`",
             f"- Eval summary JSON: `{relative(run_dir / 'eval_summary.json')}`",
-            f"- Static web demo: `{relative(run_dir / 'web_demo.html')}`",
+            f"- Static rollout browser: `{relative(run_dir / 'web_demo.html')}`",
             f"- First saved rollout: `{relative(rollout_path) if rollout_path else 'run eval with --save-rollouts'}`",
             "",
             "## Failure Analysis",

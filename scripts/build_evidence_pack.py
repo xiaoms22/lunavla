@@ -96,7 +96,7 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/cpu_smoke/summary_report.md", "Confirm the one-command smoke loop works."),
         artifact_row("outputs/cpu_smoke/project_report.md", "Smallest report a learner can inspect."),
         artifact_row("outputs/cpu_smoke/resume_pack.md", "Smallest resume and interview pack a learner can inspect."),
-        artifact_row("outputs/cpu_smoke/web_demo.html", "Static rollout demo from the CPU smoke path."),
+        artifact_row("outputs/cpu_smoke/web_demo.html", "Static rollout browser from the CPU smoke path."),
         artifact_row("outputs/act_pusht_baseline/summary_report.md", "Baseline metric summary."),
         artifact_row("outputs/act_pusht_baseline/project_report.md", "Baseline project report."),
         artifact_row("outputs/act_pusht_baseline/resume_pack.md", "Baseline resume and interview pack."),
