@@ -39,12 +39,7 @@ jobs:
         run: python scripts/run_cpu_smoke.py
 
       - name: Run baseline evidence path
-        run: |
-          python trainer/train_act_pusht.py --config configs/act_pusht_baseline.yaml
-          python eval_vla.py --checkpoint outputs/act_pusht_baseline/checkpoint.pt --episodes 5 --save-rollouts
-          python scripts/summarize_results.py --run-dir outputs/act_pusht_baseline
-          python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline
-          python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
+        run: python scripts/run_baseline_evidence.py
 
       - name: Upload generated evidence
         uses: actions/upload-artifact@v4

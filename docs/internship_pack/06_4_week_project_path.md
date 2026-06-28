@@ -12,9 +12,9 @@ Deliverable: one paragraph explaining `observation -> action`.
 
 ## Week 2: Baseline
 
-- Run `configs/act_pusht_baseline.yaml`.
-- Evaluate with `eval_vla.py`.
-- Generate a summary and demo page.
+- Run `python scripts/run_baseline_evidence.py`.
+- Inspect the summary, project report, web demo, and README assets.
+- Optionally rerun `python scripts/run_baseline_evidence.py --episodes 50` for a stronger report.
 
 Deliverable: baseline result table and rollout screenshot.
 

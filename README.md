@@ -49,7 +49,13 @@ python scripts/run_cpu_smoke.py
 
 This single command runs training, evaluation, summary generation, project report generation, and a static HTML rollout demo. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
 
-Run the baseline manually:
+Run the baseline evidence path:
+
+```bash
+python scripts/run_baseline_evidence.py
+```
+
+Or run the same baseline path step by step:
 
 ```bash
 python trainer/train_act_pusht.py --config configs/act_pusht_baseline.yaml
@@ -107,7 +113,7 @@ minimind-vla/
   docs/                 # learning notes, evaluation guide, and internship pack
   images/               # README-visible rollout, loss, architecture, and result assets
   model/                # tiny policy and ACT-style wrapper
-  scripts/              # smoke test, summaries, asset export, and web demo generator
+  scripts/              # smoke/baseline runners, summaries, reports, assets, and web demo generator
   trainer/              # training entrypoints and shared utilities
   eval_vla.py           # rollout evaluation entrypoint
 ```
