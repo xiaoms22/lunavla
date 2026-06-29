@@ -47,6 +47,9 @@ jobs:
       - name: Validate configs
         run: python scripts/validate_configs.py
 
+      - name: Check release failure modes
+        run: python scripts/check_negative_paths.py
+
       - name: Run CPU smoke loop
         run: python scripts/run_cpu_smoke.py
 

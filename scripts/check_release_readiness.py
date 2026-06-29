@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -28,6 +30,7 @@ CORE_FILES = [
     "scripts/generate_troubleshooting_guide.py",
     "scripts/generate_command_reference.py",
     "scripts/generate_code_walkthrough.py",
+    "scripts/check_negative_paths.py",
     "scripts/check_repo_quality.py",
     "scripts/check_environment.py",
     "scripts/check_readme_assets.py",
@@ -129,6 +132,7 @@ PUBLIC_COMMANDS = [
     "python scripts/generate_troubleshooting_guide.py",
     "python scripts/generate_command_reference.py",
     "python scripts/generate_code_walkthrough.py",
+    "python scripts/check_negative_paths.py",
     "python scripts/check_environment.py",
     "python scripts/check_readme_assets.py",
     "python scripts/check_project_progress.py",
@@ -225,6 +229,19 @@ def check_readme_assets() -> None:
             fail(f"README.md should reference {asset}")
 
 
+def check_negative_paths() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/check_negative_paths.py"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        details = "\n".join(part for part in [result.stdout.strip(), result.stderr.strip()] if part)
+        fail("negative path checks failed" + (f": {details}" if details else ""))
+
+
 def main() -> int:
     args = parse_args()
     require_paths(CORE_FILES, "core release files")
@@ -236,6 +253,7 @@ def main() -> int:
     check_readme_assets()
     check_cards_are_linked()
     check_markdown_links()
+    check_negative_paths()
     print("release readiness check passed")
     return 0
 

@@ -12,6 +12,7 @@ MiniMind-VLA is released as a tiny, reproducible VLA internship project starter.
 - Troubleshooting guide for common missing-artifact, weak-run, and report-prep symptoms.
 - Command reference generator for mapping public commands to generated artifacts.
 - Code walkthrough generator for reading the runnable implementation in order.
+- Negative-path release checks for malformed configs and missing submission-pack sources.
 - ACT-style PushT baseline and chunk-size ablation config.
 - Rollout evaluation with success rate, final distance, rollout length, and action smoothness.
 - Static README assets generated from local run artifacts.

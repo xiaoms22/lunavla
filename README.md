@@ -85,6 +85,12 @@ Validate the runnable configs:
 python scripts/validate_configs.py
 ```
 
+Check fast negative cases for release utilities:
+
+```bash
+python scripts/check_negative_paths.py
+```
+
 Run the baseline evidence path:
 
 ```bash

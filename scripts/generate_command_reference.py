@@ -31,6 +31,20 @@ COMMANDS: list[dict[str, Any]] = [
         "next": "Fix missing dependencies before training.",
     },
     {
+        "stage": "validate",
+        "command": "python scripts/validate_configs.py",
+        "purpose": "Check runnable config structure before training.",
+        "outputs": [],
+        "next": "Fix config errors before launching evidence commands.",
+    },
+    {
+        "stage": "release guard",
+        "command": "python scripts/check_negative_paths.py",
+        "purpose": "Confirm release utilities reject malformed or incomplete inputs clearly.",
+        "outputs": [],
+        "next": "Fix validation errors before running release readiness.",
+    },
+    {
         "stage": "read data",
         "command": "python scripts/inspect_dataset.py",
         "purpose": "Inspect one observation, action, episode id, and action chunk target.",
