@@ -34,8 +34,10 @@ Deliverable: one ablation report with metric deltas and a short conclusion.
 
 - Run `python scripts/build_evidence_pack.py --skip-runs`.
 - Run `python scripts/build_submission_pack.py`.
+- Run `python scripts/check_project_progress.py`.
 - Include `outputs/environment_check.md` as reproducibility context.
 - Include `outputs/readme_asset_check.md` as visual evidence context.
+- Include `outputs/project_progress.md` as the evidence coverage checklist.
 - Fill in the project report template.
 - Generate a first draft with `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline`.
 - Generate interview material with `python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline`.

@@ -23,6 +23,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Report it | `python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline` | A claim-safety check, resume-safe bullets, a two-minute pitch, and honest boundaries. |
 | Show it | `python scripts/check_readme_assets.py` | A quality check for README GIFs, screenshots, and result visuals. |
+| Track it | `python scripts/check_project_progress.py` | A stage checklist for generated project evidence. |
 | Extend it | `docs/internship_pack/07_advanced_project_path.md` | A safe path for improving the baseline after the runnable loop works. |
 
 ## Quick Results
@@ -81,6 +82,7 @@ python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline
 python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
 python scripts/check_readme_assets.py
+python scripts/check_project_progress.py
 ```
 
 Run the chunk-size ablation:
@@ -131,6 +133,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
 - failure-case logging with first-pass category counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
 - README asset checks for rollout GIFs, action-chunk animation, loss curve, static rollout, and result table.
+- project progress checks that map generated artifacts to report-ready stages.
 - a compact `outputs/submission_pack/` folder for reviewing the final project evidence.
 
 Mock PushT is the low-cost teaching layer. Its value is helping you understand the data, policy, rollout, evaluation, and reporting loop before moving to heavier robotics stacks.

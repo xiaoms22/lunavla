@@ -94,6 +94,7 @@ def required_artifacts() -> list[dict[str, str]]:
     return [
         artifact_row("outputs/environment_check.md", "Confirm the local environment can run public commands."),
         artifact_row("outputs/readme_asset_check.md", "Confirm README images and animations are renderable."),
+        artifact_row("outputs/project_progress.md", "Show which public project evidence stages are complete."),
         artifact_row("outputs/dataset_inspection.md", "Understand one VLA sample and action chunk target."),
         artifact_row("outputs/cpu_smoke/summary_report.md", "Confirm the one-command smoke loop works."),
         artifact_row("outputs/cpu_smoke/project_report.md", "Smallest report a learner can inspect."),
@@ -138,6 +139,7 @@ def build_index() -> str:
         "- The dataset path can be inspected before training.",
         "- The local environment passes the public command readiness check.",
         "- The README-visible assets pass image and animation checks.",
+        "- The project progress report maps generated artifacts to report-ready stages.",
         "- The CPU smoke loop trains, evaluates, summarizes, and exports a demo.",
         "- The baseline path produces rollout metrics, reports, and README assets.",
         "- The chunk-size ablation produces a comparison report and metric deltas.",
@@ -162,13 +164,14 @@ def build_index() -> str:
             "",
             "1. Start with `outputs/environment_check.md` to show the run environment was ready.",
             "2. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
-            "3. Use `outputs/dataset_inspection.md` to explain the sample format.",
-            "4. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
-            "5. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
-            "6. Use `outputs/run_comparison.md` for the ablation story.",
-            "7. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "8. Use the README GIFs and rollout demo as visual evidence.",
-            "9. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "3. Use `outputs/project_progress.md` to check which evidence stages are complete.",
+            "4. Use `outputs/dataset_inspection.md` to explain the sample format.",
+            "5. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
+            "6. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
+            "7. Use `outputs/run_comparison.md` for the ablation story.",
+            "8. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "9. Use the README GIFs and rollout demo as visual evidence.",
+            "10. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
@@ -192,6 +195,7 @@ def main() -> int:
     out_path = resolve(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(build_index(), encoding="utf-8")
+    run([python, "scripts/check_project_progress.py"])
     missing = [row["artifact"] for row in required_artifacts() if row["exists"] != "yes"]
     if missing:
         raise FileNotFoundError("Missing evidence artifacts: " + ", ".join(missing))
