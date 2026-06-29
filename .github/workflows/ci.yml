@@ -47,6 +47,9 @@ jobs:
       - name: Run CPU smoke loop
         run: python scripts/run_cpu_smoke.py
 
+      - name: Generate first run checklist
+        run: python scripts/generate_first_run_checklist.py
+
       - name: Run baseline evidence path
         run: python scripts/run_baseline_evidence.py
 
@@ -89,6 +92,7 @@ jobs:
           name: minimind-vla-ci-evidence
           path: |
             outputs/environment_check.md
+            outputs/first_run_checklist.md
             outputs/readme_asset_check.md
             outputs/project_progress.md
             outputs/project_card.md

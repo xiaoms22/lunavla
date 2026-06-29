@@ -55,9 +55,10 @@ python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --ou
 pip install -r requirements.txt
 python scripts/check_environment.py
 python scripts/run_cpu_smoke.py
+python scripts/generate_first_run_checklist.py
 ```
 
-The environment check catches Python, dependency, path, and write-permission issues before training. The smoke command runs training, evaluation, summary generation, project report generation, resume-pack generation, run diagnosis, and a static HTML rollout browser. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
+The environment check catches Python, dependency, path, and write-permission issues before training. The smoke command runs training, evaluation, summary generation, project report generation, resume-pack generation, run diagnosis, and a static HTML rollout browser. The first-run checklist tells you which generated files to open first. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
 
 Inspect one dataset sample before training:
 
@@ -87,6 +88,7 @@ python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline
 python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline
 python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
+python scripts/generate_first_run_checklist.py
 python scripts/generate_failure_review.py
 python scripts/check_readme_assets.py
 python scripts/check_project_progress.py
@@ -142,6 +144,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - a PushT-style demonstration generator;
 - an ACT-style action chunk policy;
 - config-driven training and checkpoint export;
+- first-run checklist for checking the smallest runnable loop before moving on;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
 - failure-case logging with first-pass category counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
 - failure review across smoke, baseline, and ablation runs.

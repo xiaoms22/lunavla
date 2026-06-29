@@ -29,6 +29,7 @@ STAGES = [
             "outputs/cpu_smoke/resume_pack.md",
             "outputs/cpu_smoke/run_diagnostic.md",
             "outputs/cpu_smoke/web_demo.html",
+            "outputs/first_run_checklist.md",
         ],
     },
     {
