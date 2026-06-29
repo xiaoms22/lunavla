@@ -1,12 +1,12 @@
-name: Experiment Report
-description: Share a reproducible MiniMind-VLA training, evaluation, or ablation result.
+﻿name: Experiment Report
+description: Share a reproducible LunaVLA training, evaluation, or ablation result.
 title: "[Experiment] "
 labels: ["experiment"]
 body:
   - type: markdown
     attributes:
       value: |
-        Use this form to share evidence from a public MiniMind-VLA run. Keep claims tied to the reported metrics and artifacts.
+        Use this form to share evidence from a public LunaVLA run. Keep claims tied to the reported metrics and artifacts.
   - type: dropdown
     id: run_type
     attributes:
@@ -54,7 +54,7 @@ body:
     attributes:
       label: Claim boundary
       options:
-        - label: My claim is limited to this teaching-scale MiniMind-VLA setup.
+        - label: My claim is limited to this teaching-scale LunaVLA setup.
           required: true
         - label: I inspected at least one saved rollout or generated web demo.
         - label: I am not claiming real-robot deployment or state-of-the-art robotics performance.

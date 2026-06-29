@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from pathlib import Path
@@ -96,7 +96,7 @@ STAGES = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Check MiniMind-VLA project evidence progress.")
+    parser = argparse.ArgumentParser(description="Check LunaVLA project evidence progress.")
     parser.add_argument("--out", default="outputs/project_progress.md", help="Markdown report path.")
     parser.add_argument("--strict", action="store_true", help="Exit with a non-zero status if any stage is incomplete.")
     return parser.parse_args()
@@ -172,11 +172,11 @@ def build_report() -> tuple[str, str]:
     stage_rows, artifact_rows = build_rows()
     status = overall(stage_rows)
     lines: list[str] = [
-        "# MiniMind-VLA Project Progress",
+        "# LunaVLA Project Progress",
         "",
         f"Overall: `{status}`",
         "",
-        "This report turns generated MiniMind-VLA artifacts into a beginner-friendly project evidence checklist.",
+        "This report turns generated LunaVLA artifacts into a beginner-friendly project evidence checklist.",
         "",
         "## Stage Summary",
         "",

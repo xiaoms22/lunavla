@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import csv
@@ -28,7 +28,7 @@ def format_category_counts(counts: dict) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Summarize a MiniMind-VLA run directory.")
+    parser = argparse.ArgumentParser(description="Summarize a LunaVLA run directory.")
     parser.add_argument("--run-dir", required=True, help="Run directory under outputs/ or an absolute path.")
     return parser.parse_args()
 
@@ -63,7 +63,7 @@ def main() -> int:
         writer.writerow(table)
 
     report = [
-        "# MiniMind-VLA Run Summary",
+        "# LunaVLA Run Summary",
         "",
         "| metric | value |",
         "| --- | --- |",

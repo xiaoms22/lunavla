@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -64,7 +64,7 @@ def resolve(path: str | Path) -> Path:
 
 
 def fetch(url: str) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": "MiniMind-VLA media fetcher"})
+    request = urllib.request.Request(url, headers={"User-Agent": "LunaVLA media fetcher"})
     with urllib.request.urlopen(request, timeout=60) as response:
         return response.read()
 

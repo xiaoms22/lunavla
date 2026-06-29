@@ -1,4 +1,4 @@
-name: MiniMind-VLA CI
+﻿name: LunaVLA CI
 
 on:
   push:
@@ -110,7 +110,7 @@ jobs:
       - name: Upload generated evidence
         uses: actions/upload-artifact@v4
         with:
-          name: minimind-vla-ci-evidence
+          name: lunavla-ci-evidence
           path: |
             outputs/environment_check.md
             outputs/quickstart_summary.md

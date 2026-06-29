@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import re
@@ -75,7 +75,7 @@ TROUBLESHOOTING_ROWS = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a public MiniMind-VLA troubleshooting guide.")
+    parser = argparse.ArgumentParser(description="Generate a public LunaVLA troubleshooting guide.")
     parser.add_argument("--out", default="outputs/troubleshooting_guide.md", help="Markdown troubleshooting path.")
     return parser.parse_args()
 
@@ -150,7 +150,7 @@ def overall_status(rows: list[dict[str, str]]) -> str:
 def build_report() -> str:
     rows = status_rows()
     lines: list[str] = [
-        "# MiniMind-VLA Troubleshooting Guide",
+        "# LunaVLA Troubleshooting Guide",
         "",
         "Use this guide when a public command fails, an artifact is missing, or you are not sure which generated file to inspect first.",
         "",

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a resume and interview pack from a MiniMind-VLA run.")
+    parser = argparse.ArgumentParser(description="Generate a resume and interview pack from a LunaVLA run.")
     parser.add_argument("--run-dir", required=True, help="Run directory under outputs/ or an absolute path.")
     parser.add_argument("--out", default=None, help="Markdown output path. Defaults to <run-dir>/resume_pack.md.")
     parser.add_argument(
@@ -128,7 +128,7 @@ def best_resume_bullet(training: dict[str, Any], evaluation: dict[str, Any], com
 
 
 def build_pitch(training: dict[str, Any], evaluation: dict[str, Any]) -> list[str]:
-    project_name = training.get("project_name", "MiniMind-VLA")
+    project_name = training.get("project_name", "LunaVLA")
     success_rate = format_value(evaluation.get("success_rate", "n/a"))
     final_distance = format_value(evaluation.get("mean_final_distance", "n/a"))
     chunk_size = format_value(training.get("chunk_size", "n/a"))
@@ -161,7 +161,7 @@ def build_pack(run_dir: Path, comparison_path: Path | None) -> str:
     comparison_exists = comparison_path is not None and comparison_path.exists()
 
     lines: list[str] = [
-        "# MiniMind-VLA Resume And Interview Pack",
+        "# LunaVLA Resume And Interview Pack",
         "",
         "This pack turns one verified local run into resume-safe project evidence.",
         "",

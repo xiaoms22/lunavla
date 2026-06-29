@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -15,7 +15,7 @@ DEFAULT_RUNS = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a MiniMind-VLA failure review across public run directories.")
+    parser = argparse.ArgumentParser(description="Generate a LunaVLA failure review across public run directories.")
     parser.add_argument("--runs", nargs="*", default=DEFAULT_RUNS, help="Run directories to include.")
     parser.add_argument("--out", default="outputs/failure_review.md", help="Markdown report path.")
     return parser.parse_args()
@@ -138,9 +138,9 @@ def build_report(run_dirs: list[Path]) -> str:
         category_rows = [{"category": "none", "count": 0}]
 
     lines: list[str] = [
-        "# MiniMind-VLA Failure Review",
+        "# LunaVLA Failure Review",
         "",
-        "This report collects first-pass failure evidence across the public MiniMind-VLA run directories.",
+        "This report collects first-pass failure evidence across the public LunaVLA run directories.",
         "",
         "Failure labels are a teaching aid. Inspect saved rollouts before writing a final conclusion.",
         "",

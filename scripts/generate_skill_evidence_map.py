@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a beginner-friendly MiniMind-VLA skill evidence map.")
+    parser = argparse.ArgumentParser(description="Generate a beginner-friendly LunaVLA skill evidence map.")
     parser.add_argument("--run-dir", default="outputs/act_pusht_baseline", help="Primary run directory.")
     parser.add_argument("--out", default="outputs/skill_evidence_map.md", help="Markdown skill map path.")
     return parser.parse_args()
@@ -145,7 +145,7 @@ def rows(run_dir: Path) -> list[dict[str, str]]:
 
 def build_report(run_dir: Path) -> str:
     lines: list[str] = [
-        "# MiniMind-VLA Skill Evidence Map",
+        "# LunaVLA Skill Evidence Map",
         "",
         "This map connects beginner-facing VLA skills to the code, commands, and generated artifacts that support them.",
         "",

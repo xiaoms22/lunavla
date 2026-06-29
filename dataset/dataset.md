@@ -1,6 +1,6 @@
-# Dataset Notes
+﻿# Dataset Notes
 
-MiniMind-VLA uses a tiny VLA record abstraction so the full imitation-learning loop can run without external simulators or large downloads.
+LunaVLA uses a tiny VLA record abstraction so the full imitation-learning loop can run without external simulators or large downloads.
 
 ```json
 {

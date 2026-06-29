@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -15,7 +15,7 @@ README = ROOT / "README.md"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Check README-visible MiniMind-VLA image and animation assets.")
+    parser = argparse.ArgumentParser(description="Check README-visible LunaVLA image and animation assets.")
     parser.add_argument("--out", default="outputs/readme_asset_check.md", help="Markdown report path.")
     return parser.parse_args()
 
@@ -203,7 +203,7 @@ def markdown_table(rows: list[dict[str, Any]]) -> list[str]:
 def build_report(rows: list[dict[str, Any]]) -> str:
     overall = overall_status(rows)
     lines: list[str] = [
-        "# MiniMind-VLA README Asset Check",
+        "# LunaVLA README Asset Check",
         "",
         f"Overall: `{overall}`",
         "",

@@ -1,6 +1,6 @@
-# Initial Public Release
+﻿# Initial Public Release
 
-MiniMind-VLA is released as a tiny, reproducible VLA internship project starter.
+LunaVLA is released as a tiny, reproducible VLA internship project starter.
 
 ## Included
 

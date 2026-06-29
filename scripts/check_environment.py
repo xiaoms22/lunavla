@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import importlib
@@ -14,7 +14,7 @@ MIN_PYTHON = (3, 10)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Check whether the local environment can run MiniMind-VLA.")
+    parser = argparse.ArgumentParser(description="Check whether the local environment can run LunaVLA.")
     parser.add_argument("--out", default="outputs/environment_check.md", help="Markdown report path.")
     return parser.parse_args()
 
@@ -174,11 +174,11 @@ def markdown_table(rows: list[dict[str, Any]]) -> list[str]:
 def build_report(rows: list[dict[str, str]]) -> str:
     overall = overall_status(rows)
     lines: list[str] = [
-        "# MiniMind-VLA Environment Check",
+        "# LunaVLA Environment Check",
         "",
         f"Overall: `{overall}`",
         "",
-        "This report checks whether the current machine is ready to run the public MiniMind-VLA commands.",
+        "This report checks whether the current machine is ready to run the public LunaVLA commands.",
         "",
         "## Checks",
         "",

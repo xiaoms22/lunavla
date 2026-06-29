@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import re
@@ -55,7 +55,7 @@ CORE_FILES = [
 ]
 
 README_ASSETS = [
-    "images/minimind-vla-architecture.svg",
+    "images/lunavla-architecture.svg",
     "images/pusht_rollout.gif",
     "images/act_action_chunk.gif",
     "images/loss_curve.gif",
@@ -186,7 +186,7 @@ README_REQUIRED_PHRASES = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Check MiniMind-VLA public release readiness.")
+    parser = argparse.ArgumentParser(description="Check LunaVLA public release readiness.")
     parser.add_argument(
         "--skip-generated",
         action="store_true",

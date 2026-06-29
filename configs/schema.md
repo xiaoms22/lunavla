@@ -2,7 +2,7 @@
 
 All runnable configs keep the same top-level shape:
 
-- `model`: MiniMind-style model contract, including model name, policy type, observation dimension, instruction dimension, action dimension, and action chunk size.
+- `model`: LunaVLA model contract, including model name, policy type, observation dimension, instruction dimension, action dimension, and action chunk size.
 - `project_name`: stable experiment name.
 - `framework`: framework label for the lightweight scaffold.
 - `policy`: policy name and action chunk size.

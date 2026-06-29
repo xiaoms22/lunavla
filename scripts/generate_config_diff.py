@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -21,7 +21,7 @@ EXPECTED_EXPERIMENT_PATHS = {
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Compare MiniMind-VLA baseline and ablation configs.")
+    parser = argparse.ArgumentParser(description="Compare LunaVLA baseline and ablation configs.")
     parser.add_argument("--baseline", default="configs/act_pusht_baseline.yaml", help="Baseline config path.")
     parser.add_argument("--candidate", default="configs/act_pusht_ablation_chunk_size.yaml", help="Ablation config path.")
     parser.add_argument("--out", default="outputs/config_diff.md", help="Markdown config diff path.")
@@ -123,7 +123,7 @@ def build_markdown(payload: dict[str, Any]) -> str:
     rows = payload["differences"]
     extra = [row for row in rows if row["kind"] == "extra experimental change"]
     lines: list[str] = [
-        "# MiniMind-VLA Config Diff",
+        "# LunaVLA Config Diff",
         "",
         "This file checks whether the public ablation changes only the intended experiment variable.",
         "",

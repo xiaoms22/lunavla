@@ -1,18 +1,18 @@
-# MiniMind-VLA: A Tiny VLA Project Starter You Can Run
+﻿# LunaVLA: A Tiny VLA Project Starter You Can Run
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-Apache--2.0-green)
-![CI](https://github.com/xiaoms22/minimind-vla/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/xiaoms22/lunavla/actions/workflows/ci.yml/badge.svg)
 ![CPU Smoke](https://img.shields.io/badge/CPU%20Smoke-passing-brightgreen)
 ![Task](https://img.shields.io/badge/Task-ACT%20%2B%20PushT--style-orange)
 
 **Run a tiny VLA loop: `observation -> action -> rollout -> evaluation`, then turn the result into beginner-friendly embodied AI project evidence.**
 
-给 VLA / 具身智能初学者：如果你学过概念，但还缺少一个能跑、能改、能讲清楚的项目，MiniMind-VLA 用一个轻量 imitation-learning 闭环，帮助你从数据记录、策略训练、rollout 评估到结果展示完整走一遍。
+给 VLA / 具身智能初学者：如果你学过概念，但还缺少一个能跑、能改、能讲清楚的项目，LunaVLA 用一个轻量 imitation-learning 闭环，帮助你从数据记录、策略训练、rollout 评估到结果展示完整走一遍。
 
-This repo follows the spirit of MiniMind: low cost, reproducible, readable from code, and useful for learners. It focuses on a teaching-scale action-learning baseline, not real-robot deployment, frontier robot foundation model training, or state-of-the-art robotics claims.
+LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an independent educational project and is not affiliated with, endorsed by, or maintained by the original MiniMind authors. It focuses on a teaching-scale action-learning baseline, not real-robot deployment, frontier robot foundation model training, or state-of-the-art robotics claims.
 
-![MiniMind-VLA architecture](images/minimind-vla-architecture.svg)
+![LunaVLA architecture](images/lunavla-architecture.svg)
 
 ## Learning Path
 
@@ -176,7 +176,7 @@ python scripts/check_release_readiness.py
 
 ## What You Build
 
-MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship project should be able to explain:
+LunaVLA is intentionally small, but it includes the pieces a VLA internship project should be able to explain:
 
 - data records with `observation`, `action`, `episode_id`, `timestep`, `success`, and `metadata`;
 - environment checks for Python, dependencies, repo files, and output write access;
@@ -230,7 +230,7 @@ Use GitHub issues to report a bug, share an experiment, or post a learner showca
 ## Repository Layout
 
 ```text
-minimind-vla/
+lunavla/
   configs/              # CPU smoke, baseline, and ablation configs
   dataset/              # VLA record schema and PushT-style data generator
   docs/                 # learning notes, evaluation guide, and internship pack
@@ -259,7 +259,7 @@ Each training record follows this shape:
 
 ## Honest Claim
 
-MiniMind-VLA is a tiny, readable, reproducible project starter for learning observation-to-action training. It is not a real-robot deployment benchmark and does not claim state-of-the-art robotics performance.
+LunaVLA is a tiny, readable, reproducible project starter for learning observation-to-action training. It is not a real-robot deployment benchmark and does not claim state-of-the-art robotics performance.
 
 ## License
 

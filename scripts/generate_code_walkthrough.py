@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from pathlib import Path
@@ -91,7 +91,7 @@ EXERCISES = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a beginner-friendly MiniMind-VLA code walkthrough.")
+    parser = argparse.ArgumentParser(description="Generate a beginner-friendly LunaVLA code walkthrough.")
     parser.add_argument("--out", default="outputs/code_walkthrough.md", help="Markdown walkthrough path.")
     return parser.parse_args()
 
@@ -154,7 +154,7 @@ def exercise_rows() -> list[dict[str, str]]:
 
 def build_walkthrough() -> str:
     lines: list[str] = [
-        "# MiniMind-VLA Code Walkthrough",
+        "# LunaVLA Code Walkthrough",
         "",
         "This guide shows a beginner how to read the runnable code after the first smoke run.",
         "",

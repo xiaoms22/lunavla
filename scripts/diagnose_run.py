@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Diagnose whether a MiniMind-VLA run is ready to report.")
+    parser = argparse.ArgumentParser(description="Diagnose whether a LunaVLA run is ready to report.")
     parser.add_argument("--run-dir", required=True, help="Run directory under outputs/ or an absolute path.")
     parser.add_argument("--out", default=None, help="Markdown output path. Defaults to <run-dir>/run_diagnostic.md.")
     return parser.parse_args()
@@ -323,7 +323,7 @@ def build_markdown(run_dir: Path, training: dict[str, Any], evaluation: dict[str
     artifact_rows, _ = artifact_checks(run_dir)
 
     lines: list[str] = [
-        "# MiniMind-VLA Run Diagnostic",
+        "# LunaVLA Run Diagnostic",
         "",
         f"Run directory: `{relative(run_dir)}`",
         "",

@@ -1,8 +1,8 @@
-# Data Card
+﻿# Data Card
 
 ## Dataset
 
-MiniMind-VLA uses a PushT-style demonstration generator for a tiny observation-to-action task.
+LunaVLA uses a PushT-style demonstration generator for a tiny observation-to-action task.
 
 ## Schema
 

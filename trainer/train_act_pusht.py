@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import sys
@@ -85,7 +85,7 @@ def main() -> int:
     }
     write_csv(output_dir / "loss_curve.csv", loss_rows)
     write_json(output_dir / "training_summary.json", summary)
-    write_run_card(output_dir / "run_card.md", "MiniMind-VLA Training Run", summary)
+    write_run_card(output_dir / "run_card.md", "LunaVLA Training Run", summary)
 
     print(f"trained: {summary['project_name']}")
     print(f"checkpoint: {checkpoint_path}")

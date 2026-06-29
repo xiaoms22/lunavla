@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -11,7 +11,7 @@ BASELINE_DIR = "outputs/act_pusht_baseline"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a copyable MiniMind-VLA learner showcase issue draft.")
+    parser = argparse.ArgumentParser(description="Generate a copyable LunaVLA learner showcase issue draft.")
     parser.add_argument("--run-dir", default=BASELINE_DIR, help="Primary run directory.")
     parser.add_argument("--out", default="outputs/learner_showcase.md", help="Markdown showcase draft path.")
     return parser.parse_args()
@@ -113,11 +113,11 @@ def build_showcase(run_dir: Path) -> str:
     lines: list[str] = [
         "# Learner Showcase Draft",
         "",
-        "Copy the sections below into a MiniMind-VLA learner showcase issue or your own project README.",
+        "Copy the sections below into a LunaVLA learner showcase issue or your own project README.",
         "",
         "## Suggested Issue Title",
         "",
-        "[Showcase] Finished MiniMind-VLA baseline evidence pack",
+        "[Showcase] Finished LunaVLA baseline evidence pack",
         "",
         "## Completion Level",
         "",

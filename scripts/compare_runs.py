@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import csv
@@ -19,7 +19,7 @@ METRIC_DIRECTIONS = {
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Compare MiniMind-VLA run directories.")
+    parser = argparse.ArgumentParser(description="Compare LunaVLA run directories.")
     parser.add_argument("--runs", nargs="+", required=True, help="Run directories under outputs/ or absolute paths.")
     parser.add_argument("--out", default="outputs/run_comparison.md", help="Markdown output path.")
     return parser.parse_args()
@@ -194,7 +194,7 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     deltas = delta_rows(rows)
-    lines = ["# MiniMind-VLA Ablation Comparison", ""]
+    lines = ["# LunaVLA Ablation Comparison", ""]
     if rows:
         lines.extend(
             [

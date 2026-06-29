@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import subprocess
@@ -14,7 +14,7 @@ from trainer.trainer_utils import load_yaml
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run MiniMind-VLA baseline plus chunk-size ablation evidence.")
+    parser = argparse.ArgumentParser(description="Run LunaVLA baseline plus chunk-size ablation evidence.")
     parser.add_argument("--baseline-config", default="configs/act_pusht_baseline.yaml", help="Baseline config path.")
     parser.add_argument(
         "--ablation-config",

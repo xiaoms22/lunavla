@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a MiniMind-VLA learning checkpoint for beginners.")
+    parser = argparse.ArgumentParser(description="Generate a LunaVLA learning checkpoint for beginners.")
     parser.add_argument("--run-dir", default="outputs/act_pusht_baseline", help="Primary run directory.")
     parser.add_argument("--out", default="outputs/learning_checkpoint.md", help="Markdown checkpoint path.")
     return parser.parse_args()
@@ -150,7 +150,7 @@ def question_rows(run_dir: Path) -> list[dict[str, str]]:
 
 def build_checkpoint(run_dir: Path) -> str:
     lines: list[str] = [
-        "# MiniMind-VLA Learning Checkpoint",
+        "# LunaVLA Learning Checkpoint",
         "",
         "Use this file after running the public evidence commands. It checks whether you can explain the project, not just execute it.",
         "",

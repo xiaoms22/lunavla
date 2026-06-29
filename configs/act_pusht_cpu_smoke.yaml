@@ -1,12 +1,12 @@
-model:
+﻿model:
   name: mini_vla
   policy_type: linear_smoke
   observation_dim: 4
   instruction_dim: 8
   action_dim: 2
   chunk_size: 2
-project_name: minimind_vla_cpu_smoke
-framework: minimind-vla
+project_name: luna_vla_cpu_smoke
+framework: lunavla
 policy:
   name: act
   chunk_size: 2

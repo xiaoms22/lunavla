@@ -1,6 +1,6 @@
-# Four-Week Project Path
+﻿# Four-Week Project Path
 
-This path turns MiniMind-VLA from a runnable repo into a project a VLA beginner can understand, report, and explain clearly.
+This path turns LunaVLA from a runnable repo into a project a VLA beginner can understand, report, and explain clearly.
 
 ## Week 1: Run And Read
 

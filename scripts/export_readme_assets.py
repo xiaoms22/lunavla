@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import csv
@@ -17,7 +17,7 @@ Color = tuple[int, int, int]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Export README-visible MiniMind-VLA assets.")
+    parser = argparse.ArgumentParser(description="Export README-visible LunaVLA assets.")
     parser.add_argument("--run-dir", required=True, help="Run directory under outputs/ or an absolute path.")
     parser.add_argument("--out-dir", required=True, help="Output directory under repo root or an absolute path.")
     return parser.parse_args()
@@ -347,7 +347,7 @@ def export_result_table(run_dir: Path, out_dir: Path) -> Path:
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#f7f3ec"/>',
         '<rect x="32" y="28" width="796" height="52" rx="8" fill="#172026"/>',
-        '<text x="54" y="62" font-family="Arial, sans-serif" font-size="22" fill="#ffffff">MiniMind-VLA baseline result</text>',
+        '<text x="54" y="62" font-family="Arial, sans-serif" font-size="22" fill="#ffffff">LunaVLA baseline result</text>',
     ]
     y = 92
     for idx, (key, value) in enumerate(rows):

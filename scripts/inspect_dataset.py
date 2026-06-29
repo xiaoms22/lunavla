@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -18,7 +18,7 @@ from trainer.trainer_utils import load_yaml
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Inspect a MiniMind-VLA dataset sample and action chunk target.")
+    parser = argparse.ArgumentParser(description="Inspect a LunaVLA dataset sample and action chunk target.")
     parser.add_argument("--config", default="configs/act_pusht_cpu_smoke.yaml", help="Config file to inspect.")
     parser.add_argument("--index", type=int, default=0, help="Training sample index to inspect.")
     parser.add_argument("--out", default="outputs/dataset_inspection.md", help="Markdown report path.")
@@ -76,7 +76,7 @@ def build_report(config_path: Path, sample_index: int) -> str:
     chunk_pairs = action_chunk_pairs(target, action_dim)
 
     lines: list[str] = [
-        "# MiniMind-VLA Dataset Inspection",
+        "# LunaVLA Dataset Inspection",
         "",
         "This report shows how one VLA record becomes one training sample.",
         "",

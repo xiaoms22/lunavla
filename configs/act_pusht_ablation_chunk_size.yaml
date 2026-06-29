@@ -1,12 +1,12 @@
-model:
+﻿model:
   name: mini_vla
   policy_type: act
   observation_dim: 4
   instruction_dim: 8
   action_dim: 2
   chunk_size: 4
-project_name: minimind_vla_act_pusht_chunk_ablation
-framework: minimind-vla
+project_name: luna_vla_act_pusht_chunk_ablation
+framework: lunavla
 policy:
   name: act
   chunk_size: 4

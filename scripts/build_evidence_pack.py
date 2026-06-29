@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build a MiniMind-VLA evidence index for a completed run set.")
+    parser = argparse.ArgumentParser(description="Build a LunaVLA evidence index for a completed run set.")
     parser.add_argument("--episodes", type=int, default=5, help="Evaluation episodes when running evidence commands.")
     parser.add_argument("--out", default="outputs/evidence_index.md", help="Markdown evidence index path.")
     parser.add_argument("--skip-runs", action="store_true", help="Only build the index from existing artifacts.")
@@ -145,9 +145,9 @@ def build_index() -> str:
     ]
 
     lines: list[str] = [
-        "# MiniMind-VLA Evidence Index",
+        "# LunaVLA Evidence Index",
         "",
-        "This file is the public-facing evidence map for a completed local MiniMind-VLA run.",
+        "This file is the public-facing evidence map for a completed local LunaVLA run.",
         "",
         "## What This Pack Proves",
         "",

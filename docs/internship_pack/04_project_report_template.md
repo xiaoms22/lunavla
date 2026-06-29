@@ -1,8 +1,8 @@
-# Project Report Template
+﻿# Project Report Template
 
 ## Title
 
-MiniMind-VLA: A Tiny ACT-Style Observation-to-Action Learning Loop
+LunaVLA: A Tiny ACT-Style Observation-to-Action Learning Loop
 
 Start with an auto-generated draft:
 

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from pathlib import Path
@@ -14,7 +14,7 @@ SUPPORTED_POLICIES = {"act"}
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Validate MiniMind-VLA runnable config files.")
+    parser = argparse.ArgumentParser(description="Validate LunaVLA runnable config files.")
     parser.add_argument(
         "configs",
         nargs="*",
@@ -88,7 +88,7 @@ def validate_config(path: Path) -> list[str]:
     artifacts = config["artifacts"]
 
     require(isinstance(config["project_name"], str) and bool(config["project_name"]), "`project_name` must be a non-empty string", errors)
-    require(config["framework"] == "minimind-vla", "`framework` should be `minimind-vla`", errors)
+    require(config["framework"] == "lunavla", "`framework` should be `lunavla`", errors)
     require(config["task"] == "pusht", "`task` should be `pusht` for current public configs", errors)
 
     require(model.get("observation_dim") == 4, "`model.observation_dim` must be 4 for the PushT-style record", errors)

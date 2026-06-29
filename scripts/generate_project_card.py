@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -15,7 +15,7 @@ RUNS = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a one-page MiniMind-VLA project evidence card.")
+    parser = argparse.ArgumentParser(description="Generate a one-page LunaVLA project evidence card.")
     parser.add_argument("--out", default="outputs/project_card.md", help="Markdown project card path.")
     return parser.parse_args()
 
@@ -117,9 +117,9 @@ def evidence_rows() -> list[dict[str, str]]:
 
 def build_card() -> str:
     lines: list[str] = [
-        "# MiniMind-VLA Project Card",
+        "# LunaVLA Project Card",
         "",
-        "MiniMind-VLA is a tiny, reproducible VLA project starter for learning the `observation -> action -> rollout -> evaluation` loop.",
+        "LunaVLA is a tiny, reproducible VLA project starter for learning the `observation -> action -> rollout -> evaluation` loop.",
         "",
         "## What This Project Demonstrates",
         "",

@@ -1,1 +1,1 @@
-"""Training entrypoints for MiniMind-VLA."""
+﻿"""Training entrypoints for LunaVLA."""

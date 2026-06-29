@@ -1,4 +1,4 @@
-# Interview Q&A
+﻿# Interview Q&A
 
 ## What is VLA in this project?
 
@@ -6,7 +6,7 @@ VLA means Vision-Language-Action. In this tiny project, the interface is VLA-sha
 
 ## What is behavior cloning?
 
-Behavior cloning trains a policy to imitate expert demonstrations. MiniMind-VLA generates simple PushT-style demonstrations and trains a policy to predict the expert action chunk from the current observation.
+Behavior cloning trains a policy to imitate expert demonstrations. LunaVLA generates simple PushT-style demonstrations and trains a policy to predict the expert action chunk from the current observation.
 
 ## Why use action chunks?
 

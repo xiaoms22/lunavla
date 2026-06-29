@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import subprocess
@@ -14,7 +14,7 @@ from trainer.trainer_utils import load_yaml
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the MiniMind-VLA baseline evidence path.")
+    parser = argparse.ArgumentParser(description="Run the LunaVLA baseline evidence path.")
     parser.add_argument("--config", default="configs/act_pusht_baseline.yaml", help="Baseline config path.")
     parser.add_argument("--episodes", type=int, default=5, help="Evaluation episodes for the baseline report.")
     parser.add_argument("--asset-dir", default="images", help="Directory for README-visible assets.")

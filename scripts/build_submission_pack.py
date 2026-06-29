@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build a compact MiniMind-VLA submission pack from generated evidence.")
+    parser = argparse.ArgumentParser(description="Build a compact LunaVLA submission pack from generated evidence.")
     parser.add_argument("--run-dir", default="outputs/act_pusht_baseline", help="Primary run directory.")
     parser.add_argument("--comparison", default="outputs/run_comparison.md", help="Ablation comparison report path.")
     parser.add_argument("--evidence-index", default="outputs/evidence_index.md", help="Evidence index path.")
@@ -95,9 +95,9 @@ def pack_relative(path_text: str, out_dir: Path) -> str:
 
 def build_summary(run_dir: Path, comparison: Path, evidence_index: Path, out_dir: Path, copied: list[dict[str, str]]) -> str:
     lines: list[str] = [
-        "# MiniMind-VLA Submission Pack",
+        "# LunaVLA Submission Pack",
         "",
-        "This folder collects the generated evidence from one completed MiniMind-VLA run.",
+        "This folder collects the generated evidence from one completed LunaVLA run.",
         "",
         "## What This Pack Contains",
         "",

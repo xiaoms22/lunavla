@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -129,7 +129,7 @@ def next_step(run_dir: Path) -> str:
 def build_report(run_dir: Path) -> tuple[str, str]:
     run_status = status(run_dir)
     lines: list[str] = [
-        "# MiniMind-VLA First Run Checklist",
+        "# LunaVLA First Run Checklist",
         "",
         "Run this after the CPU smoke path to confirm the smallest runnable loop produced the files a beginner should inspect first.",
         "",

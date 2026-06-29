@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -24,7 +24,7 @@ EXPECTED_ARTIFACTS = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the one-command MiniMind-VLA beginner quickstart.")
+    parser = argparse.ArgumentParser(description="Run the one-command LunaVLA beginner quickstart.")
     parser.add_argument("--out", default="outputs/quickstart_summary.md", help="Markdown quickstart summary path.")
     parser.add_argument(
         "--skip-run",
@@ -117,9 +117,9 @@ def build_summary() -> tuple[str, str]:
     artifacts = artifact_rows()
     status = quickstart_status(artifacts)
     lines: list[str] = [
-        "# MiniMind-VLA Quickstart Summary",
+        "# LunaVLA Quickstart Summary",
         "",
-        "This file summarizes the one-command beginner path for running the smallest MiniMind-VLA loop.",
+        "This file summarizes the one-command beginner path for running the smallest LunaVLA loop.",
         "",
         f"Status: `{status}`",
         "",

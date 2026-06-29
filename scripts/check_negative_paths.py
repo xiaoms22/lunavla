@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import tempfile
 from pathlib import Path
@@ -34,7 +34,7 @@ def check_mismatched_chunk_config(tmp_dir: Path) -> None:
                 "  action_dim: 2",
                 "  chunk_size: 4",
                 "project_name: negative_path_check",
-                "framework: minimind-vla",
+                "framework: lunavla",
                 "policy:",
                 "  name: act",
                 "  chunk_size: 2",
@@ -81,7 +81,7 @@ def check_submission_pack_missing_source(tmp_dir: Path) -> None:
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="minimind_vla_negative_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="luna_vla_negative_") as tmp:
         tmp_dir = Path(tmp)
         checks = [
             check_malformed_config,

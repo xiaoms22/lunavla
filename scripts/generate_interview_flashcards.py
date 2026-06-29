@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate MiniMind-VLA interview flashcards from public run evidence.")
+    parser = argparse.ArgumentParser(description="Generate LunaVLA interview flashcards from public run evidence.")
     parser.add_argument("--run-dir", default="outputs/act_pusht_baseline", help="Primary run directory.")
     parser.add_argument("--out", default="outputs/interview_flashcards.md", help="Markdown flashcard path.")
     return parser.parse_args()
@@ -112,7 +112,7 @@ def flashcards(run_dir: Path) -> list[dict[str, str]]:
 
 def build_report(run_dir: Path) -> str:
     lines: list[str] = [
-        "# MiniMind-VLA Interview Flashcards",
+        "# LunaVLA Interview Flashcards",
         "",
         "Use these cards after running the public evidence commands. Each answer points to a code file or generated report that supports the claim.",
         "",

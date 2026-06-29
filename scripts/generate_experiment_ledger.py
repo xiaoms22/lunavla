@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import hashlib
@@ -47,7 +47,7 @@ ARTIFACTS = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a MiniMind-VLA experiment ledger.")
+    parser = argparse.ArgumentParser(description="Generate a LunaVLA experiment ledger.")
     parser.add_argument("--out", default="outputs/experiment_ledger.md", help="Markdown ledger path.")
     parser.add_argument("--json-out", default="outputs/experiment_ledger.json", help="Machine-readable ledger path.")
     return parser.parse_args()
@@ -165,7 +165,7 @@ def run_record(item: dict[str, str]) -> dict[str, Any]:
 def build_ledger() -> dict[str, Any]:
     records = [run_record(item) for item in RUNS]
     return {
-        "project": "MiniMind-VLA",
+        "project": "LunaVLA",
         "purpose": "Connect public commands, configs, metrics, and artifacts for reproducible project evidence.",
         "claim_boundary": "teaching-scale PushT-style imitation-learning loop, not real-robot deployment",
         "runs": records,
@@ -233,7 +233,7 @@ def artifact_rows(ledger: dict[str, Any]) -> list[dict[str, Any]]:
 
 def build_markdown(ledger: dict[str, Any]) -> str:
     lines: list[str] = [
-        "# MiniMind-VLA Experiment Ledger",
+        "# LunaVLA Experiment Ledger",
         "",
         "This ledger connects public commands, configs, metrics, and generated artifacts so a learner can audit what was run.",
         "",

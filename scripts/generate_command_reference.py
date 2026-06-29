@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 from pathlib import Path
@@ -210,7 +210,7 @@ COMMANDS: list[dict[str, Any]] = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a MiniMind-VLA public command reference.")
+    parser = argparse.ArgumentParser(description="Generate a LunaVLA public command reference.")
     parser.add_argument("--out", default="outputs/command_reference.md", help="Markdown command reference path.")
     return parser.parse_args()
 
@@ -254,7 +254,7 @@ def build_reference() -> str:
     ]
 
     lines: list[str] = [
-        "# MiniMind-VLA Command Reference",
+        "# LunaVLA Command Reference",
         "",
         "This file maps public commands to the learning loop they support and the artifacts they generate.",
         "",

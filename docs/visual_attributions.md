@@ -1,6 +1,6 @@
-# Visual Attributions
+﻿# Visual Attributions
 
-MiniMind-VLA uses two kinds of README visuals:
+LunaVLA uses two kinds of README visuals:
 
 - Local project evidence generated from this repo with `python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images`.
 - Ecosystem context media copied or resized from official public project repositories.
@@ -14,7 +14,7 @@ MiniMind-VLA uses two kinds of README visuals:
 | `images/ecosystem/lerobot_vla_architecture.jpg` | [LeRobot](https://github.com/huggingface/lerobot) | `media/readme/VLA_architecture.jpg` | Apache-2.0 | Visual context for VLA-style system components. |
 | `images/ecosystem/libero_sim_overview.jpg` | [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) | `images/fig1.png` | MIT | Visual context for simulation benchmark tasks. |
 
-These images are used only as ecosystem references. The runnable evidence claimed by MiniMind-VLA comes from the local PushT-style loop, generated reports, and README assets in this repository.
+These images are used only as ecosystem references. The runnable evidence claimed by LunaVLA comes from the local PushT-style loop, generated reports, and README assets in this repository.
 
 ## Refresh
 

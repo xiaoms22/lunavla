@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -18,7 +18,7 @@ from trainer.trainer_utils import append_jsonl, ensure_dir, write_json
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Evaluate a MiniMind-VLA checkpoint.")
+    parser = argparse.ArgumentParser(description="Evaluate a LunaVLA checkpoint.")
     parser.add_argument("--checkpoint", required=True, help="Path to checkpoint.pt.")
     parser.add_argument("--episodes", type=int, default=None, help="Number of eval episodes.")
     parser.add_argument("--save-rollouts", action="store_true", help="Save rollout JSON files.")

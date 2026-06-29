@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -10,10 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a beginner-friendly MiniMind-VLA project report.")
+    parser = argparse.ArgumentParser(description="Generate a beginner-friendly LunaVLA project report.")
     parser.add_argument("--run-dir", required=True, help="Run directory under outputs/ or an absolute path.")
     parser.add_argument("--out", default=None, help="Markdown output path. Defaults to <run-dir>/project_report.md.")
-    parser.add_argument("--title", default="MiniMind-VLA Project Report", help="Report title.")
+    parser.add_argument("--title", default="LunaVLA Project Report", help="Report title.")
     return parser.parse_args()
 
 

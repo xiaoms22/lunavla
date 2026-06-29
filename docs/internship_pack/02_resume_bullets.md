@@ -1,10 +1,10 @@
-# Resume Bullets
+﻿# Resume Bullets
 
 Use only the bullet that matches what you have actually completed. Keep the language honest and evidence-backed.
 
 ## CPU Smoke Completed
 
-> Built and verified MiniMind-VLA, a lightweight Vision-Language-Action learning scaffold with a one-command CPU smoke test covering training, rollout evaluation, summary generation, and rollout browser export.
+> Built and verified LunaVLA, a lightweight Vision-Language-Action learning scaffold with a one-command CPU smoke test covering training, rollout evaluation, summary generation, and rollout browser export.
 
 ## Baseline Completed
 

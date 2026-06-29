@@ -1,6 +1,6 @@
-# Data Pipeline
+﻿# Data Pipeline
 
-MiniMind-VLA keeps the data path deliberately small:
+LunaVLA keeps the data path deliberately small:
 
 ```text
 PushT-style generator -> VLA records -> training batch -> checkpoint -> rollout eval -> report/demo

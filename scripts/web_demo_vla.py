@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import json
@@ -77,7 +77,7 @@ def main() -> int:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MiniMind-VLA Rollout Browser</title>
+  <title>LunaVLA Rollout Browser</title>
   <style>
     :root {{
       color-scheme: light;
@@ -135,7 +135,7 @@ def main() -> int:
 </head>
 <body>
   <main>
-    <h1>MiniMind-VLA Rollout Browser</h1>
+    <h1>LunaVLA Rollout Browser</h1>
     <p class="note">Inspect saved rollout episodes, metrics, and first-pass failure labels from one local run.</p>
     <section class="metrics">
       <div class="metric"><span>success rate</span><strong id="success-rate">n/a</strong></div>
