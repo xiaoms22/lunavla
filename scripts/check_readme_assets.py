@@ -155,7 +155,7 @@ def check_asset_file(target: str, rows: list[dict[str, Any]]) -> None:
         add_row(rows, asset, "fail", f"{path.stat().st_size} bytes", "Regenerate the asset; the file is too small.")
         return
     suffix = path.suffix.lower()
-    if suffix in {".png", ".gif", ".jpg", ".jpeg"}:
+    if suffix in {".png", ".gif", ".jpg", ".jpeg", ".webp"}:
         check_raster(path, rows)
     elif suffix == ".svg":
         check_svg(path, rows)
@@ -219,6 +219,7 @@ def build_report(rows: list[dict[str, Any]]) -> str:
             "## Rebuild",
             "",
             "```bash",
+            "python scripts/prepare_homepage_media.py",
             "python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images",
             "python scripts/check_readme_assets.py",
             "```",

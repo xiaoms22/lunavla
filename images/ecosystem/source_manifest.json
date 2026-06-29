@@ -1,0 +1,37 @@
+{
+  "note": "External ecosystem media copied or resized from official public project repositories.",
+  "assets": [
+    {
+      "name": "LeRobot robot control demo",
+      "project": "https://github.com/huggingface/lerobot",
+      "source": "https://raw.githubusercontent.com/huggingface/lerobot/main/media/readme/robots_control_video.webp",
+      "license": "Apache-2.0",
+      "local_path": "images/ecosystem/lerobot_control_demo.webp",
+      "bytes": 2425850
+    },
+    {
+      "name": "LeRobot SO-100 demo",
+      "project": "https://github.com/huggingface/lerobot",
+      "source": "https://raw.githubusercontent.com/huggingface/lerobot/main/media/readme/so100_video.webp",
+      "license": "Apache-2.0",
+      "local_path": "images/ecosystem/lerobot_so100_demo.webp",
+      "bytes": 492230
+    },
+    {
+      "name": "LeRobot VLA architecture overview",
+      "project": "https://github.com/huggingface/lerobot",
+      "source": "https://raw.githubusercontent.com/huggingface/lerobot/main/media/readme/VLA_architecture.jpg",
+      "license": "Apache-2.0",
+      "local_path": "images/ecosystem/lerobot_vla_architecture.jpg",
+      "bytes": 57148
+    },
+    {
+      "name": "LIBERO simulation benchmark overview",
+      "project": "https://github.com/Lifelong-Robot-Learning/LIBERO",
+      "source": "https://raw.githubusercontent.com/Lifelong-Robot-Learning/LIBERO/master/images/fig1.png",
+      "license": "MIT",
+      "local_path": "images/ecosystem/libero_sim_overview.jpg",
+      "bytes": 89176
+    }
+  ]
+}

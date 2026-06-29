@@ -52,6 +52,18 @@ python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --ou
 | --- | --- | --- |
 | ![Rollout demo](images/rollout_demo.png) | ![Loss curve](images/loss_curve_baseline.png) | ![Result table](images/result_table.svg) |
 
+## Robotics Visual Context
+
+The local PushT-style loop above is the runnable evidence in this repo. The visuals below are ecosystem references from official LeRobot and LIBERO project media, included to help beginners connect this tiny loop to broader robot-learning workflows.
+
+| LeRobot robot control | LeRobot SO-100 demo | LeRobot VLA overview |
+| --- | --- | --- |
+| ![LeRobot robot control demo](images/ecosystem/lerobot_control_demo.webp) | ![LeRobot SO-100 demo](images/ecosystem/lerobot_so100_demo.webp) | ![LeRobot VLA architecture overview](images/ecosystem/lerobot_vla_architecture.jpg) |
+
+| LIBERO simulation tasks | Refresh media | Attribution |
+| --- | --- | --- |
+| ![LIBERO simulation benchmark overview](images/ecosystem/libero_sim_overview.jpg) | `python scripts/prepare_homepage_media.py` | [Visual attributions](docs/visual_attributions.md) |
+
 
 ## Quick Start
 
@@ -203,6 +215,7 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - [DATA_CARD.md](DATA_CARD.md): what the teaching data is and is not.
 - [MODEL_CARD.md](MODEL_CARD.md): what the tiny policy is intended for.
 - [RELEASE_NOTES.md](RELEASE_NOTES.md): what this public release includes.
+- [docs/visual_attributions.md](docs/visual_attributions.md): sources and licenses for README ecosystem media.
 
 ## Share A Run
 

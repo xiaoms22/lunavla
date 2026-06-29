@@ -30,7 +30,7 @@ PUBLIC_TEXT_BLOCKLIST = [
     joined("Not", "Implemented"),
     joined("place", "holder"),
     joined("Road", "map"),
-    joined("Le", "Robot"),
+    joined("Le", "Robot", " ", "adapter"),
     joined("Open", "VLA"),
     joined("open", "pi"),
     joined("p", "i0"),
