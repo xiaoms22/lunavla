@@ -93,6 +93,7 @@ def run_metrics(run_dir: str) -> dict[str, Any]:
 def required_artifacts() -> list[dict[str, str]]:
     return [
         artifact_row("outputs/environment_check.md", "Confirm the local environment can run public commands."),
+        artifact_row("outputs/readme_asset_check.md", "Confirm README images and animations are renderable."),
         artifact_row("outputs/dataset_inspection.md", "Understand one VLA sample and action chunk target."),
         artifact_row("outputs/cpu_smoke/summary_report.md", "Confirm the one-command smoke loop works."),
         artifact_row("outputs/cpu_smoke/project_report.md", "Smallest report a learner can inspect."),
@@ -136,6 +137,7 @@ def build_index() -> str:
         "",
         "- The dataset path can be inspected before training.",
         "- The local environment passes the public command readiness check.",
+        "- The README-visible assets pass image and animation checks.",
         "- The CPU smoke loop trains, evaluates, summarizes, and exports a demo.",
         "- The baseline path produces rollout metrics, reports, and README assets.",
         "- The chunk-size ablation produces a comparison report and metric deltas.",
@@ -159,13 +161,14 @@ def build_index() -> str:
             "## How To Use This In A Project Report",
             "",
             "1. Start with `outputs/environment_check.md` to show the run environment was ready.",
-            "2. Use `outputs/dataset_inspection.md` to explain the sample format.",
-            "3. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
-            "4. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
-            "5. Use `outputs/run_comparison.md` for the ablation story.",
-            "6. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "7. Use the README GIFs and rollout demo as visual evidence.",
-            "8. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "2. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
+            "3. Use `outputs/dataset_inspection.md` to explain the sample format.",
+            "4. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
+            "5. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
+            "6. Use `outputs/run_comparison.md` for the ablation story.",
+            "7. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "8. Use the README GIFs and rollout demo as visual evidence.",
+            "9. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
@@ -177,13 +180,14 @@ def build_index() -> str:
 def main() -> int:
     args = parse_args()
     python = sys.executable
+    run([python, "scripts/check_environment.py"])
     if not args.skip_runs:
-        run([python, "scripts/check_environment.py"])
         run([python, "scripts/validate_configs.py"])
         run([python, "scripts/inspect_dataset.py"])
         run([python, "scripts/run_cpu_smoke.py"])
         run([python, "scripts/run_baseline_evidence.py", "--episodes", str(args.episodes)])
         run([python, "scripts/run_ablation_evidence.py", "--episodes", str(args.episodes), "--skip-baseline"])
+    run([python, "scripts/check_readme_assets.py"])
 
     out_path = resolve(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
