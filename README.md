@@ -95,6 +95,12 @@ Build a complete evidence index after running the core paths:
 python scripts/build_evidence_pack.py --skip-runs
 ```
 
+Check release readiness after the evidence artifacts exist:
+
+```bash
+python scripts/check_release_readiness.py
+```
+
 ## What You Build
 
 MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship project should be able to explain:
@@ -119,6 +125,12 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - `docs/internship_pack/05_jd_to_project_mapping.md`: map JD keywords to code evidence.
 - `docs/internship_pack/06_4_week_project_path.md`: four-week learning path.
 - `docs/internship_pack/07_advanced_project_path.md`: stronger project path after the baseline works.
+
+## Release Materials
+
+- [DATA_CARD.md](DATA_CARD.md): what the teaching data is and is not.
+- [MODEL_CARD.md](MODEL_CARD.md): what the tiny policy is intended for.
+- [RELEASE_NOTES.md](RELEASE_NOTES.md): what this public release includes.
 
 ## Share A Run
 

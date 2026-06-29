@@ -50,6 +50,9 @@ jobs:
       - name: Build evidence index
         run: python scripts/build_evidence_pack.py --skip-runs
 
+      - name: Check release readiness
+        run: python scripts/check_release_readiness.py
+
       - name: Upload generated evidence
         uses: actions/upload-artifact@v4
         with:
