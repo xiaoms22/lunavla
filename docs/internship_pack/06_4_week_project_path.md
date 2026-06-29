@@ -10,6 +10,7 @@ This path turns MiniMind-VLA from a runnable repo into a project a VLA beginner 
 - Run `python scripts/run_cpu_smoke.py`.
 - Run `python scripts/generate_first_run_checklist.py`.
 - Run `python scripts/generate_troubleshooting_guide.py`.
+- Run `python scripts/generate_command_reference.py`.
 - Read `dataset/pusht_dataset.py`, `model/minivla_policy.py`, and `trainer/train_act_pusht.py`.
 - Write down the shape of one training sample.
 
@@ -48,6 +49,7 @@ Deliverable: one ablation report with metric deltas, failure review, and a short
 - Include `outputs/environment_check.md` as reproducibility context.
 - Include `outputs/first_run_checklist.md` as the smallest-loop readiness check.
 - Include `outputs/troubleshooting_guide.md` as the recovery and debugging guide.
+- Include `outputs/command_reference.md` as the public command map.
 - Include `outputs/readme_asset_check.md` as visual evidence context.
 - Include `outputs/project_progress.md` as the evidence coverage checklist.
 - Include `outputs/project_card.md` as the one-page overview.

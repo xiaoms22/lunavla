@@ -17,6 +17,7 @@ STAGES = [
             "outputs/environment_check.md",
             "outputs/dataset_inspection.md",
             "outputs/quickstart_summary.md",
+            "outputs/command_reference.md",
         ],
     },
     {
@@ -32,6 +33,7 @@ STAGES = [
             "outputs/cpu_smoke/web_demo.html",
             "outputs/first_run_checklist.md",
             "outputs/troubleshooting_guide.md",
+            "outputs/command_reference.md",
         ],
     },
     {

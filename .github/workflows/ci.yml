@@ -53,6 +53,9 @@ jobs:
       - name: Generate first run checklist
         run: python scripts/generate_first_run_checklist.py
 
+      - name: Generate command reference
+        run: python scripts/generate_command_reference.py
+
       - name: Run baseline evidence path
         run: python scripts/run_baseline_evidence.py
 
@@ -101,6 +104,7 @@ jobs:
             outputs/quickstart_summary.md
             outputs/first_run_checklist.md
             outputs/troubleshooting_guide.md
+            outputs/command_reference.md
             outputs/readme_asset_check.md
             outputs/project_progress.md
             outputs/project_card.md
