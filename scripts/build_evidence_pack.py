@@ -101,6 +101,8 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/readme_asset_check.md", "Confirm README images and animations are renderable."),
         artifact_row("outputs/project_progress.md", "Show which public project evidence stages are complete."),
         artifact_row("outputs/project_card.md", "One-page project evidence card."),
+        artifact_row("outputs/experiment_ledger.md", "Audit commands, configs, metrics, and run artifacts."),
+        artifact_row("outputs/experiment_ledger.json", "Machine-readable experiment ledger."),
         artifact_row("outputs/learning_checkpoint.md", "Concept-to-evidence learning checkpoint."),
         artifact_row("outputs/interview_flashcards.md", "Interview flashcards tied to code and run evidence."),
         artifact_row("outputs/skill_evidence_map.md", "Map beginner-facing VLA skills to code and run evidence."),
@@ -157,6 +159,7 @@ def build_index() -> str:
         "- The README-visible assets pass image and animation checks.",
         "- The project progress report maps generated artifacts to report-ready stages.",
         "- The project card compresses commands, metrics, evidence links, and boundaries into one page.",
+        "- The experiment ledger ties commands, config hashes, metrics, and artifacts together.",
         "- The learning checkpoint maps VLA concepts to code, reports, and self-check questions.",
         "- The interview flashcards help learners practice evidence-backed answers.",
         "- The skill evidence map connects VLA skills to code files, commands, and generated artifacts.",
@@ -193,18 +196,19 @@ def build_index() -> str:
             "7. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
             "8. Use `outputs/project_progress.md` to check which evidence stages are complete.",
             "9. Use `outputs/project_card.md` as the one-page overview.",
-            "10. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
-            "11. Use `outputs/interview_flashcards.md` for quick interview practice.",
-            "12. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
-            "13. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
-            "14. Use `outputs/failure_review.md` to explain failure behavior.",
-            "15. Use `outputs/dataset_inspection.md` to explain the sample format.",
-            "16. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
-            "17. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
-            "18. Use `outputs/run_comparison.md` for the ablation story.",
-            "19. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "20. Use the README GIFs and rollout demo as visual evidence.",
-            "21. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "10. Use `outputs/experiment_ledger.md` to audit commands, configs, metrics, and artifacts.",
+            "11. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
+            "12. Use `outputs/interview_flashcards.md` for quick interview practice.",
+            "13. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
+            "14. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
+            "15. Use `outputs/failure_review.md` to explain failure behavior.",
+            "16. Use `outputs/dataset_inspection.md` to explain the sample format.",
+            "17. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
+            "18. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
+            "19. Use `outputs/run_comparison.md` for the ablation story.",
+            "20. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "21. Use the README GIFs and rollout demo as visual evidence.",
+            "22. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
@@ -233,6 +237,7 @@ def main() -> int:
     run([python, "scripts/generate_interview_flashcards.py"])
     run([python, "scripts/generate_skill_evidence_map.py"])
     run([python, "scripts/generate_project_card.py"])
+    run([python, "scripts/generate_experiment_ledger.py"])
     run([python, "scripts/generate_showcase_issue.py"])
 
     out_path = resolve(args.out)
@@ -240,6 +245,7 @@ def main() -> int:
     run([python, "scripts/generate_troubleshooting_guide.py"])
     run([python, "scripts/generate_command_reference.py"])
     run([python, "scripts/generate_code_walkthrough.py"])
+    run([python, "scripts/generate_experiment_ledger.py"])
     run([python, "scripts/check_project_progress.py"])
     run([python, "scripts/generate_troubleshooting_guide.py"])
     out_path.write_text(build_index(), encoding="utf-8")

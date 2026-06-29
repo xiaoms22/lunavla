@@ -33,6 +33,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | Show it | `python scripts/check_readme_assets.py` | A quality check for README GIFs, screenshots, and result visuals. |
 | Track it | `python scripts/check_project_progress.py` | A stage checklist for generated project evidence. |
 | Package it | `python scripts/generate_project_card.py` | A one-page project card with commands, metrics, evidence, and boundaries. |
+| Audit it | `python scripts/generate_experiment_ledger.py` | A config, metric, command, and artifact ledger for reproducible claims. |
 | Share it | `python scripts/generate_showcase_issue.py` | A copyable learner showcase draft for public sharing. |
 | Extend it | `docs/internship_pack/07_advanced_project_path.md` | A safe path for improving the baseline after the runnable loop works. |
 
@@ -131,6 +132,7 @@ python scripts/generate_learning_checkpoint.py
 python scripts/generate_interview_flashcards.py
 python scripts/generate_skill_evidence_map.py
 python scripts/generate_project_card.py
+python scripts/generate_experiment_ledger.py
 python scripts/generate_showcase_issue.py
 ```
 
@@ -193,6 +195,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - README asset checks for rollout GIFs, action-chunk animation, loss curve, static rollout, and result table.
 - project progress checks that map generated artifacts to report-ready stages.
 - a one-page project card for quickly reviewing commands, metrics, evidence files, and honest boundaries.
+- an experiment ledger that ties commands, config hashes, metrics, and artifacts together.
 - a learner showcase draft for sharing reproducible project evidence without overclaiming.
 - a compact `outputs/submission_pack/` folder for reviewing the final project evidence.
 

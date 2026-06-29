@@ -57,6 +57,8 @@ STAGES = [
             "images/result_table.svg",
             "outputs/readme_asset_check.md",
             "outputs/project_card.md",
+            "outputs/experiment_ledger.md",
+            "outputs/experiment_ledger.json",
             "outputs/learning_checkpoint.md",
             "outputs/interview_flashcards.md",
             "outputs/skill_evidence_map.md",

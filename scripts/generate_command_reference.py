@@ -162,6 +162,13 @@ COMMANDS: list[dict[str, Any]] = [
         "next": "Use the card as the fastest review artifact.",
     },
     {
+        "stage": "audit",
+        "command": "python scripts/generate_experiment_ledger.py",
+        "purpose": "Record commands, config hashes, metrics, and artifact coverage.",
+        "outputs": ["outputs/experiment_ledger.md", "outputs/experiment_ledger.json"],
+        "next": "Use the ledger to support report and interview claims.",
+    },
+    {
         "stage": "share",
         "command": "python scripts/generate_showcase_issue.py",
         "purpose": "Generate a copyable learner showcase draft.",
@@ -265,6 +272,7 @@ def build_reference() -> str:
             "- To read code in order: read `outputs/code_walkthrough.md`.",
             "- To explain training and evaluation: read `outputs/act_pusht_baseline/project_report.md`.",
             "- To explain what the run proves: read `outputs/act_pusht_baseline/run_diagnostic.md`.",
+            "- To audit configs and metrics: read `outputs/experiment_ledger.md`.",
             "- To explain comparison results: read `outputs/run_comparison.md`.",
             "- To prepare for interviews: read `outputs/interview_flashcards.md` and `outputs/skill_evidence_map.md`.",
             "- To package the work: read `outputs/project_card.md` and `outputs/submission_pack/SUBMISSION_README.md`.",

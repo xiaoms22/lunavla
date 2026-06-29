@@ -20,6 +20,7 @@ MiniMind-VLA is released as a tiny, reproducible VLA internship project starter.
 - README asset check for ensuring GIFs, PNGs, SVGs, and the asset manifest are usable.
 - Project progress check for mapping generated artifacts to report-ready stages.
 - Project card generator for a one-page command, metric, evidence, and boundary summary.
+- Experiment ledger generator for linking commands, config hashes, metrics, and artifacts.
 - Learning checkpoint generator for concept-to-evidence self-check questions.
 - Interview flashcards generator for evidence-backed answers tied to code and run artifacts.
 - Skill evidence map generator for connecting VLA abilities to code, commands, and artifacts.
