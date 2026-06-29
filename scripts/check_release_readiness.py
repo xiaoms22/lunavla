@@ -26,6 +26,7 @@ CORE_FILES = [
     "scripts/build_submission_pack.py",
     "scripts/generate_first_run_checklist.py",
     "scripts/generate_troubleshooting_guide.py",
+    "scripts/check_repo_quality.py",
     "scripts/check_environment.py",
     "scripts/check_readme_assets.py",
     "scripts/check_project_progress.py",

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import subprocess
 from pathlib import Path
 
@@ -20,14 +19,8 @@ FORBIDDEN_PATHS = [
     ROOT / "references",
 ]
 
-PUBLIC_TEXT_PATHS = [
-    ROOT / "README.md",
-    ROOT / "DATA_CARD.md",
-    ROOT / "MODEL_CARD.md",
-    ROOT / "RELEASE_NOTES.md",
-    *sorted((ROOT / "docs").glob("**/*.md")),
-    *sorted((ROOT / ".github").glob("**/*.yml")),
-]
+TRACKED_TEXT_SUFFIXES = {".md", ".py", ".yml", ".yaml", ".txt", ".json"}
+SKIP_TRACKED_PREFIXES = ("outputs/", "data/", "references/")
 
 PUBLIC_TEXT_BLOCKLIST = [
     joined("star", "_", "playbook"),
@@ -36,6 +29,32 @@ PUBLIC_TEXT_BLOCKLIST = [
     joined("future", " ", "adapter"),
     joined("Not", "Implemented"),
     joined("place", "holder"),
+    joined("Road", "map"),
+    joined("Le", "Robot"),
+    joined("Open", "VLA"),
+    joined("open", "pi"),
+    joined("p", "i0"),
+]
+
+PERSONAL_TEXT_BLOCKLIST = [
+    chr(0x5343) + chr(0x5BFB),
+    chr(0x8096) + chr(0x94ED) + chr(0x7855),
+    joined("Ming", "shuo"),
+    joined("U", "DAS"),
+    joined("Robo", "Arena"),
+    joined("Spi", "rit"),
+    joined("moz", "brain"),
+    joined("men", "tor"),
+    chr(0x5BFC) + chr(0x5E08),
+    chr(0x624B) + chr(0x673A) + chr(0x53F7),
+    chr(0x7535) + chr(0x8BDD),
+    chr(0x90AE) + chr(0x7BB1),
+    chr(0x7B80) + chr(0x5386) + chr(0x539F) + chr(0x6587),
+    chr(0x5B9E) + chr(0x4E60) + chr(0x7ECF) + chr(0x5386),
+]
+
+PUBLIC_COMMAND_BLOCKLIST = [
+    joined("&", "&"),
 ]
 
 MOJIBAKE_PATTERNS = [
@@ -55,6 +74,28 @@ def fail(message: str) -> None:
     raise SystemExit(f"repo quality check failed: {message}")
 
 
+def git_ls_files() -> list[str]:
+    result = subprocess.run(
+        ["git", "ls-files"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def public_text_paths() -> list[Path]:
+    paths: list[Path] = []
+    for relative in git_ls_files():
+        if relative.startswith(SKIP_TRACKED_PREFIXES):
+            continue
+        path = ROOT / relative
+        if path.suffix in TRACKED_TEXT_SUFFIXES:
+            paths.append(path)
+    return paths
+
+
 def check_forbidden_paths() -> None:
     for path in FORBIDDEN_PATHS:
         relative = path.relative_to(ROOT).as_posix()
@@ -70,20 +111,25 @@ def check_forbidden_paths() -> None:
 
 
 def check_text_blocklist() -> None:
-    for path in PUBLIC_TEXT_PATHS:
+    for path in public_text_paths():
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
-        for pattern in PUBLIC_TEXT_BLOCKLIST:
+        for pattern in PUBLIC_TEXT_BLOCKLIST + PERSONAL_TEXT_BLOCKLIST:
             if pattern in text:
-                fail(f"{path.relative_to(ROOT).as_posix()} contains internal marker `{pattern}`")
+                fail(f"{path.relative_to(ROOT).as_posix()} contains blocked public marker")
         for pattern in MOJIBAKE_PATTERNS:
             if pattern in text:
                 fail(f"{path.relative_to(ROOT).as_posix()} may contain mojibake `{pattern}`")
+        for pattern in PUBLIC_COMMAND_BLOCKLIST:
+            if pattern in text:
+                fail(f"{path.relative_to(ROOT).as_posix()} contains shell-specific command separator `{pattern}`")
 
 
 def iter_readme_paths() -> list[str]:
     text = README.read_text(encoding="utf-8")
+    import re
+
     markdown_targets = re.findall(r"\[[^\]]*\]\(([^)]+)\)", text)
     image_targets = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", text)
     inline_code_paths = re.findall(
