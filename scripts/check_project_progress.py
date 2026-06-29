@@ -80,6 +80,8 @@ STAGES = [
             "outputs/run_comparison.md",
             "outputs/run_comparison.csv",
             "outputs/run_comparison_deltas.csv",
+            "outputs/config_diff.md",
+            "outputs/config_diff.json",
         ],
     },
     {

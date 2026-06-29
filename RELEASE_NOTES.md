@@ -14,6 +14,7 @@ MiniMind-VLA is released as a tiny, reproducible VLA internship project starter.
 - Code walkthrough generator for reading the runnable implementation in order.
 - Negative-path release checks for malformed configs and missing submission-pack sources.
 - ACT-style PushT baseline and chunk-size ablation config.
+- Config diff generator for auditing the baseline vs ablation setup.
 - Rollout evaluation with success rate, final distance, rollout length, and action smoothness.
 - Static README assets generated from local run artifacts.
 - Homepage ecosystem media from official LeRobot and LIBERO sources with attribution.

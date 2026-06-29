@@ -23,6 +23,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--episodes", type=int, default=5, help="Evaluation episodes for each run.")
     parser.add_argument("--out", default="outputs/run_comparison.md", help="Ablation comparison Markdown path.")
+    parser.add_argument("--config-diff-out", default="outputs/config_diff.md", help="Config diff Markdown path.")
     parser.add_argument("--asset-dir", default="images", help="Directory for README-visible baseline assets.")
     parser.add_argument("--skip-baseline", action="store_true", help="Reuse an existing baseline run directory.")
     return parser.parse_args()
@@ -102,10 +103,23 @@ def main() -> int:
     baseline_config = resolve(args.baseline_config)
     ablation_config = resolve(args.ablation_config)
     out_path = resolve(args.out)
+    config_diff_out = resolve(args.config_diff_out)
     asset_dir = resolve(args.asset_dir)
     python = sys.executable
 
     run([python, "scripts/validate_configs.py", relative(baseline_config), relative(ablation_config)])
+    run(
+        [
+            python,
+            "scripts/generate_config_diff.py",
+            "--baseline",
+            relative(baseline_config),
+            "--candidate",
+            relative(ablation_config),
+            "--out",
+            relative(config_diff_out),
+        ]
+    )
     if args.skip_baseline:
         baseline_dir = run_dir_from_config(baseline_config)
         ensure_outputs(expected_run_outputs(baseline_dir), "baseline")
@@ -135,6 +149,8 @@ def main() -> int:
         out_path,
         out_path.with_suffix(".csv"),
         out_path.with_name(out_path.stem + "_deltas.csv"),
+        config_diff_out,
+        config_diff_out.with_suffix(".json"),
         baseline_dir / "resume_pack.md",
         baseline_dir / "run_diagnostic.md",
         ablation_dir / "resume_pack.md",

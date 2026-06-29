@@ -127,6 +127,8 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/run_comparison.md", "Baseline vs ablation comparison report."),
         artifact_row("outputs/run_comparison.csv", "Machine-readable comparison table."),
         artifact_row("outputs/run_comparison_deltas.csv", "Machine-readable metric deltas."),
+        artifact_row("outputs/config_diff.md", "Config-level ablation audit."),
+        artifact_row("outputs/config_diff.json", "Machine-readable config diff."),
         artifact_row("images/pusht_rollout.gif", "README-visible rollout animation."),
         artifact_row("images/act_action_chunk.gif", "README-visible action chunk animation."),
         artifact_row("images/loss_curve.gif", "README-visible loss curve animation."),
@@ -168,6 +170,7 @@ def build_index() -> str:
         "- The CPU smoke loop trains, evaluates, summarizes, and exports a demo.",
         "- The baseline path produces rollout metrics, reports, and README assets.",
         "- The chunk-size ablation produces a comparison report and metric deltas.",
+        "- The config diff verifies which settings changed for the ablation.",
         "- The claims remain limited to a teaching-scale PushT-style imitation-learning setup.",
         "",
         "## Run Metrics",
@@ -206,9 +209,10 @@ def build_index() -> str:
             "17. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
             "18. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
             "19. Use `outputs/run_comparison.md` for the ablation story.",
-            "20. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "21. Use the README GIFs and rollout demo as visual evidence.",
-            "22. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "20. Use `outputs/config_diff.md` to confirm what changed in the ablation.",
+            "21. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "22. Use the README GIFs and rollout demo as visual evidence.",
+            "23. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:

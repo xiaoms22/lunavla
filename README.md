@@ -30,6 +30,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | Map it | `python scripts/generate_skill_evidence_map.py` | A skill-to-code-to-artifact map for project reports and interview prep. |
 | Report it | `python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline` | A claim-safety check, resume-safe bullets, a two-minute pitch, and honest boundaries. |
 | Review it | `python scripts/generate_failure_review.py` | A cross-run failure review for rollout behavior and inspection notes. |
+| Compare it | `python scripts/generate_config_diff.py` | A config-level audit for the baseline vs ablation setup. |
 | Show it | `python scripts/check_readme_assets.py` | A quality check for README GIFs, screenshots, and result visuals. |
 | Track it | `python scripts/check_project_progress.py` | A stage checklist for generated project evidence. |
 | Package it | `python scripts/generate_project_card.py` | A one-page project card with commands, metrics, evidence, and boundaries. |
@@ -151,6 +152,7 @@ python scripts/summarize_results.py --run-dir outputs/act_pusht_ablation_chunk_s
 python scripts/generate_project_report.py --run-dir outputs/act_pusht_ablation_chunk_size
 python scripts/diagnose_run.py --run-dir outputs/act_pusht_ablation_chunk_size
 python scripts/compare_runs.py --runs outputs/act_pusht_baseline outputs/act_pusht_ablation_chunk_size --out outputs/run_comparison.md
+python scripts/generate_config_diff.py
 python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline --comparison outputs/run_comparison.md
 ```
 
@@ -189,6 +191,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
 - failure-case logging with first-pass category counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
 - failure review across smoke, baseline, and ablation runs.
+- config diff for checking which settings changed in the ablation.
 - learning checkpoint that maps VLA concepts to code evidence and self-check questions.
 - interview flashcards that connect common questions to code files and generated run evidence.
 - skill evidence map that connects beginner-facing abilities to code, commands, and artifacts.

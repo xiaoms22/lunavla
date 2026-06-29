@@ -47,6 +47,9 @@ jobs:
       - name: Validate configs
         run: python scripts/validate_configs.py
 
+      - name: Generate config diff
+        run: python scripts/generate_config_diff.py
+
       - name: Check release failure modes
         run: python scripts/check_negative_paths.py
 
@@ -142,6 +145,8 @@ jobs:
             outputs/run_comparison.md
             outputs/run_comparison.csv
             outputs/run_comparison_deltas.csv
+            outputs/config_diff.md
+            outputs/config_diff.json
             outputs/evidence_index.md
             outputs/submission_pack/**
             images/pusht_rollout.gif

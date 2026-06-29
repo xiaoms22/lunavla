@@ -202,6 +202,8 @@ def main() -> int:
                 "",
                 "What behavior changes when one policy or training setting changes?",
                 "",
+                "Config audit: `outputs/config_diff.md`",
+                "",
                 "## Runs",
                 "",
             ]

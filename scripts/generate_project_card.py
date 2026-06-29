@@ -98,6 +98,7 @@ def evidence_rows() -> list[dict[str, str]]:
         ("learner showcase", "outputs/learner_showcase.md", "copyable public sharing draft"),
         ("failure review", "outputs/failure_review.md", "cross-run failure behavior"),
         ("ablation", "outputs/run_comparison.md", "chunk-size comparison"),
+        ("config diff", "outputs/config_diff.md", "ablation setup audit"),
         ("README assets", "outputs/readme_asset_check.md", "visual evidence quality"),
         ("experiment ledger", "outputs/experiment_ledger.md", "commands, config hashes, metrics, and artifacts"),
         ("rollout browser", "outputs/act_pusht_baseline/web_demo.html", "saved rollout inspection"),

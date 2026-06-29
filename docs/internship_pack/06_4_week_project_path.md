@@ -30,11 +30,12 @@ Deliverable: baseline result table, run diagnostic, README asset check, and roll
 
 - Run `python scripts/run_ablation_evidence.py`.
 - Read `outputs/run_comparison.md` and inspect at least one rollout from each run.
+- Read `outputs/config_diff.md` before writing the ablation conclusion.
 - Read each run diagnostic before writing the ablation conclusion.
 - Run `python scripts/generate_failure_review.py`.
 - Explain how chunk size changes behavior.
 
-Deliverable: one ablation report with metric deltas, failure review, and a short conclusion.
+Deliverable: one ablation report with config diff, metric deltas, failure review, and a short conclusion.
 
 ## Week 4: Report And Interview Pack
 

@@ -127,6 +127,13 @@ COMMANDS: list[dict[str, Any]] = [
         "next": "Use only the comparison report for ablation claims.",
     },
     {
+        "stage": "config diff",
+        "command": "python scripts/generate_config_diff.py",
+        "purpose": "Check which config fields changed between baseline and ablation.",
+        "outputs": ["outputs/config_diff.md", "outputs/config_diff.json"],
+        "next": "Confirm the ablation changed only the intended experiment variable.",
+    },
+    {
         "stage": "review",
         "command": "python scripts/generate_failure_review.py",
         "purpose": "Summarize rollout failure cases across generated runs.",
@@ -274,6 +281,7 @@ def build_reference() -> str:
             "- To explain what the run proves: read `outputs/act_pusht_baseline/run_diagnostic.md`.",
             "- To audit configs and metrics: read `outputs/experiment_ledger.md`.",
             "- To explain comparison results: read `outputs/run_comparison.md`.",
+            "- To explain ablation setup: read `outputs/config_diff.md`.",
             "- To prepare for interviews: read `outputs/interview_flashcards.md` and `outputs/skill_evidence_map.md`.",
             "- To package the work: read `outputs/project_card.md` and `outputs/submission_pack/SUBMISSION_README.md`.",
             "",
