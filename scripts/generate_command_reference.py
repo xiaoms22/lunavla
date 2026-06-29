@@ -98,6 +98,7 @@ COMMANDS: list[dict[str, Any]] = [
             "outputs/act_pusht_baseline/run_diagnostic.md",
             "outputs/act_pusht_baseline/web_demo.html",
             "images/pusht_rollout.gif",
+            "images/local_rollout.gif",
             "images/act_action_chunk.gif",
             "images/loss_curve.gif",
             "images/rollout_demo.png",

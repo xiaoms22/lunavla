@@ -80,7 +80,8 @@ def artifact_rows(run_dir: Path, comparison_path: Path | None) -> list[dict[str,
         (run_dir / "web_demo.html", "static rollout browser"),
         (run_dir / "rollouts", "saved rollout JSON files"),
         (ROOT / "outputs/evidence_index.md", "complete evidence map"),
-        (ROOT / "images/pusht_rollout.gif", "README rollout animation"),
+        (ROOT / "images/pusht_rollout.gif", "README real PushT evaluation animation"),
+        (ROOT / "images/local_rollout.gif", "README local rollout trace animation"),
         (ROOT / "images/loss_curve.gif", "README loss animation"),
     ]
     if comparison_path is not None:

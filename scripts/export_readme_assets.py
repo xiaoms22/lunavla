@@ -259,7 +259,7 @@ def export_rollout_gif(run_dir: Path, out_dir: Path) -> Path:
     for idx in range(len(rollout)):
         gif_frames.extend([rollout_canvas(rollout, idx)] * 2)
     gif_frames.extend([rollout_canvas(rollout, len(rollout) - 1)] * 6)
-    target = out_dir / "pusht_rollout.gif"
+    target = out_dir / "local_rollout.gif"
     write_gif(target, gif_frames, delay_cs=9)
     return target
 

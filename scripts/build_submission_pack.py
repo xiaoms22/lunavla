@@ -220,6 +220,7 @@ def main() -> int:
         (ROOT / "outputs/config_diff.json", out_dir / "config_diff.json"),
         (evidence_index, out_dir / "evidence_index.md"),
         (ROOT / "images/pusht_rollout.gif", out_dir / "assets/pusht_rollout.gif"),
+        (ROOT / "images/local_rollout.gif", out_dir / "assets/local_rollout.gif"),
         (ROOT / "images/act_action_chunk.gif", out_dir / "assets/act_action_chunk.gif"),
         (ROOT / "images/loss_curve.gif", out_dir / "assets/loss_curve.gif"),
         (ROOT / "images/rollout_demo.png", out_dir / "assets/rollout_demo.png"),
