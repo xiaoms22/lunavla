@@ -8,7 +8,7 @@
 
 **Run a tiny VLA loop: `observation -> action -> rollout -> evaluation`, then turn the result into beginner-friendly embodied AI project evidence.**
 
-给 VLA / 具身智能新手：如果你学过概念但缺少一个能跑、能改、能讲清楚的项目，MiniMind-VLA 用一个轻量 imitation-learning 闭环，帮助你从数据记录、策略训练、rollout 评估到结果展示完整走一遍。
+给 VLA / 具身智能初学者：如果你学过概念，但还缺少一个能跑、能改、能讲清楚的项目，MiniMind-VLA 用一个轻量 imitation-learning 闭环，帮助你从数据记录、策略训练、rollout 评估到结果展示完整走一遍。
 
 This repo follows the spirit of MiniMind: low cost, reproducible, readable from code, and useful for learners. It focuses on a teaching-scale action-learning baseline, not real-robot deployment, frontier robot foundation model training, or state-of-the-art robotics claims.
 
@@ -53,6 +53,12 @@ Inspect one dataset sample before training:
 
 ```bash
 python scripts/inspect_dataset.py
+```
+
+Validate the runnable configs:
+
+```bash
+python scripts/validate_configs.py
 ```
 
 Run the baseline evidence path:
