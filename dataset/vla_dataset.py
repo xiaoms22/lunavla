@@ -15,6 +15,9 @@ class VLARecord:
     success: bool
     language_instruction: str | None
     metadata: dict[str, Any]
+    task_id: str = "unknown"
+    subtask_id: str = "unknown"
+    phase: str = "unknown"
 
     @classmethod
     def from_mapping(cls, item: dict[str, Any]) -> "VLARecord":
@@ -26,6 +29,9 @@ class VLARecord:
             success=bool(item["success"]),
             language_instruction=item.get("language_instruction"),
             metadata=dict(item.get("metadata", {})),
+            task_id=str(item.get("task_id", item.get("metadata", {}).get("task", "unknown"))),
+            subtask_id=str(item.get("subtask_id", item.get("metadata", {}).get("subtask_id", "unknown"))),
+            phase=str(item.get("phase", item.get("metadata", {}).get("phase", "unknown"))),
         )
 
     def to_dict(self) -> dict[str, Any]:

@@ -1,4 +1,4 @@
-﻿# LunaVLA: A Tiny VLA Project Starter You Can Run
+# LunaVLA: IL/VA Core for VLA Beginners
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/License-Apache--2.0-green)
@@ -6,11 +6,11 @@
 ![CPU Smoke](https://img.shields.io/badge/CPU%20Smoke-passing-brightgreen)
 ![Task](https://img.shields.io/badge/Task-ACT%20%2B%20PushT--style-orange)
 
-**Run a tiny VLA loop: `observation -> action -> rollout -> evaluation`, then turn the result into beginner-friendly embodied AI project evidence.**
+**Run the IL/VA core behind a tiny VLA-style project: `observation -> action -> rollout -> evaluation`, then turn the result into beginner-friendly embodied AI project evidence.**
 
 给 VLA / 具身智能初学者：如果你学过概念，但还缺少一个能跑、能改、能讲清楚的项目，LunaVLA 用一个轻量 imitation-learning 闭环，帮助你从数据记录、策略训练、rollout 评估到结果展示完整走一遍。
 
-LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an independent educational project and is not affiliated with, endorsed by, or maintained by the original MiniMind authors. It focuses on a teaching-scale action-learning baseline, not real-robot deployment, frontier robot foundation model training, or state-of-the-art robotics claims.
+LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an independent educational project and is not affiliated with, endorsed by, or maintained by the original MiniMind authors. It focuses on a teaching-scale action-learning baseline plus a small Task Layer, not real-robot deployment, frontier robot foundation model training, or state-of-the-art robotics claims.
 
 ![LunaVLA architecture](images/lunavla-architecture.svg)
 
@@ -177,7 +177,7 @@ python scripts/check_release_readiness.py
 
 LunaVLA is intentionally small, but it includes the pieces a VLA internship project should be able to explain:
 
-- data records with `observation`, `action`, `episode_id`, `timestep`, `success`, and `metadata`;
+- data records with `observation`, `action`, `episode_id`, `timestep`, `success`, `task_id`, `subtask_id`, `phase`, and `metadata`;
 - environment checks for Python, dependencies, repo files, and output write access;
 - one-command quickstart for the smallest beginner path;
 - a PushT-style demonstration generator;
@@ -188,8 +188,9 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - command reference for mapping public commands to generated artifacts;
 - code walkthrough for reading the runnable implementation in order;
 - action chunk lesson for understanding ACT-style future-action targets;
+- Task Layer diagnostics that label rollout frames as `approach_block`, `align_push`, `push_to_goal`, or `settle`;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
-- failure-case logging with first-pass category counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
+- failure-case logging with first-pass category counts, failure subtask counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
 - failure review across smoke, baseline, and ablation runs.
 - config diff for checking which settings changed in the ablation.
 - learning checkpoint that maps VLA concepts to code evidence and self-check questions.

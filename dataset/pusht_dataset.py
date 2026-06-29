@@ -7,6 +7,8 @@ from typing import Any, Iterable
 
 import numpy as np
 
+from dataset.task_context import build_pusht_task_context
+
 
 @dataclass
 class VLADatum:
@@ -17,6 +19,9 @@ class VLADatum:
     success: bool
     language_instruction: str | None
     metadata: dict[str, Any]
+    task_id: str = "pusht_mock"
+    subtask_id: str = "unknown"
+    phase: str = "unknown"
 
 
 def generate_mock_pusht_records(
@@ -38,6 +43,12 @@ def generate_mock_pusht_records(
             expert_action += rng.normal(0.0, 0.004, size=2).astype(np.float32)
             position = np.clip(position + expert_action, 0.0, 1.0)
             distance = float(np.linalg.norm(goal - position))
+            task_context = build_pusht_task_context(
+                position=position,
+                goal=goal,
+                instruction=language_instruction,
+                success_distance=0.08,
+            )
             records.append(
                 VLADatum(
                     observation=[
@@ -51,7 +62,14 @@ def generate_mock_pusht_records(
                     timestep=timestep,
                     success=distance < 0.08,
                     language_instruction=language_instruction,
-                    metadata={"task": "pusht_mock", "distance_to_goal": distance},
+                    metadata={
+                        "task": "pusht_mock",
+                        "distance_to_goal": distance,
+                        "task_context": task_context.to_dict(),
+                    },
+                    task_id=task_context.task_id,
+                    subtask_id=task_context.subtask_id,
+                    phase=task_context.phase,
                 )
             )
 

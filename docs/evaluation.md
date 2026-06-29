@@ -10,6 +10,8 @@ VLA projects cannot be evaluated by training loss alone. A policy can fit demons
 - `action_smoothness`: average action delta across a rollout.
 - `failure_cases`: labeled failed episodes.
 - `failure_category_counts`: first-pass counts for failure types such as `wrong_direction`, `stuck`, `oscillation`, and `action_clipping`.
+- `subtask_frame_counts`: how many rollout frames fell into each coarse task stage.
+- `failure_subtask_counts`: which subtask the rollout ended in when the episode failed.
 
 ## Current Implementation
 
@@ -18,6 +20,8 @@ VLA projects cannot be evaluated by training loss alone. A policy can fit demons
 - `eval_summary.json`
 - optional `rollouts/episode_*.json`
 - `failure_cases.jsonl`
+
+Saved rollouts include a `task_context` object on each frame. This gives the project a small task-understanding layer without introducing an LLM dependency.
 
 `scripts/compare_runs.py` compares baseline and ablation run directories.
 

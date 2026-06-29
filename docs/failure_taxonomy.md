@@ -16,6 +16,7 @@ Each failure case should include:
 - episode id;
 - final distance;
 - initial distance and minimum distance;
+- failing subtask or phase;
 - short label;
 - one sentence explanation;
 - next minimal fix.

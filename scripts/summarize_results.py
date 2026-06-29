@@ -54,6 +54,8 @@ def main() -> int:
         "mean_action_smoothness": evaluation.get("mean_action_smoothness", "n/a"),
         "failure_cases": failure_count,
         "failure_categories": format_category_counts(evaluation.get("failure_category_counts", {})),
+        "failure_subtasks": format_category_counts(evaluation.get("failure_subtask_counts", {})),
+        "subtask_frames": format_category_counts(evaluation.get("subtask_frame_counts", {})),
     }
 
     csv_path = run_dir / "result_table.csv"
@@ -77,6 +79,7 @@ def main() -> int:
             "",
             "- `final_loss` checks whether the imitation objective is numerically moving.",
             "- `success_rate` is the headline rollout metric for internship project evidence.",
+            "- `failure_subtasks` shows where the rollout ended when the policy did not solve the task.",
             "- `failure_cases` should be read with `docs/failure_taxonomy.md` before adding claims to a resume.",
         ]
     )

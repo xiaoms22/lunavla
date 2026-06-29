@@ -251,9 +251,12 @@ def main() -> int:
     }}
     function renderDetail(rollout) {{
       const failure = failureFor(rollout);
+      const finalContext = rollout.final_task_context || {{}};
       detail.innerHTML = `
         <div><strong>episode:</strong> ${{fmt(rollout.episode_id)}} ${{statusTag(rollout.success)}}</div>
         <div><strong>artifact:</strong> ${{fmt(rollout.artifact)}}</div>
+        <div><strong>instruction:</strong> ${{fmt(rollout.instruction)}}</div>
+        <div><strong>final subtask:</strong> ${{fmt(finalContext.subtask_id || 'unknown')}}</div>
         <div><strong>steps:</strong> ${{fmt(rollout.steps)}}</div>
         <div><strong>initial distance:</strong> ${{fmt(rollout.initial_distance)}}</div>
         <div><strong>min distance:</strong> ${{fmt(rollout.min_distance)}}</div>

@@ -71,6 +71,16 @@ def category_counts(evaluation: dict[str, Any], failures: list[dict[str, Any]]) 
     return counts
 
 
+def subtask_counts(evaluation: dict[str, Any], failures: list[dict[str, Any]]) -> dict[str, int]:
+    counts = dict(evaluation.get("failure_subtask_counts") or {})
+    if counts:
+        return {str(key): int(value) for key, value in counts.items()}
+    for failure in failures:
+        subtask = str(failure.get("subtask_id", "unknown"))
+        counts[subtask] = int(counts.get(subtask, 0)) + 1
+    return counts
+
+
 def markdown_table(rows: list[dict[str, Any]]) -> list[str]:
     if not rows:
         return ["No rows."]
@@ -86,6 +96,7 @@ def run_summary(run_dir: Path) -> tuple[dict[str, Any], list[dict[str, Any]], di
     evaluation = read_json(run_dir / "eval_summary.json")
     failures = read_jsonl(run_dir / "failure_cases.jsonl")
     counts = category_counts(evaluation, failures)
+    subtasks = subtask_counts(evaluation, failures)
     row = {
         "run": run_dir.name,
         "exists": "yes" if run_dir.exists() else "no",
@@ -94,6 +105,7 @@ def run_summary(run_dir: Path) -> tuple[dict[str, Any], list[dict[str, Any]], di
         "mean_final_distance": evaluation.get("mean_final_distance", "n/a"),
         "failure_count": evaluation.get("failure_count", len(failures) if run_dir.exists() else "n/a"),
         "failure_categories": counts,
+        "failure_subtasks": subtasks,
         "diagnostic": relative(run_dir / "run_diagnostic.md"),
         "browser": relative(run_dir / "web_demo.html"),
         "project_name": training.get("project_name", run_dir.name),
@@ -108,6 +120,7 @@ def logged_failure_rows(run_dir: Path, failures: list[dict[str, Any]]) -> list[d
             {
                 "run": run_dir.name,
                 "episode": failure.get("episode_id", "n/a"),
+                "subtask": failure.get("subtask_id", "unknown"),
                 "category": failure.get("category", "unknown"),
                 "final_distance": failure.get("final_distance", "n/a"),
                 "min_distance": failure.get("min_distance", "n/a"),
@@ -122,6 +135,7 @@ def build_report(run_dirs: list[Path]) -> str:
     summary_rows: list[dict[str, Any]] = []
     failure_rows: list[dict[str, Any]] = []
     total_counts: dict[str, int] = {}
+    total_subtask_counts: dict[str, int] = {}
 
     for run_dir in run_dirs:
         summary, failures, counts = run_summary(run_dir)
@@ -129,6 +143,8 @@ def build_report(run_dirs: list[Path]) -> str:
         failure_rows.extend(logged_failure_rows(run_dir, failures))
         for category, count in counts.items():
             total_counts[category] = total_counts.get(category, 0) + int(count)
+        for subtask, count in summary.get("failure_subtasks", {}).items():
+            total_subtask_counts[subtask] = total_subtask_counts.get(subtask, 0) + int(count)
 
     category_rows = [
         {"category": category, "count": count}
@@ -136,6 +152,12 @@ def build_report(run_dirs: list[Path]) -> str:
     ]
     if not category_rows:
         category_rows = [{"category": "none", "count": 0}]
+    subtask_rows = [
+        {"subtask": subtask, "count": count}
+        for subtask, count in sorted(total_subtask_counts.items(), key=lambda item: (-item[1], item[0]))
+    ]
+    if not subtask_rows:
+        subtask_rows = [{"subtask": "none", "count": 0}]
 
     lines: list[str] = [
         "# LunaVLA Failure Review",
@@ -150,6 +172,8 @@ def build_report(run_dirs: list[Path]) -> str:
     lines.extend(markdown_table(summary_rows))
     lines.extend(["", "## Category Counts", ""])
     lines.extend(markdown_table(category_rows))
+    lines.extend(["", "## Failure Subtask Counts", ""])
+    lines.extend(markdown_table(subtask_rows))
     lines.extend(["", "## Logged Failure Cases", ""])
     if failure_rows:
         lines.extend(markdown_table(failure_rows))

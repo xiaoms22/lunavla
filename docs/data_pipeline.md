@@ -15,8 +15,13 @@ Each record contains:
 - `episode_id`: demonstration id.
 - `timestep`: step inside an episode.
 - `success`: whether the state is close enough to the goal.
+- `task_id`: structured task name, such as `pusht_mock`.
+- `subtask_id`: coarse task stage, such as `approach_block`, `align_push`, `push_to_goal`, or `settle`.
+- `phase`: display-friendly alias for the current task stage.
 - `language_instruction`: optional task text carried with the sample.
 - `metadata`: task-specific details such as distance to goal.
+
+This Task Layer is intentionally small. It makes the IL/VA core inspectable before LunaVLA adds optional LLM planning or world-model diagnostics.
 
 ## Supported Sources
 

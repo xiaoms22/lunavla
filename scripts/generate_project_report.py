@@ -43,6 +43,10 @@ def format_value(value: Any) -> str:
         return "n/a"
     if isinstance(value, float):
         return f"{value:.6g}"
+    if isinstance(value, dict):
+        if not value:
+            return "none"
+        return ", ".join(f"{key}:{value}" for key, value in sorted(value.items()))
     return str(value)
 
 
@@ -72,13 +76,17 @@ def failure_table(failures: list[dict[str, Any]]) -> list[str]:
             "No failure cases were logged for this run. For a stronger report, evaluate more episodes and inspect whether rare failures appear.",
         ]
 
-    lines = ["| episode | category | final distance | note | next minimal fix |", "| --- | --- | --- | --- | --- |"]
+    lines = [
+        "| episode | subtask | category | final distance | note | next minimal fix |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
     for failure in failures[:5]:
         lines.append(
             "| "
             + " | ".join(
                 [
                     format_value(failure.get("episode_id")),
+                    format_value(failure.get("subtask_id", "unknown")),
                     format_value(failure.get("category", "unknown")),
                     format_value(failure.get("final_distance")),
                     format_value(failure.get("note", "")),
@@ -167,6 +175,7 @@ def build_report(run_dir: Path, title: str) -> str:
                 ("mean rollout length", evaluation.get("mean_rollout_length", "n/a")),
                 ("mean action smoothness", evaluation.get("mean_action_smoothness", "n/a")),
                 ("failure cases", len(failures)),
+                ("failure subtasks", evaluation.get("failure_subtask_counts", {})),
             ]
         )
     )
@@ -188,6 +197,15 @@ def build_report(run_dir: Path, title: str) -> str:
         ]
     )
     lines.extend(failure_category_table(evaluation, failures))
+    lines.extend(["", "### Subtask Summary", ""])
+    lines.extend(
+        metric_table(
+            [
+                ("subtask frame counts", evaluation.get("subtask_frame_counts", {})),
+                ("failure subtask counts", evaluation.get("failure_subtask_counts", {})),
+            ]
+        )
+    )
     lines.extend(
         [
             "",

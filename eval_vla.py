@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from dataset.pusht_dataset import _instruction_features
+from dataset.task_context import build_pusht_task_context
 from model import MiniVLAPolicy
 from trainer.trainer_utils import append_jsonl, ensure_dir, write_json
 
@@ -36,6 +37,23 @@ def mean_action_norm(frames: list[dict[str, Any]]) -> float:
         return 0.0
     norms = [float(np.linalg.norm(np.asarray(frame["action"], dtype=np.float32))) for frame in frames]
     return float(np.mean(norms))
+
+
+def count_frame_subtasks(rollouts: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for rollout in rollouts:
+        for frame in rollout.get("frames", []):
+            context = frame.get("task_context", {})
+            subtask_id = str(context.get("subtask_id", "unknown"))
+            counts[subtask_id] = counts.get(subtask_id, 0) + 1
+    return counts
+
+
+def final_task_context(rollout: dict[str, Any]) -> dict[str, Any]:
+    frames = rollout.get("frames", [])
+    if not frames:
+        return {}
+    return dict(frames[-1].get("task_context", {}))
 
 
 def classify_failure(rollout: dict[str, Any], success_distance: float) -> dict[str, Any]:
@@ -103,6 +121,12 @@ def rollout_episode(
     position = rng.uniform(low=0.05, high=0.95, size=2).astype(np.float32)
     initial_position = position.copy()
     initial_distance = float(np.linalg.norm(goal - initial_position))
+    initial_context = build_pusht_task_context(
+        position=initial_position,
+        goal=goal,
+        instruction=instruction,
+        success_distance=success_distance,
+    )
     frames: list[dict[str, Any]] = []
 
     for timestep in range(rollout_steps):
@@ -111,18 +135,29 @@ def rollout_episode(
         action = np.clip(action_chunk[:2], -0.12, 0.12)
         position = np.clip(position + action, 0.0, 1.0)
         distance = float(np.linalg.norm(goal - position))
+        task_context = build_pusht_task_context(
+            position=position,
+            goal=goal,
+            instruction=instruction,
+            success_distance=success_distance,
+        )
         frames.append(
             {
                 "timestep": timestep,
                 "position": [float(position[0]), float(position[1])],
                 "action": [float(action[0]), float(action[1])],
                 "distance_to_goal": distance,
+                "task_context": task_context.to_dict(),
+                "task_id": task_context.task_id,
+                "subtask_id": task_context.subtask_id,
+                "phase": task_context.phase,
             }
         )
         if distance <= success_distance:
             break
 
     final_distance = frames[-1]["distance_to_goal"]
+    final_context = final_task_context({"frames": frames})
     action_deltas = []
     for prev, cur in zip(frames, frames[1:]):
         prev_action = np.asarray(prev["action"], dtype=np.float32)
@@ -130,13 +165,18 @@ def rollout_episode(
         action_deltas.append(float(np.linalg.norm(cur_action - prev_action)))
     return {
         "success": final_distance <= success_distance,
+        "task_id": initial_context.task_id,
+        "instruction": instruction,
         "initial_position": [float(initial_position[0]), float(initial_position[1])],
         "goal": [float(goal[0]), float(goal[1])],
+        "initial_task_context": initial_context.to_dict(),
+        "final_task_context": final_context,
         "initial_distance": initial_distance,
         "min_distance": min(float(frame["distance_to_goal"]) for frame in frames),
         "final_distance": final_distance,
         "steps": len(frames),
         "action_smoothness": float(np.mean(action_deltas)) if action_deltas else 0.0,
+        "subtask_frame_counts": count_frame_subtasks([{"frames": frames}]),
         "frames": frames,
     }
 
@@ -160,6 +200,7 @@ def main() -> int:
     rollouts: list[dict[str, Any]] = []
     success_count = 0
     failure_category_counts: dict[str, int] = {}
+    failure_subtask_counts: dict[str, int] = {}
     for episode_id in range(episodes):
         rollout = rollout_episode(
             policy=policy,
@@ -173,11 +214,17 @@ def main() -> int:
         success_count += int(rollout["success"])
         if not rollout["success"]:
             failure = classify_failure(rollout, success_distance)
+            task_context = final_task_context(rollout)
+            failure_subtask = str(task_context.get("subtask_id", "unknown"))
             failure_category_counts[failure["category"]] = failure_category_counts.get(failure["category"], 0) + 1
+            failure_subtask_counts[failure_subtask] = failure_subtask_counts.get(failure_subtask, 0) + 1
             append_jsonl(
                 failure_path,
                 {
                     "episode_id": episode_id,
+                    "task_id": task_context.get("task_id", "unknown"),
+                    "subtask_id": failure_subtask,
+                    "phase": task_context.get("phase", "unknown"),
                     "final_distance": rollout["final_distance"],
                     "initial_distance": rollout["initial_distance"],
                     "min_distance": rollout["min_distance"],
@@ -200,6 +247,8 @@ def main() -> int:
         "mean_action_smoothness": round(float(np.mean([r["action_smoothness"] for r in rollouts])), 6),
         "failure_count": episodes - success_count,
         "failure_category_counts": failure_category_counts,
+        "subtask_frame_counts": count_frame_subtasks(rollouts),
+        "failure_subtask_counts": failure_subtask_counts,
         "rollout_steps": rollout_steps,
         "success_distance": success_distance,
     }
