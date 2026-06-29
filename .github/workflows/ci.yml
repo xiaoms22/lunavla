@@ -59,6 +59,9 @@ jobs:
       - name: Run ablation evidence path
         run: python scripts/run_ablation_evidence.py --skip-baseline
 
+      - name: Generate failure review
+        run: python scripts/generate_failure_review.py
+
       - name: Build evidence index
         run: python scripts/build_evidence_pack.py --skip-runs
 
@@ -73,6 +76,7 @@ jobs:
             outputs/environment_check.md
             outputs/readme_asset_check.md
             outputs/project_progress.md
+            outputs/failure_review.md
             outputs/cpu_smoke/summary_report.md
             outputs/cpu_smoke/project_report.md
             outputs/cpu_smoke/resume_pack.md

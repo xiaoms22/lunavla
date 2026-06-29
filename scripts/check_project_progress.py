@@ -49,6 +49,7 @@ STAGES = [
             "images/loss_curve_baseline.png",
             "images/result_table.svg",
             "outputs/readme_asset_check.md",
+            "outputs/failure_review.md",
         ],
     },
     {

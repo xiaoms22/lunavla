@@ -26,9 +26,10 @@ Deliverable: baseline result table, run diagnostic, README asset check, and roll
 - Run `python scripts/run_ablation_evidence.py`.
 - Read `outputs/run_comparison.md` and inspect at least one rollout from each run.
 - Read each run diagnostic before writing the ablation conclusion.
+- Run `python scripts/generate_failure_review.py`.
 - Explain how chunk size changes behavior.
 
-Deliverable: one ablation report with metric deltas and a short conclusion.
+Deliverable: one ablation report with metric deltas, failure review, and a short conclusion.
 
 ## Week 4: Report And Interview Pack
 
@@ -38,6 +39,7 @@ Deliverable: one ablation report with metric deltas and a short conclusion.
 - Include `outputs/environment_check.md` as reproducibility context.
 - Include `outputs/readme_asset_check.md` as visual evidence context.
 - Include `outputs/project_progress.md` as the evidence coverage checklist.
+- Include `outputs/failure_review.md` as failure-analysis evidence.
 - Fill in the project report template.
 - Generate a first draft with `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline`.
 - Generate interview material with `python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline`.
