@@ -37,6 +37,7 @@ Deliverable: one ablation report with metric deltas, failure review, and a short
 - Run `python scripts/build_submission_pack.py`.
 - Run `python scripts/check_project_progress.py`.
 - Run `python scripts/generate_learning_checkpoint.py`.
+- Run `python scripts/generate_interview_flashcards.py`.
 - Run `python scripts/generate_project_card.py`.
 - Run `python scripts/generate_showcase_issue.py`.
 - Include `outputs/environment_check.md` as reproducibility context.
@@ -44,6 +45,7 @@ Deliverable: one ablation report with metric deltas, failure review, and a short
 - Include `outputs/project_progress.md` as the evidence coverage checklist.
 - Include `outputs/project_card.md` as the one-page overview.
 - Include `outputs/learning_checkpoint.md` as the concept review checklist.
+- Include `outputs/interview_flashcards.md` as the evidence-backed interview practice sheet.
 - Include `outputs/learner_showcase.md` as the public sharing draft.
 - Include `outputs/failure_review.md` as failure-analysis evidence.
 - Fill in the project report template.

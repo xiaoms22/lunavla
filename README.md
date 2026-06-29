@@ -22,6 +22,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
+| Practice it | `python scripts/generate_interview_flashcards.py` | Evidence-backed interview flashcards tied to code and run artifacts. |
 | Report it | `python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline` | A claim-safety check, resume-safe bullets, a two-minute pitch, and honest boundaries. |
 | Review it | `python scripts/generate_failure_review.py` | A cross-run failure review for rollout behavior and inspection notes. |
 | Show it | `python scripts/check_readme_assets.py` | A quality check for README GIFs, screenshots, and result visuals. |
@@ -89,6 +90,7 @@ python scripts/generate_failure_review.py
 python scripts/check_readme_assets.py
 python scripts/check_project_progress.py
 python scripts/generate_learning_checkpoint.py
+python scripts/generate_interview_flashcards.py
 python scripts/generate_project_card.py
 python scripts/generate_showcase_issue.py
 ```
@@ -142,6 +144,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - failure-case logging with first-pass category counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
 - failure review across smoke, baseline, and ablation runs.
 - learning checkpoint that maps VLA concepts to code evidence and self-check questions.
+- interview flashcards that connect common questions to code files and generated run evidence.
 - README asset checks for rollout GIFs, action-chunk animation, loss curve, static rollout, and result table.
 - project progress checks that map generated artifacts to report-ready stages.
 - a one-page project card for quickly reviewing commands, metrics, evidence files, and honest boundaries.
