@@ -40,7 +40,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 
 ## Quick Results
 
-The animations and images below are generated from a checked local run:
+The PushT comparison below uses saved local LeRobot evaluation media. Use the asset export command to refresh the README media manifest after a checked local run:
 
 ```bash
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
@@ -50,17 +50,9 @@ python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --ou
 | --- | --- |
 | ![ACT PushT evaluation animation](images/pusht_act_eval.gif) | ![Diffusion Policy PushT evaluation animation](images/pusht_diffusion_policy_eval.gif) |
 
-| Local rollout trace | ACT action chunk | Training loss | Result table |
-| --- | --- | --- | --- |
-| ![Local rollout trace animation](images/local_rollout.gif) | ![ACT action chunk animation](images/act_action_chunk.gif) | ![Loss curve animation](images/loss_curve.gif) | ![Result table](images/result_table.svg) |
-
-| Static rollout | Loss curve snapshot |
-| --- | --- |
-| ![Rollout demo](images/rollout_demo.png) | ![Loss curve](images/loss_curve_baseline.png) |
-
 ## Robotics Visual Context
 
-The ACT and Diffusion Policy PushT animations above are visual context from saved local LeRobot evaluation videos. The runnable evidence in this repo is the local PushT-style teaching loop, metrics, local rollout trace, and generated reports. The visuals below are ecosystem references from official LeRobot and LIBERO project media, included to help beginners connect this tiny loop to broader robot-learning workflows.
+The ACT and Diffusion Policy PushT animations above are visual context from saved local LeRobot evaluation videos. The runnable evidence in this repo is the local PushT-style teaching loop, metrics, rollout browser, and generated reports. The visuals below are ecosystem references from official LeRobot and LIBERO project media, included to help beginners connect this tiny loop to broader robot-learning workflows.
 
 | LeRobot robot control | LeRobot SO-100 demo | LeRobot VLA overview |
 | --- | --- | --- |

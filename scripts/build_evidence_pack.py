@@ -131,9 +131,6 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/config_diff.json", "Machine-readable config diff."),
         artifact_row("images/pusht_act_eval.gif", "README-visible ACT PushT evaluation animation."),
         artifact_row("images/pusht_diffusion_policy_eval.gif", "README-visible Diffusion Policy PushT evaluation animation."),
-        artifact_row("images/local_rollout.gif", "README-visible local rollout trace animation."),
-        artifact_row("images/act_action_chunk.gif", "README-visible action chunk animation."),
-        artifact_row("images/loss_curve.gif", "README-visible loss curve animation."),
     ]
 
 

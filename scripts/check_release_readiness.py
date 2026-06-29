@@ -58,12 +58,6 @@ README_ASSETS = [
     "images/lunavla-architecture.svg",
     "images/pusht_act_eval.gif",
     "images/pusht_diffusion_policy_eval.gif",
-    "images/local_rollout.gif",
-    "images/act_action_chunk.gif",
-    "images/loss_curve.gif",
-    "images/rollout_demo.png",
-    "images/loss_curve_baseline.png",
-    "images/result_table.svg",
     "images/ecosystem/lerobot_control_demo.webp",
     "images/ecosystem/lerobot_so100_demo.webp",
     "images/ecosystem/lerobot_vla_architecture.jpg",
@@ -138,12 +132,6 @@ GENERATED_EVIDENCE = [
     "outputs/submission_pack/evidence_index.md",
     "outputs/submission_pack/assets/pusht_act_eval.gif",
     "outputs/submission_pack/assets/pusht_diffusion_policy_eval.gif",
-    "outputs/submission_pack/assets/local_rollout.gif",
-    "outputs/submission_pack/assets/act_action_chunk.gif",
-    "outputs/submission_pack/assets/loss_curve.gif",
-    "outputs/submission_pack/assets/rollout_demo.png",
-    "outputs/submission_pack/assets/loss_curve_baseline.png",
-    "outputs/submission_pack/assets/result_table.svg",
 ]
 
 PUBLIC_COMMANDS = [

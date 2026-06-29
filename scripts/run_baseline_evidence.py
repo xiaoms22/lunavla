@@ -42,12 +42,7 @@ def expected_outputs(run_dir: Path, asset_dir: Path) -> list[Path]:
         run_dir / "web_demo.html",
         asset_dir / "pusht_act_eval.gif",
         asset_dir / "pusht_diffusion_policy_eval.gif",
-        asset_dir / "local_rollout.gif",
-        asset_dir / "act_action_chunk.gif",
-        asset_dir / "loss_curve.gif",
-        asset_dir / "rollout_demo.png",
-        asset_dir / "loss_curve_baseline.png",
-        asset_dir / "result_table.svg",
+        asset_dir / "asset_manifest.json",
     ]
 
 

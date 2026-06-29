@@ -72,8 +72,6 @@ def evidence_rows(run_dir: Path) -> list[dict[str, str]]:
         ("Rollout browser", relative(run_dir / "web_demo.html")),
         ("README ACT PushT eval GIF", "images/pusht_act_eval.gif"),
         ("README Diffusion Policy PushT eval GIF", "images/pusht_diffusion_policy_eval.gif"),
-        ("README local rollout GIF", "images/local_rollout.gif"),
-        ("README result table", "images/result_table.svg"),
     ]
     return [
         {

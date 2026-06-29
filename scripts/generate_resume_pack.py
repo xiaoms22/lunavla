@@ -82,8 +82,6 @@ def artifact_rows(run_dir: Path, comparison_path: Path | None) -> list[dict[str,
         (ROOT / "outputs/evidence_index.md", "complete evidence map"),
         (ROOT / "images/pusht_act_eval.gif", "README ACT PushT evaluation animation"),
         (ROOT / "images/pusht_diffusion_policy_eval.gif", "README Diffusion Policy PushT evaluation animation"),
-        (ROOT / "images/local_rollout.gif", "README local rollout trace animation"),
-        (ROOT / "images/loss_curve.gif", "README loss animation"),
     ]
     if comparison_path is not None:
         artifacts.insert(7, (comparison_path, "baseline vs ablation report"))

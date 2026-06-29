@@ -1,11 +1,8 @@
 {
   "run_dir": "outputs/act_pusht_baseline",
   "assets": [
-    "images/local_rollout.gif",
-    "images/act_action_chunk.gif",
-    "images/loss_curve.gif",
-    "images/rollout_demo.png",
-    "images/loss_curve_baseline.png",
-    "images/result_table.svg"
-  ]
+    "images/pusht_act_eval.gif",
+    "images/pusht_diffusion_policy_eval.gif"
+  ],
+  "note": "README PushT media are curated LeRobot evaluation animations. This command records the checked local run used beside those homepage assets; it does not regenerate the curated PushT comparison GIFs."
 }

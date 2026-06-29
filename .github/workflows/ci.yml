@@ -149,6 +149,6 @@ jobs:
             outputs/config_diff.json
             outputs/evidence_index.md
             outputs/submission_pack/**
-            images/pusht_rollout.gif
-            images/act_action_chunk.gif
-            images/loss_curve.gif
+            images/pusht_act_eval.gif
+            images/pusht_diffusion_policy_eval.gif
+            images/asset_manifest.json
