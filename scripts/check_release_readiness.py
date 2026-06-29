@@ -56,7 +56,8 @@ CORE_FILES = [
 
 README_ASSETS = [
     "images/lunavla-architecture.svg",
-    "images/pusht_rollout.gif",
+    "images/pusht_act_eval.gif",
+    "images/pusht_diffusion_policy_eval.gif",
     "images/local_rollout.gif",
     "images/act_action_chunk.gif",
     "images/loss_curve.gif",
@@ -135,7 +136,8 @@ GENERATED_EVIDENCE = [
     "outputs/submission_pack/config_diff.md",
     "outputs/submission_pack/config_diff.json",
     "outputs/submission_pack/evidence_index.md",
-    "outputs/submission_pack/assets/pusht_rollout.gif",
+    "outputs/submission_pack/assets/pusht_act_eval.gif",
+    "outputs/submission_pack/assets/pusht_diffusion_policy_eval.gif",
     "outputs/submission_pack/assets/local_rollout.gif",
     "outputs/submission_pack/assets/act_action_chunk.gif",
     "outputs/submission_pack/assets/loss_curve.gif",

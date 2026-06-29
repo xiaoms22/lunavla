@@ -46,17 +46,21 @@ The animations and images below are generated from a checked local run:
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
 ```
 
-| Real PushT eval | ACT action chunk | Training loss |
-| --- | --- | --- |
-| ![Real PushT evaluation animation](images/pusht_rollout.gif) | ![ACT action chunk animation](images/act_action_chunk.gif) | ![Loss curve animation](images/loss_curve.gif) |
+| ACT PushT eval | Diffusion Policy PushT eval |
+| --- | --- |
+| ![ACT PushT evaluation animation](images/pusht_act_eval.gif) | ![Diffusion Policy PushT evaluation animation](images/pusht_diffusion_policy_eval.gif) |
 
-| Local rollout trace | Static rollout | Loss curve | Result table |
+| Local rollout trace | ACT action chunk | Training loss | Result table |
 | --- | --- | --- | --- |
-| ![Local rollout trace animation](images/local_rollout.gif) | ![Rollout demo](images/rollout_demo.png) | ![Loss curve](images/loss_curve_baseline.png) | ![Result table](images/result_table.svg) |
+| ![Local rollout trace animation](images/local_rollout.gif) | ![ACT action chunk animation](images/act_action_chunk.gif) | ![Loss curve animation](images/loss_curve.gif) | ![Result table](images/result_table.svg) |
+
+| Static rollout | Loss curve snapshot |
+| --- | --- |
+| ![Rollout demo](images/rollout_demo.png) | ![Loss curve](images/loss_curve_baseline.png) |
 
 ## Robotics Visual Context
 
-The real PushT animation above is visual context from a saved LeRobot PushT evaluation video. The runnable evidence in this repo is the local PushT-style teaching loop, metrics, local rollout trace, and generated reports. The visuals below are ecosystem references from official LeRobot and LIBERO project media, included to help beginners connect this tiny loop to broader robot-learning workflows.
+The ACT and Diffusion Policy PushT animations above are visual context from saved local LeRobot evaluation videos. The runnable evidence in this repo is the local PushT-style teaching loop, metrics, local rollout trace, and generated reports. The visuals below are ecosystem references from official LeRobot and LIBERO project media, included to help beginners connect this tiny loop to broader robot-learning workflows.
 
 | LeRobot robot control | LeRobot SO-100 demo | LeRobot VLA overview |
 | --- | --- | --- |

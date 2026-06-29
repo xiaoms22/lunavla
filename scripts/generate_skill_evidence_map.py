@@ -119,10 +119,14 @@ def rows(run_dir: Path) -> list[dict[str, str]]:
         {
             "skill": "Visual evidence",
             "code evidence": "`scripts/export_readme_assets.py`, `scripts/web_demo_vla.py`",
-            "run evidence": "`images/pusht_rollout.gif`, `images/local_rollout.gif`, `images/result_table.svg`",
+            "run evidence": "`images/pusht_act_eval.gif`, `images/pusht_diffusion_policy_eval.gif`, `images/local_rollout.gif`, `images/result_table.svg`",
             "command": "`python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images`",
-            "how to explain": "The README assets separate real PushT visual context from the local rollout trace, action chunks, and loss curve.",
-            "exists": exists_label("images/pusht_rollout.gif") + " / " + exists_label("images/local_rollout.gif"),
+            "how to explain": "The README assets compare ACT and Diffusion Policy PushT behavior, then separate that visual context from the local rollout trace, action chunks, and loss curve.",
+            "exists": exists_label("images/pusht_act_eval.gif")
+            + " / "
+            + exists_label("images/pusht_diffusion_policy_eval.gif")
+            + " / "
+            + exists_label("images/local_rollout.gif"),
         },
         {
             "skill": "Claim safety",

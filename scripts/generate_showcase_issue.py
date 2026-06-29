@@ -70,7 +70,8 @@ def evidence_rows(run_dir: Path) -> list[dict[str, str]]:
         ("Failure review", "outputs/failure_review.md"),
         ("Ablation comparison", "outputs/run_comparison.md"),
         ("Rollout browser", relative(run_dir / "web_demo.html")),
-        ("README real PushT eval GIF", "images/pusht_rollout.gif"),
+        ("README ACT PushT eval GIF", "images/pusht_act_eval.gif"),
+        ("README Diffusion Policy PushT eval GIF", "images/pusht_diffusion_policy_eval.gif"),
         ("README local rollout GIF", "images/local_rollout.gif"),
         ("README result table", "images/result_table.svg"),
     ]

@@ -2,7 +2,7 @@
 
 LunaVLA uses three kinds of README visuals:
 
-- Real PushT visual context converted from a saved local LeRobot PushT evaluation video.
+- Real PushT visual context converted from saved local LeRobot evaluation videos.
 - Local project evidence generated from this repo with `python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images`.
 - Ecosystem context media copied or resized from official public project repositories.
 
@@ -10,9 +10,10 @@ LunaVLA uses three kinds of README visuals:
 
 | local file | source | use |
 | --- | --- | --- |
-| `images/pusht_rollout.gif` | Saved local LeRobot PushT evaluation video, converted from `eval_episode_4.mp4`. | Correct visual reference for the real PushT task. |
+| `images/pusht_act_eval.gif` | Saved local ACT PushT evaluation video, converted from `pusht_act/videos/pusht_0/eval_episode_4.mp4`. | ACT policy visual reference for the real PushT task. |
+| `images/pusht_diffusion_policy_eval.gif` | Saved local Diffusion Policy PushT evaluation video, converted from `pusht_diffusion_pretrained_eval.mp4`. | Diffusion Policy visual reference for the real PushT task. |
 
-This GIF is visual context. LunaVLA's runnable claims come from the local PushT-style teaching loop, generated metrics, and reports.
+These GIFs are visual context for comparing policy behavior. LunaVLA's runnable claims come from the local PushT-style teaching loop, generated metrics, and reports.
 
 ## Ecosystem Media
 
