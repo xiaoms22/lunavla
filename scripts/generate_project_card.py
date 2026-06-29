@@ -87,6 +87,7 @@ def evidence_rows() -> list[dict[str, str]]:
         ("dataset", "outputs/dataset_inspection.md", "one VLA sample and action chunk"),
         ("baseline report", "outputs/act_pusht_baseline/project_report.md", "main technical story"),
         ("baseline diagnostic", "outputs/act_pusht_baseline/run_diagnostic.md", "claim-safety check"),
+        ("learning checkpoint", "outputs/learning_checkpoint.md", "concept-to-evidence review"),
         ("failure review", "outputs/failure_review.md", "cross-run failure behavior"),
         ("ablation", "outputs/run_comparison.md", "chunk-size comparison"),
         ("README assets", "outputs/readme_asset_check.md", "visual evidence quality"),

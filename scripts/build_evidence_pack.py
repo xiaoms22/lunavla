@@ -96,6 +96,7 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/readme_asset_check.md", "Confirm README images and animations are renderable."),
         artifact_row("outputs/project_progress.md", "Show which public project evidence stages are complete."),
         artifact_row("outputs/project_card.md", "One-page project evidence card."),
+        artifact_row("outputs/learning_checkpoint.md", "Concept-to-evidence learning checkpoint."),
         artifact_row("outputs/failure_review.md", "Summarize failure cases across public runs."),
         artifact_row("outputs/dataset_inspection.md", "Understand one VLA sample and action chunk target."),
         artifact_row("outputs/cpu_smoke/summary_report.md", "Confirm the one-command smoke loop works."),
@@ -143,6 +144,7 @@ def build_index() -> str:
         "- The README-visible assets pass image and animation checks.",
         "- The project progress report maps generated artifacts to report-ready stages.",
         "- The project card compresses commands, metrics, evidence links, and boundaries into one page.",
+        "- The learning checkpoint maps VLA concepts to code, reports, and self-check questions.",
         "- The failure review summarizes logged rollout failure cases.",
         "- The CPU smoke loop trains, evaluates, summarizes, and exports a demo.",
         "- The baseline path produces rollout metrics, reports, and README assets.",
@@ -170,14 +172,15 @@ def build_index() -> str:
             "2. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
             "3. Use `outputs/project_progress.md` to check which evidence stages are complete.",
             "4. Use `outputs/project_card.md` as the one-page overview.",
-            "5. Use `outputs/failure_review.md` to explain failure behavior.",
-            "6. Use `outputs/dataset_inspection.md` to explain the sample format.",
-            "7. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
-            "8. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
-            "9. Use `outputs/run_comparison.md` for the ablation story.",
-            "10. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "11. Use the README GIFs and rollout demo as visual evidence.",
-            "12. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "5. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
+            "6. Use `outputs/failure_review.md` to explain failure behavior.",
+            "7. Use `outputs/dataset_inspection.md` to explain the sample format.",
+            "8. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
+            "9. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
+            "10. Use `outputs/run_comparison.md` for the ablation story.",
+            "11. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "12. Use the README GIFs and rollout demo as visual evidence.",
+            "13. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
@@ -198,6 +201,7 @@ def main() -> int:
         run([python, "scripts/run_ablation_evidence.py", "--episodes", str(args.episodes), "--skip-baseline"])
     run([python, "scripts/generate_failure_review.py"])
     run([python, "scripts/check_readme_assets.py"])
+    run([python, "scripts/generate_learning_checkpoint.py"])
     run([python, "scripts/generate_project_card.py"])
 
     out_path = resolve(args.out)

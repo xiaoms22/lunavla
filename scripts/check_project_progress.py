@@ -50,6 +50,7 @@ STAGES = [
             "images/result_table.svg",
             "outputs/readme_asset_check.md",
             "outputs/project_card.md",
+            "outputs/learning_checkpoint.md",
             "outputs/failure_review.md",
         ],
     },
