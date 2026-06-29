@@ -68,6 +68,9 @@ jobs:
       - name: Generate interview flashcards
         run: python scripts/generate_interview_flashcards.py
 
+      - name: Generate skill evidence map
+        run: python scripts/generate_skill_evidence_map.py
+
       - name: Generate project card
         run: python scripts/generate_project_card.py
 
@@ -91,6 +94,7 @@ jobs:
             outputs/project_card.md
             outputs/learning_checkpoint.md
             outputs/interview_flashcards.md
+            outputs/skill_evidence_map.md
             outputs/learner_showcase.md
             outputs/failure_review.md
             outputs/cpu_smoke/summary_report.md

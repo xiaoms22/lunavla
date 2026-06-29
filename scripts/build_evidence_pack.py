@@ -98,6 +98,7 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/project_card.md", "One-page project evidence card."),
         artifact_row("outputs/learning_checkpoint.md", "Concept-to-evidence learning checkpoint."),
         artifact_row("outputs/interview_flashcards.md", "Interview flashcards tied to code and run evidence."),
+        artifact_row("outputs/skill_evidence_map.md", "Map beginner-facing VLA skills to code and run evidence."),
         artifact_row("outputs/learner_showcase.md", "Copyable learner showcase draft."),
         artifact_row("outputs/failure_review.md", "Summarize failure cases across public runs."),
         artifact_row("outputs/dataset_inspection.md", "Understand one VLA sample and action chunk target."),
@@ -148,6 +149,7 @@ def build_index() -> str:
         "- The project card compresses commands, metrics, evidence links, and boundaries into one page.",
         "- The learning checkpoint maps VLA concepts to code, reports, and self-check questions.",
         "- The interview flashcards help learners practice evidence-backed answers.",
+        "- The skill evidence map connects VLA skills to code files, commands, and generated artifacts.",
         "- The learner showcase draft turns generated evidence into a shareable public story.",
         "- The failure review summarizes logged rollout failure cases.",
         "- The CPU smoke loop trains, evaluates, summarizes, and exports a demo.",
@@ -178,15 +180,16 @@ def build_index() -> str:
             "4. Use `outputs/project_card.md` as the one-page overview.",
             "5. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
             "6. Use `outputs/interview_flashcards.md` for quick interview practice.",
-            "7. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
-            "8. Use `outputs/failure_review.md` to explain failure behavior.",
-            "9. Use `outputs/dataset_inspection.md` to explain the sample format.",
-            "10. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
-            "11. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
-            "12. Use `outputs/run_comparison.md` for the ablation story.",
-            "13. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "14. Use the README GIFs and rollout demo as visual evidence.",
-            "15. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "7. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
+            "8. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
+            "9. Use `outputs/failure_review.md` to explain failure behavior.",
+            "10. Use `outputs/dataset_inspection.md` to explain the sample format.",
+            "11. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
+            "12. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
+            "13. Use `outputs/run_comparison.md` for the ablation story.",
+            "14. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "15. Use the README GIFs and rollout demo as visual evidence.",
+            "16. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
@@ -209,6 +212,7 @@ def main() -> int:
     run([python, "scripts/check_readme_assets.py"])
     run([python, "scripts/generate_learning_checkpoint.py"])
     run([python, "scripts/generate_interview_flashcards.py"])
+    run([python, "scripts/generate_skill_evidence_map.py"])
     run([python, "scripts/generate_project_card.py"])
     run([python, "scripts/generate_showcase_issue.py"])
 

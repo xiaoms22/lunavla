@@ -52,6 +52,7 @@ STAGES = [
             "outputs/project_card.md",
             "outputs/learning_checkpoint.md",
             "outputs/interview_flashcards.md",
+            "outputs/skill_evidence_map.md",
             "outputs/learner_showcase.md",
             "outputs/failure_review.md",
         ],

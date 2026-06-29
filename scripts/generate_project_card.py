@@ -89,6 +89,7 @@ def evidence_rows() -> list[dict[str, str]]:
         ("baseline diagnostic", "outputs/act_pusht_baseline/run_diagnostic.md", "claim-safety check"),
         ("learning checkpoint", "outputs/learning_checkpoint.md", "concept-to-evidence review"),
         ("interview flashcards", "outputs/interview_flashcards.md", "evidence-backed interview answers"),
+        ("skill evidence map", "outputs/skill_evidence_map.md", "skills mapped to code and artifacts"),
         ("learner showcase", "outputs/learner_showcase.md", "copyable public sharing draft"),
         ("failure review", "outputs/failure_review.md", "cross-run failure behavior"),
         ("ablation", "outputs/run_comparison.md", "chunk-size comparison"),

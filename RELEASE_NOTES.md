@@ -14,6 +14,7 @@ MiniMind-VLA is released as a tiny, reproducible VLA internship project starter.
 - Project card generator for a one-page command, metric, evidence, and boundary summary.
 - Learning checkpoint generator for concept-to-evidence self-check questions.
 - Interview flashcards generator for evidence-backed answers tied to code and run artifacts.
+- Skill evidence map generator for connecting VLA abilities to code, commands, and artifacts.
 - Learner showcase generator for copyable, evidence-backed public sharing.
 - Internship pack with skill map, resume bullets, interview Q&A, JD mapping, and project paths.
 - Submission pack generator for collecting reports, rollout browser, comparison results, and README assets.
