@@ -62,7 +62,7 @@ def expected_run_outputs(run_dir: Path, include_resume: bool = False) -> list[Pa
         run_dir / "web_demo.html",
     ]
     if include_resume:
-        outputs.append(run_dir / "resume_pack.md")
+        outputs.extend([run_dir / "resume_pack.md", run_dir / "run_diagnostic.md"])
     return outputs
 
 
@@ -92,6 +92,7 @@ def run_eval_report(config_path: Path, episodes: int) -> Path:
     run([python, "scripts/web_demo_vla.py", "--run-dir", relative(run_dir)])
     run([python, "scripts/generate_project_report.py", "--run-dir", relative(run_dir)])
     run([python, "scripts/generate_resume_pack.py", "--run-dir", relative(run_dir)])
+    run([python, "scripts/diagnose_run.py", "--run-dir", relative(run_dir)])
     ensure_outputs(expected_run_outputs(run_dir, include_resume=True), run_dir.name)
     return run_dir
 
@@ -127,13 +128,17 @@ def main() -> int:
     run([python, "scripts/compare_runs.py", "--runs", relative(baseline_dir), relative(ablation_dir), "--out", relative(out_path)])
     run([python, "scripts/generate_resume_pack.py", "--run-dir", relative(baseline_dir), "--comparison", relative(out_path)])
     run([python, "scripts/generate_resume_pack.py", "--run-dir", relative(ablation_dir), "--comparison", relative(out_path)])
+    run([python, "scripts/diagnose_run.py", "--run-dir", relative(baseline_dir)])
+    run([python, "scripts/diagnose_run.py", "--run-dir", relative(ablation_dir)])
 
     comparison_outputs = [
         out_path,
         out_path.with_suffix(".csv"),
         out_path.with_name(out_path.stem + "_deltas.csv"),
         baseline_dir / "resume_pack.md",
+        baseline_dir / "run_diagnostic.md",
         ablation_dir / "resume_pack.md",
+        ablation_dir / "run_diagnostic.md",
     ]
     ensure_outputs(comparison_outputs, "comparison")
     print(f"ablation evidence ready: {out_path}")

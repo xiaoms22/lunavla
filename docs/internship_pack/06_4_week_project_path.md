@@ -14,15 +14,16 @@ Deliverable: one paragraph explaining `observation -> action chunk`.
 ## Week 2: Baseline
 
 - Run `python scripts/run_baseline_evidence.py`.
-- Inspect the summary, project report, web demo, and README assets.
+- Inspect the summary, run diagnostic, project report, web demo, and README assets.
 - Optionally rerun `python scripts/run_baseline_evidence.py --episodes 50` for a stronger report.
 
-Deliverable: baseline result table and rollout screenshot.
+Deliverable: baseline result table, run diagnostic, and rollout screenshot.
 
 ## Week 3: Ablation
 
 - Run `python scripts/run_ablation_evidence.py`.
 - Read `outputs/run_comparison.md` and inspect at least one rollout from each run.
+- Read each run diagnostic before writing the ablation conclusion.
 - Explain how chunk size changes behavior.
 
 Deliverable: one ablation report with metric deltas and a short conclusion.
@@ -34,6 +35,7 @@ Deliverable: one ablation report with metric deltas and a short conclusion.
 - Fill in the project report template.
 - Generate a first draft with `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline`.
 - Generate interview material with `python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline`.
+- Check claim safety with `python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline`.
 - Choose a matching resume bullet.
 - Practice the two-minute interview pitch.
 

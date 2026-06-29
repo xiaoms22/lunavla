@@ -10,6 +10,7 @@ MiniMind-VLA is released as a tiny, reproducible VLA internship project starter.
 - Static README assets generated from local run artifacts.
 - Internship pack with skill map, resume bullets, interview Q&A, JD mapping, and project paths.
 - Submission pack generator for collecting reports, rollout browser, comparison results, and README assets.
+- Run diagnostic generator for checking artifact completeness, metric strength, failure cases, and safe reporting claims.
 - Model card and data card for honest, reproducible project reporting.
 
 ## Boundary

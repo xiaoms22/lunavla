@@ -38,6 +38,7 @@ def expected_outputs(run_dir: Path, asset_dir: Path) -> list[Path]:
         run_dir / "summary_report.md",
         run_dir / "project_report.md",
         run_dir / "resume_pack.md",
+        run_dir / "run_diagnostic.md",
         run_dir / "web_demo.html",
         asset_dir / "pusht_rollout.gif",
         asset_dir / "act_action_chunk.gif",
@@ -75,6 +76,7 @@ def main() -> int:
     run([python, "scripts/web_demo_vla.py", "--run-dir", str(run_dir.relative_to(ROOT).as_posix())])
     run([python, "scripts/generate_project_report.py", "--run-dir", str(run_dir.relative_to(ROOT).as_posix())])
     run([python, "scripts/generate_resume_pack.py", "--run-dir", str(run_dir.relative_to(ROOT).as_posix())])
+    run([python, "scripts/diagnose_run.py", "--run-dir", str(run_dir.relative_to(ROOT).as_posix())])
     run(
         [
             python,
