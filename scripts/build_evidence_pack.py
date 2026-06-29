@@ -97,6 +97,7 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/first_run_checklist.md", "Confirm the CPU smoke loop generated the first files to inspect."),
         artifact_row("outputs/troubleshooting_guide.md", "Map common run symptoms to files and recovery commands."),
         artifact_row("outputs/command_reference.md", "Map each public command to its purpose and generated artifacts."),
+        artifact_row("outputs/code_walkthrough.md", "Guide beginners through the runnable code path."),
         artifact_row("outputs/readme_asset_check.md", "Confirm README images and animations are renderable."),
         artifact_row("outputs/project_progress.md", "Show which public project evidence stages are complete."),
         artifact_row("outputs/project_card.md", "One-page project evidence card."),
@@ -152,6 +153,7 @@ def build_index() -> str:
         "- The first-run checklist confirms the CPU smoke artifacts are ready to inspect.",
         "- The troubleshooting guide maps missing artifacts and weak runs to recovery commands.",
         "- The command reference maps every public command to the artifacts learners should inspect.",
+        "- The code walkthrough shows the recommended reading order for the runnable implementation.",
         "- The README-visible assets pass image and animation checks.",
         "- The project progress report maps generated artifacts to report-ready stages.",
         "- The project card compresses commands, metrics, evidence links, and boundaries into one page.",
@@ -187,21 +189,22 @@ def build_index() -> str:
             "3. Use `outputs/first_run_checklist.md` to confirm the smallest loop produced the expected files.",
             "4. Use `outputs/troubleshooting_guide.md` if any artifact is missing or a run needs debugging.",
             "5. Use `outputs/command_reference.md` to explain what each public command generates.",
-            "6. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
-            "7. Use `outputs/project_progress.md` to check which evidence stages are complete.",
-            "8. Use `outputs/project_card.md` as the one-page overview.",
-            "9. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
-            "10. Use `outputs/interview_flashcards.md` for quick interview practice.",
-            "11. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
-            "12. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
-            "13. Use `outputs/failure_review.md` to explain failure behavior.",
-            "14. Use `outputs/dataset_inspection.md` to explain the sample format.",
-            "15. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
-            "16. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
-            "17. Use `outputs/run_comparison.md` for the ablation story.",
-            "18. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "19. Use the README GIFs and rollout demo as visual evidence.",
-            "20. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "6. Use `outputs/code_walkthrough.md` to explain how the code path fits together.",
+            "7. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
+            "8. Use `outputs/project_progress.md` to check which evidence stages are complete.",
+            "9. Use `outputs/project_card.md` as the one-page overview.",
+            "10. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
+            "11. Use `outputs/interview_flashcards.md` for quick interview practice.",
+            "12. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
+            "13. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
+            "14. Use `outputs/failure_review.md` to explain failure behavior.",
+            "15. Use `outputs/dataset_inspection.md` to explain the sample format.",
+            "16. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
+            "17. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
+            "18. Use `outputs/run_comparison.md` for the ablation story.",
+            "19. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "20. Use the README GIFs and rollout demo as visual evidence.",
+            "21. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
@@ -224,6 +227,7 @@ def main() -> int:
         run([python, "scripts/generate_first_run_checklist.py"])
     run([python, "scripts/generate_failure_review.py"])
     run([python, "scripts/generate_command_reference.py"])
+    run([python, "scripts/generate_code_walkthrough.py"])
     run([python, "scripts/check_readme_assets.py"])
     run([python, "scripts/generate_learning_checkpoint.py"])
     run([python, "scripts/generate_interview_flashcards.py"])
@@ -235,6 +239,7 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     run([python, "scripts/generate_troubleshooting_guide.py"])
     run([python, "scripts/generate_command_reference.py"])
+    run([python, "scripts/generate_code_walkthrough.py"])
     run([python, "scripts/check_project_progress.py"])
     run([python, "scripts/generate_troubleshooting_guide.py"])
     out_path.write_text(build_index(), encoding="utf-8")

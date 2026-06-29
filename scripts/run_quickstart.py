@@ -19,6 +19,7 @@ EXPECTED_ARTIFACTS = [
     ("rollout browser", "outputs/cpu_smoke/web_demo.html", "static rollout inspection"),
     ("first-run checklist", "outputs/first_run_checklist.md", "what to open first"),
     ("troubleshooting guide", "outputs/troubleshooting_guide.md", "recovery commands"),
+    ("code walkthrough", "outputs/code_walkthrough.md", "guided code reading"),
 ]
 
 
@@ -130,6 +131,7 @@ def build_summary() -> tuple[str, str]:
         "python scripts/run_cpu_smoke.py",
         "python scripts/generate_first_run_checklist.py",
         "python scripts/generate_troubleshooting_guide.py",
+        "python scripts/generate_code_walkthrough.py",
         "```",
         "",
         "## Smoke Metrics",
@@ -146,7 +148,8 @@ def build_summary() -> tuple[str, str]:
             "1. `outputs/first_run_checklist.md` for the beginner review order.",
             "2. `outputs/cpu_smoke/summary_report.md` for metrics.",
             "3. `outputs/cpu_smoke/web_demo.html` for rollout behavior.",
-            "4. `outputs/troubleshooting_guide.md` if something is missing.",
+            "4. `outputs/code_walkthrough.md` for the code reading order.",
+            "5. `outputs/troubleshooting_guide.md` if something is missing.",
             "",
             "## Next Step",
             "",
@@ -171,6 +174,7 @@ def main() -> int:
         run([python, "scripts/run_cpu_smoke.py"])
     run([python, "scripts/generate_first_run_checklist.py"])
     run([python, "scripts/generate_troubleshooting_guide.py"])
+    run([python, "scripts/generate_code_walkthrough.py"])
 
     report, status = build_summary()
     out_path = resolve(args.out)

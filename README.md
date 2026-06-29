@@ -21,6 +21,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | Start it | `python scripts/run_quickstart.py` | Environment check, dataset inspection, CPU smoke, first-run checklist, and troubleshooting guide. |
 | Check it | `python scripts/check_environment.py` | Python/dependency/path readiness before the first run. |
 | Find it | `python scripts/generate_command_reference.py` | A command-to-artifact map for choosing the next step. |
+| Read it | `python scripts/generate_code_walkthrough.py` | A guided reading order for the runnable code path. |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
 | Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
@@ -69,6 +70,7 @@ python scripts/run_cpu_smoke.py
 python scripts/generate_first_run_checklist.py
 python scripts/generate_troubleshooting_guide.py
 python scripts/generate_command_reference.py
+python scripts/generate_code_walkthrough.py
 ```
 
 Inspect one dataset sample before training:
@@ -103,6 +105,7 @@ python scripts/run_quickstart.py --skip-run
 python scripts/generate_first_run_checklist.py
 python scripts/generate_troubleshooting_guide.py
 python scripts/generate_command_reference.py
+python scripts/generate_code_walkthrough.py
 python scripts/generate_failure_review.py
 python scripts/check_readme_assets.py
 python scripts/check_project_progress.py
@@ -162,6 +165,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - first-run checklist for checking the smallest runnable loop before moving on;
 - troubleshooting guide for mapping common symptoms to files and recovery commands;
 - command reference for mapping public commands to generated artifacts;
+- code walkthrough for reading the runnable implementation in order;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
 - failure-case logging with first-pass category counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
 - failure review across smoke, baseline, and ablation runs.

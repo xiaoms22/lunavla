@@ -56,6 +56,9 @@ jobs:
       - name: Generate command reference
         run: python scripts/generate_command_reference.py
 
+      - name: Generate code walkthrough
+        run: python scripts/generate_code_walkthrough.py
+
       - name: Run baseline evidence path
         run: python scripts/run_baseline_evidence.py
 
@@ -105,6 +108,7 @@ jobs:
             outputs/first_run_checklist.md
             outputs/troubleshooting_guide.md
             outputs/command_reference.md
+            outputs/code_walkthrough.md
             outputs/readme_asset_check.md
             outputs/project_progress.md
             outputs/project_card.md

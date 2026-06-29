@@ -18,6 +18,7 @@ STAGES = [
             "outputs/dataset_inspection.md",
             "outputs/quickstart_summary.md",
             "outputs/command_reference.md",
+            "outputs/code_walkthrough.md",
         ],
     },
     {
@@ -34,6 +35,7 @@ STAGES = [
             "outputs/first_run_checklist.md",
             "outputs/troubleshooting_guide.md",
             "outputs/command_reference.md",
+            "outputs/code_walkthrough.md",
         ],
     },
     {

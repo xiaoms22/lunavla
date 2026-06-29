@@ -38,6 +38,13 @@ COMMANDS: list[dict[str, Any]] = [
         "next": "Read the dataset and policy files with the sample in mind.",
     },
     {
+        "stage": "read code",
+        "command": "python scripts/generate_code_walkthrough.py",
+        "purpose": "Build a guided reading order for the runnable code path.",
+        "outputs": ["outputs/code_walkthrough.md"],
+        "next": "Read files in the order shown by the walkthrough.",
+    },
+    {
         "stage": "smoke",
         "command": "python scripts/run_cpu_smoke.py",
         "purpose": "Train, evaluate, summarize, and export the smallest local loop.",
@@ -241,6 +248,7 @@ def build_reference() -> str:
             "## Report-Friendly Reading Path",
             "",
             "- To explain data: read `outputs/dataset_inspection.md`.",
+            "- To read code in order: read `outputs/code_walkthrough.md`.",
             "- To explain training and evaluation: read `outputs/act_pusht_baseline/project_report.md`.",
             "- To explain what the run proves: read `outputs/act_pusht_baseline/run_diagnostic.md`.",
             "- To explain comparison results: read `outputs/run_comparison.md`.",
