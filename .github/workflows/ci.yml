@@ -35,6 +35,9 @@ jobs:
       - name: Check public repo quality
         run: python scripts/check_repo_quality.py
 
+      - name: Run quickstart path
+        run: python scripts/run_quickstart.py
+
       - name: Check environment
         run: python scripts/check_environment.py
 
@@ -95,6 +98,7 @@ jobs:
           name: minimind-vla-ci-evidence
           path: |
             outputs/environment_check.md
+            outputs/quickstart_summary.md
             outputs/first_run_checklist.md
             outputs/troubleshooting_guide.md
             outputs/readme_asset_check.md

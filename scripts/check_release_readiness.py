@@ -18,6 +18,7 @@ CORE_FILES = [
     "configs/act_pusht_cpu_smoke.yaml",
     "configs/act_pusht_baseline.yaml",
     "configs/act_pusht_ablation_chunk_size.yaml",
+    "scripts/run_quickstart.py",
     "scripts/run_cpu_smoke.py",
     "scripts/run_baseline_evidence.py",
     "scripts/run_ablation_evidence.py",
@@ -55,6 +56,7 @@ README_ASSETS = [
 
 GENERATED_EVIDENCE = [
     "outputs/environment_check.md",
+    "outputs/quickstart_summary.md",
     "outputs/first_run_checklist.md",
     "outputs/troubleshooting_guide.md",
     "outputs/readme_asset_check.md",
@@ -87,6 +89,7 @@ GENERATED_EVIDENCE = [
     "outputs/evidence_index.md",
     "outputs/submission_pack/SUBMISSION_README.md",
     "outputs/submission_pack/manifest.json",
+    "outputs/submission_pack/quickstart_summary.md",
     "outputs/submission_pack/environment_check.md",
     "outputs/submission_pack/first_run_checklist.md",
     "outputs/submission_pack/troubleshooting_guide.md",
@@ -114,6 +117,7 @@ GENERATED_EVIDENCE = [
 
 PUBLIC_COMMANDS = [
     "python scripts/run_cpu_smoke.py",
+    "python scripts/run_quickstart.py",
     "python scripts/generate_first_run_checklist.py",
     "python scripts/generate_troubleshooting_guide.py",
     "python scripts/check_environment.py",

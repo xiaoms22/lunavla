@@ -16,6 +16,7 @@ STAGES = [
         "artifacts": [
             "outputs/environment_check.md",
             "outputs/dataset_inspection.md",
+            "outputs/quickstart_summary.md",
         ],
     },
     {

@@ -83,6 +83,7 @@ def metric_rows() -> list[dict[str, Any]]:
 
 def evidence_rows() -> list[dict[str, str]]:
     evidence = [
+        ("quickstart", "outputs/quickstart_summary.md", "one-command beginner path summary"),
         ("environment", "outputs/environment_check.md", "local readiness"),
         ("first run", "outputs/first_run_checklist.md", "smallest runnable loop checklist"),
         ("troubleshooting", "outputs/troubleshooting_guide.md", "symptom-to-command recovery guide"),

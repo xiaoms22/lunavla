@@ -18,6 +18,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 
 | Step | Start Here | What You Get |
 | --- | --- | --- |
+| Start it | `python scripts/run_quickstart.py` | Environment check, dataset inspection, CPU smoke, first-run checklist, and troubleshooting guide. |
 | Check it | `python scripts/check_environment.py` | Python/dependency/path readiness before the first run. |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
 | Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
@@ -54,13 +55,19 @@ python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --ou
 
 ```bash
 pip install -r requirements.txt
+python scripts/run_quickstart.py
+```
+
+The quickstart command runs environment checks, dataset inspection, CPU smoke training/evaluation, first-run checklist generation, and troubleshooting guide generation. Local artifacts are written to `outputs/` and ignored by Git.
+
+If you prefer the manual path, run the same first steps one by one:
+
+```bash
 python scripts/check_environment.py
 python scripts/run_cpu_smoke.py
 python scripts/generate_first_run_checklist.py
 python scripts/generate_troubleshooting_guide.py
 ```
-
-The environment check catches Python, dependency, path, and write-permission issues before training. The smoke command runs training, evaluation, summary generation, project report generation, resume-pack generation, run diagnosis, and a static HTML rollout browser. The first-run checklist tells you which generated files to open first; the troubleshooting guide tells you what to rerun if something is missing. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
 
 Inspect one dataset sample before training:
 
@@ -90,6 +97,7 @@ python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline
 python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline
 python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
+python scripts/run_quickstart.py --skip-run
 python scripts/generate_first_run_checklist.py
 python scripts/generate_troubleshooting_guide.py
 python scripts/generate_failure_review.py
@@ -144,6 +152,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 
 - data records with `observation`, `action`, `episode_id`, `timestep`, `success`, and `metadata`;
 - environment checks for Python, dependencies, repo files, and output write access;
+- one-command quickstart for the smallest beginner path;
 - a PushT-style demonstration generator;
 - an ACT-style action chunk policy;
 - config-driven training and checkpoint export;
