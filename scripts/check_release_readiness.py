@@ -22,6 +22,7 @@ CORE_FILES = [
     "scripts/run_baseline_evidence.py",
     "scripts/run_ablation_evidence.py",
     "scripts/build_evidence_pack.py",
+    "scripts/build_submission_pack.py",
     "scripts/generate_project_report.py",
     "scripts/generate_resume_pack.py",
     "scripts/validate_configs.py",
@@ -58,6 +59,19 @@ GENERATED_EVIDENCE = [
     "outputs/run_comparison.csv",
     "outputs/run_comparison_deltas.csv",
     "outputs/evidence_index.md",
+    "outputs/submission_pack/SUBMISSION_README.md",
+    "outputs/submission_pack/manifest.json",
+    "outputs/submission_pack/project_report.md",
+    "outputs/submission_pack/resume_pack.md",
+    "outputs/submission_pack/rollout_browser.html",
+    "outputs/submission_pack/ablation_comparison.md",
+    "outputs/submission_pack/evidence_index.md",
+    "outputs/submission_pack/assets/pusht_rollout.gif",
+    "outputs/submission_pack/assets/act_action_chunk.gif",
+    "outputs/submission_pack/assets/loss_curve.gif",
+    "outputs/submission_pack/assets/rollout_demo.png",
+    "outputs/submission_pack/assets/loss_curve_baseline.png",
+    "outputs/submission_pack/assets/result_table.svg",
 ]
 
 PUBLIC_COMMANDS = [
@@ -73,6 +87,7 @@ PUBLIC_COMMANDS = [
     "python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images",
     "python scripts/run_ablation_evidence.py",
     "python scripts/build_evidence_pack.py --skip-runs",
+    "python scripts/build_submission_pack.py",
 ]
 
 README_REQUIRED_PHRASES = [

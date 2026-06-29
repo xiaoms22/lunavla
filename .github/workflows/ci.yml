@@ -76,6 +76,7 @@ jobs:
             outputs/run_comparison.csv
             outputs/run_comparison_deltas.csv
             outputs/evidence_index.md
+            outputs/submission_pack/**
             images/pusht_rollout.gif
             images/act_action_chunk.gif
             images/loss_curve.gif

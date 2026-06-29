@@ -30,10 +30,11 @@ Deliverable: one ablation report with metric deltas and a short conclusion.
 ## Week 4: Report And Interview Pack
 
 - Run `python scripts/build_evidence_pack.py --skip-runs`.
+- Run `python scripts/build_submission_pack.py`.
 - Fill in the project report template.
 - Generate a first draft with `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline`.
 - Generate interview material with `python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline`.
 - Choose a matching resume bullet.
 - Practice the two-minute interview pitch.
 
-Deliverable: evidence index, public project README, report, resume/interview pack, and interview script.
+Deliverable: evidence index, submission pack, public project README, report, resume/interview pack, and interview script.

@@ -183,6 +183,7 @@ def main() -> int:
     missing = [row["artifact"] for row in required_artifacts() if row["exists"] != "yes"]
     if missing:
         raise FileNotFoundError("Missing evidence artifacts: " + ", ".join(missing))
+    run([python, "scripts/build_submission_pack.py", "--evidence-index", relative(out_path)])
     print(f"evidence index: {out_path}")
     return 0
 

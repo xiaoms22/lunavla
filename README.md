@@ -101,6 +101,12 @@ Build a complete evidence index after running the core paths:
 python scripts/build_evidence_pack.py --skip-runs
 ```
 
+Build a compact submission pack for project review:
+
+```bash
+python scripts/build_submission_pack.py
+```
+
 Check release readiness after the evidence artifacts exist:
 
 ```bash
@@ -117,6 +123,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - config-driven training and checkpoint export;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
 - failure-case logging with first-pass category counts, result summaries, project reports, resume/interview packs, README assets, and a static rollout browser.
+- a compact `outputs/submission_pack/` folder for reviewing the final project evidence.
 
 Mock PushT is the low-cost teaching layer. Its value is helping you understand the data, policy, rollout, evaluation, and reporting loop before moving to heavier robotics stacks.
 
