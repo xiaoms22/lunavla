@@ -11,7 +11,7 @@ LunaVLA uses three kinds of README visuals:
 | local file | source | use |
 | --- | --- | --- |
 | `images/pusht_act_eval.gif` | Saved local ACT PushT evaluation video, converted from `pusht_act/videos/pusht_0/eval_episode_4.mp4`. | ACT policy visual reference for the real PushT task. |
-| `images/pusht_diffusion_policy_eval.gif` | Saved local Diffusion Policy PushT evaluation GIF, copied from `outputs/eval_videos/test/pusht_diffusion_eval.gif`. | Diffusion Policy visual reference for the real PushT task. |
+| `images/pusht_diffusion_policy_eval.gif` | Saved local Diffusion Policy PushT evaluation video, converted from `Downloads/pusht_0/eval_episode_1.mp4`. | Diffusion Policy visual reference for the real PushT task. |
 
 These GIFs are visual context for comparing policy behavior. LunaVLA's runnable claims come from the local PushT-style teaching loop, generated metrics, and reports.
 
