@@ -45,6 +45,7 @@ def core_artifacts(run_dir: Path) -> list[tuple[str, str, str]]:
 def optional_artifacts(run_dir: Path) -> list[tuple[str, str, str]]:
     return [
         ("dataset inspection", "outputs/dataset_inspection.md", "one VLA sample and action-chunk target"),
+        ("action chunk lesson", "outputs/action_chunk_lesson.md", "ACT-style future-action explanation"),
         ("resume pack", relative(run_dir / "resume_pack.md"), "smallest resume and interview draft"),
     ]
 
@@ -151,6 +152,7 @@ def build_report(run_dir: Path) -> tuple[str, str]:
             "3. `outputs/cpu_smoke/web_demo.html` to inspect rollout behavior.",
             "4. `outputs/cpu_smoke/run_diagnostic.md` to decide which claims are safe.",
             "5. `outputs/dataset_inspection.md` if you want to explain one training sample.",
+            "6. `outputs/action_chunk_lesson.md` if you want to explain ACT-style chunk targets.",
             "",
             "## What This First Run Proves",
             "",

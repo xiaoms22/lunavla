@@ -19,7 +19,7 @@ READING_STEPS: list[dict[str, Any]] = [
         "step": "policy input",
         "files": ["model/minivla_policy.py", "model/act_wrapper.py"],
         "question": "How do observation and instruction features become an action chunk prediction?",
-        "output": "outputs/learning_checkpoint.md",
+        "output": "outputs/action_chunk_lesson.md",
     },
     {
         "step": "training loop",
@@ -36,7 +36,7 @@ READING_STEPS: list[dict[str, Any]] = [
     {
         "step": "visual evidence",
         "files": ["scripts/export_readme_assets.py", "scripts/web_demo_vla.py", "scripts/check_readme_assets.py"],
-        "question": "How are rollout behavior, action chunks, loss curves, and result tables shown?",
+        "question": "How are README media and rollout browser artifacts checked?",
         "output": "outputs/readme_asset_check.md",
     },
     {

@@ -75,7 +75,7 @@ def flashcards(run_dir: Path) -> list[dict[str, str]]:
             "topic": "ACT-style chunk",
             "question": "Why predict a chunk instead of one action?",
             "answer": f"The baseline predicts chunk_size={value(training, 'chunk_size')} future 2D actions, so the policy models short-horizon action structure and gives a clear ablation variable.",
-            "evidence": "configs/act_pusht_baseline.yaml",
+            "evidence": "outputs/action_chunk_lesson.md",
         },
         {
             "topic": "Rollout evaluation",

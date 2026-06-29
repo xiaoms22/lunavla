@@ -25,6 +25,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
 | Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
+| Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
 | Practice it | `python scripts/generate_interview_flashcards.py` | Evidence-backed interview flashcards tied to code and run artifacts. |
 | Map it | `python scripts/generate_skill_evidence_map.py` | A skill-to-code-to-artifact map for project reports and interview prep. |
@@ -81,6 +82,7 @@ python scripts/generate_first_run_checklist.py
 python scripts/generate_troubleshooting_guide.py
 python scripts/generate_command_reference.py
 python scripts/generate_code_walkthrough.py
+python scripts/generate_action_chunk_lesson.py
 ```
 
 Inspect one dataset sample before training:
@@ -116,6 +118,7 @@ python scripts/summarize_results.py --run-dir outputs/act_pusht_baseline
 python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline
 python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline
 python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline
+python scripts/generate_action_chunk_lesson.py --config configs/act_pusht_baseline.yaml --run-dir outputs/act_pusht_baseline
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
 python scripts/run_quickstart.py --skip-run
 python scripts/generate_first_run_checklist.py
@@ -184,6 +187,7 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - troubleshooting guide for mapping common symptoms to files and recovery commands;
 - command reference for mapping public commands to generated artifacts;
 - code walkthrough for reading the runnable implementation in order;
+- action chunk lesson for understanding ACT-style future-action targets;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
 - failure-case logging with first-pass category counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
 - failure review across smoke, baseline, and ablation runs.
@@ -191,7 +195,7 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - learning checkpoint that maps VLA concepts to code evidence and self-check questions.
 - interview flashcards that connect common questions to code files and generated run evidence.
 - skill evidence map that connects beginner-facing abilities to code, commands, and artifacts.
-- README asset checks for rollout GIFs, action-chunk animation, loss curve, static rollout, and result table.
+- README asset checks for ACT/Diffusion Policy PushT media and ecosystem visuals.
 - project progress checks that map generated artifacts to report-ready stages.
 - a one-page project card for quickly reviewing commands, metrics, evidence files, and honest boundaries.
 - an experiment ledger that ties commands, config hashes, metrics, and artifacts together.
@@ -218,6 +222,7 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - [MODEL_CARD.md](MODEL_CARD.md): what the tiny policy is intended for.
 - [RELEASE_NOTES.md](RELEASE_NOTES.md): what this public release includes.
 - [docs/visual_attributions.md](docs/visual_attributions.md): sources and licenses for README ecosystem media.
+- [docs/tutorials/action_chunking_act.md](docs/tutorials/action_chunking_act.md): a static ACT/action-chunking tutorial.
 
 ## Share A Run
 
@@ -230,7 +235,7 @@ lunavla/
   configs/              # CPU smoke, baseline, and ablation configs
   dataset/              # VLA record schema and PushT-style data generator
   docs/                 # learning notes, evaluation guide, and internship pack
-  images/               # README-visible rollout, loss, architecture, and result assets
+  images/               # README-visible PushT media, architecture, and ecosystem assets
   model/                # tiny policy and ACT-style wrapper
   scripts/              # dataset inspection, evidence runners, reports, resume packs, assets, and web demo generator
   trainer/              # training entrypoints and shared utilities

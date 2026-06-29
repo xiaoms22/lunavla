@@ -71,7 +71,7 @@ def concept_rows(run_dir: Path) -> list[dict[str, str]]:
         {
             "concept": "ACT-style action chunk",
             "what to explain": "the target is a short flattened sequence of future 2D actions",
-            "evidence": "configs/act_pusht_baseline.yaml",
+            "evidence": "outputs/action_chunk_lesson.md",
         },
         {
             "concept": "rollout evaluation",
@@ -122,7 +122,7 @@ def question_rows(run_dir: Path) -> list[dict[str, str]]:
     return [
         {
             "question": "How does one raw record become a training sample?",
-            "look at": "outputs/dataset_inspection.md",
+            "look at": "outputs/dataset_inspection.md and outputs/action_chunk_lesson.md",
             "good answer should mention": "observation vector, instruction features, and flattened action chunk target",
         },
         {

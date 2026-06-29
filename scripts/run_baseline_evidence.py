@@ -40,6 +40,7 @@ def expected_outputs(run_dir: Path, asset_dir: Path) -> list[Path]:
         run_dir / "resume_pack.md",
         run_dir / "run_diagnostic.md",
         run_dir / "web_demo.html",
+        ROOT / "outputs/action_chunk_lesson.md",
         asset_dir / "pusht_act_eval.gif",
         asset_dir / "pusht_diffusion_policy_eval.gif",
         asset_dir / "asset_manifest.json",
@@ -74,6 +75,16 @@ def main() -> int:
     run([python, "scripts/generate_project_report.py", "--run-dir", str(run_dir.relative_to(ROOT).as_posix())])
     run([python, "scripts/generate_resume_pack.py", "--run-dir", str(run_dir.relative_to(ROOT).as_posix())])
     run([python, "scripts/diagnose_run.py", "--run-dir", str(run_dir.relative_to(ROOT).as_posix())])
+    run(
+        [
+            python,
+            "scripts/generate_action_chunk_lesson.py",
+            "--config",
+            str(config_path.relative_to(ROOT).as_posix()),
+            "--run-dir",
+            str(run_dir.relative_to(ROOT).as_posix()),
+        ]
+    )
     run(
         [
             python,

@@ -19,6 +19,7 @@ STAGES = [
             "outputs/quickstart_summary.md",
             "outputs/command_reference.md",
             "outputs/code_walkthrough.md",
+            "outputs/action_chunk_lesson.md",
         ],
     },
     {
@@ -36,6 +37,7 @@ STAGES = [
             "outputs/troubleshooting_guide.md",
             "outputs/command_reference.md",
             "outputs/code_walkthrough.md",
+            "outputs/action_chunk_lesson.md",
         ],
     },
     {
@@ -52,6 +54,7 @@ STAGES = [
             "images/pusht_act_eval.gif",
             "images/pusht_diffusion_policy_eval.gif",
             "outputs/readme_asset_check.md",
+            "outputs/action_chunk_lesson.md",
             "outputs/project_card.md",
             "outputs/experiment_ledger.md",
             "outputs/experiment_ledger.json",

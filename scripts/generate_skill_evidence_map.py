@@ -87,10 +87,10 @@ def rows(run_dir: Path) -> list[dict[str, str]]:
         {
             "skill": "ACT-style action chunks",
             "code evidence": "`model/act_wrapper.py`, `configs/act_pusht_baseline.yaml`",
-            "run evidence": "`outputs/run_comparison.md`",
-            "command": "`python scripts/run_ablation_evidence.py`",
-            "how to explain": "Chunk size is a controlled action-horizon variable that can be ablated.",
-            "exists": exists_label("outputs/run_comparison.md"),
+            "run evidence": "`outputs/action_chunk_lesson.md`, `outputs/run_comparison.md`",
+            "command": "`python scripts/generate_action_chunk_lesson.py`; `python scripts/run_ablation_evidence.py`",
+            "how to explain": "Action chunks are future expert actions flattened into one target; chunk size is then a controlled action-horizon variable.",
+            "exists": exists_label("outputs/action_chunk_lesson.md") + " / " + exists_label("outputs/run_comparison.md"),
         },
         {
             "skill": "Rollout evaluation",

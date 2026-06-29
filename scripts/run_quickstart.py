@@ -20,6 +20,7 @@ EXPECTED_ARTIFACTS = [
     ("first-run checklist", "outputs/first_run_checklist.md", "what to open first"),
     ("troubleshooting guide", "outputs/troubleshooting_guide.md", "recovery commands"),
     ("code walkthrough", "outputs/code_walkthrough.md", "guided code reading"),
+    ("action chunk lesson", "outputs/action_chunk_lesson.md", "ACT/action-chunk explanation"),
 ]
 
 
@@ -132,6 +133,7 @@ def build_summary() -> tuple[str, str]:
         "python scripts/generate_first_run_checklist.py",
         "python scripts/generate_troubleshooting_guide.py",
         "python scripts/generate_code_walkthrough.py",
+        "python scripts/generate_action_chunk_lesson.py",
         "```",
         "",
         "## Smoke Metrics",
@@ -149,7 +151,8 @@ def build_summary() -> tuple[str, str]:
             "2. `outputs/cpu_smoke/summary_report.md` for metrics.",
             "3. `outputs/cpu_smoke/web_demo.html` for rollout behavior.",
             "4. `outputs/code_walkthrough.md` for the code reading order.",
-            "5. `outputs/troubleshooting_guide.md` if something is missing.",
+            "5. `outputs/action_chunk_lesson.md` for the ACT/action-chunk explanation.",
+            "6. `outputs/troubleshooting_guide.md` if something is missing.",
             "",
             "## Next Step",
             "",
@@ -175,6 +178,7 @@ def main() -> int:
     run([python, "scripts/generate_first_run_checklist.py"])
     run([python, "scripts/generate_troubleshooting_guide.py"])
     run([python, "scripts/generate_code_walkthrough.py"])
+    run([python, "scripts/generate_action_chunk_lesson.py", "--config", "configs/act_pusht_cpu_smoke.yaml", "--run-dir", "outputs/cpu_smoke"])
 
     report, status = build_summary()
     out_path = resolve(args.out)
