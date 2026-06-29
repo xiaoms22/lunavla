@@ -38,11 +38,13 @@ Deliverable: one ablation report with metric deltas, failure review, and a short
 - Run `python scripts/check_project_progress.py`.
 - Run `python scripts/generate_learning_checkpoint.py`.
 - Run `python scripts/generate_project_card.py`.
+- Run `python scripts/generate_showcase_issue.py`.
 - Include `outputs/environment_check.md` as reproducibility context.
 - Include `outputs/readme_asset_check.md` as visual evidence context.
 - Include `outputs/project_progress.md` as the evidence coverage checklist.
 - Include `outputs/project_card.md` as the one-page overview.
 - Include `outputs/learning_checkpoint.md` as the concept review checklist.
+- Include `outputs/learner_showcase.md` as the public sharing draft.
 - Include `outputs/failure_review.md` as failure-analysis evidence.
 - Fill in the project report template.
 - Generate a first draft with `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline`.

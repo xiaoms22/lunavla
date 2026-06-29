@@ -68,6 +68,9 @@ jobs:
       - name: Generate project card
         run: python scripts/generate_project_card.py
 
+      - name: Generate learner showcase
+        run: python scripts/generate_showcase_issue.py
+
       - name: Build evidence index
         run: python scripts/build_evidence_pack.py --skip-runs
 
@@ -84,6 +87,7 @@ jobs:
             outputs/project_progress.md
             outputs/project_card.md
             outputs/learning_checkpoint.md
+            outputs/learner_showcase.md
             outputs/failure_review.md
             outputs/cpu_smoke/summary_report.md
             outputs/cpu_smoke/project_report.md

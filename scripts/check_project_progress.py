@@ -51,6 +51,7 @@ STAGES = [
             "outputs/readme_asset_check.md",
             "outputs/project_card.md",
             "outputs/learning_checkpoint.md",
+            "outputs/learner_showcase.md",
             "outputs/failure_review.md",
         ],
     },
