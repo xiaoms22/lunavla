@@ -38,6 +38,9 @@ jobs:
       - name: Inspect dataset sample
         run: python scripts/inspect_dataset.py
 
+      - name: Validate configs
+        run: python scripts/validate_configs.py
+
       - name: Run CPU smoke loop
         run: python scripts/run_cpu_smoke.py
 

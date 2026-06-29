@@ -58,6 +58,7 @@ def main() -> int:
     asset_dir = resolve(args.asset_dir)
     python = sys.executable
 
+    run([python, "scripts/validate_configs.py", str(config_path.relative_to(ROOT).as_posix())])
     run([python, "trainer/train_act_pusht.py", "--config", str(config_path.relative_to(ROOT).as_posix())])
     run(
         [

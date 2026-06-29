@@ -13,3 +13,5 @@ All runnable configs keep the same top-level shape:
 - `artifacts`: output directory, checkpoint name, and report path.
 
 The runnable path uses `dataset.source: mock_pusht` so the repository can be verified without a simulator install. Use `dataset.source: jsonl` for small custom demonstrations that follow the same record schema.
+
+Run `python scripts/validate_configs.py` after editing configs. It checks required sections, supported dataset sources, ACT chunk-size consistency, numeric training/eval fields, and artifact paths before a training run starts.

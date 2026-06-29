@@ -15,6 +15,7 @@ def run(command: list[str]) -> None:
 
 def main() -> int:
     python = sys.executable
+    run([python, "scripts/validate_configs.py", "configs/act_pusht_cpu_smoke.yaml"])
     run([python, "trainer/train_act_pusht.py", "--config", "configs/act_pusht_cpu_smoke.yaml"])
     run([python, "eval_vla.py", "--checkpoint", "outputs/cpu_smoke/checkpoint.pt", "--episodes", "3", "--save-rollouts"])
     run([python, "scripts/summarize_results.py", "--run-dir", "outputs/cpu_smoke"])

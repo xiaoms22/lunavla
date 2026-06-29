@@ -24,6 +24,7 @@ CORE_FILES = [
     "scripts/build_evidence_pack.py",
     "scripts/generate_project_report.py",
     "scripts/generate_resume_pack.py",
+    "scripts/validate_configs.py",
     "scripts/web_demo_vla.py",
     "eval_vla.py",
 ]
@@ -62,6 +63,7 @@ GENERATED_EVIDENCE = [
 PUBLIC_COMMANDS = [
     "python scripts/run_cpu_smoke.py",
     "python scripts/inspect_dataset.py",
+    "python scripts/validate_configs.py",
     "python scripts/run_baseline_evidence.py",
     "python trainer/train_act_pusht.py --config configs/act_pusht_baseline.yaml",
     "python eval_vla.py --checkpoint outputs/act_pusht_baseline/checkpoint.pt --episodes 50 --save-rollouts",

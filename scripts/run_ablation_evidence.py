@@ -104,6 +104,7 @@ def main() -> int:
     asset_dir = resolve(args.asset_dir)
     python = sys.executable
 
+    run([python, "scripts/validate_configs.py", relative(baseline_config), relative(ablation_config)])
     if args.skip_baseline:
         baseline_dir = run_dir_from_config(baseline_config)
         ensure_outputs(expected_run_outputs(baseline_dir), "baseline")

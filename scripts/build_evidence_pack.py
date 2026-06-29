@@ -171,6 +171,7 @@ def main() -> int:
     args = parse_args()
     python = sys.executable
     if not args.skip_runs:
+        run([python, "scripts/validate_configs.py"])
         run([python, "scripts/inspect_dataset.py"])
         run([python, "scripts/run_cpu_smoke.py"])
         run([python, "scripts/run_baseline_evidence.py", "--episodes", str(args.episodes)])
