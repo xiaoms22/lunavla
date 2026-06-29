@@ -12,7 +12,7 @@ STAGES = [
     {
         "stage": "environment and data",
         "goal": "The repo can run locally and one VLA sample can be inspected.",
-        "command": "python scripts/check_environment.py && python scripts/inspect_dataset.py",
+        "command": "python scripts/check_environment.py; python scripts/inspect_dataset.py",
         "artifacts": [
             "outputs/environment_check.md",
             "outputs/dataset_inspection.md",
@@ -30,6 +30,7 @@ STAGES = [
             "outputs/cpu_smoke/run_diagnostic.md",
             "outputs/cpu_smoke/web_demo.html",
             "outputs/first_run_checklist.md",
+            "outputs/troubleshooting_guide.md",
         ],
     },
     {

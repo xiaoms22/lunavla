@@ -94,6 +94,7 @@ def required_artifacts() -> list[dict[str, str]]:
     return [
         artifact_row("outputs/environment_check.md", "Confirm the local environment can run public commands."),
         artifact_row("outputs/first_run_checklist.md", "Confirm the CPU smoke loop generated the first files to inspect."),
+        artifact_row("outputs/troubleshooting_guide.md", "Map common run symptoms to files and recovery commands."),
         artifact_row("outputs/readme_asset_check.md", "Confirm README images and animations are renderable."),
         artifact_row("outputs/project_progress.md", "Show which public project evidence stages are complete."),
         artifact_row("outputs/project_card.md", "One-page project evidence card."),
@@ -146,6 +147,7 @@ def build_index() -> str:
         "- The dataset path can be inspected before training.",
         "- The local environment passes the public command readiness check.",
         "- The first-run checklist confirms the CPU smoke artifacts are ready to inspect.",
+        "- The troubleshooting guide maps missing artifacts and weak runs to recovery commands.",
         "- The README-visible assets pass image and animation checks.",
         "- The project progress report maps generated artifacts to report-ready stages.",
         "- The project card compresses commands, metrics, evidence links, and boundaries into one page.",
@@ -178,21 +180,22 @@ def build_index() -> str:
             "",
             "1. Start with `outputs/environment_check.md` to show the run environment was ready.",
             "2. Use `outputs/first_run_checklist.md` to confirm the smallest loop produced the expected files.",
-            "3. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
-            "4. Use `outputs/project_progress.md` to check which evidence stages are complete.",
-            "5. Use `outputs/project_card.md` as the one-page overview.",
-            "6. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
-            "7. Use `outputs/interview_flashcards.md` for quick interview practice.",
-            "8. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
-            "9. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
-            "10. Use `outputs/failure_review.md` to explain failure behavior.",
-            "11. Use `outputs/dataset_inspection.md` to explain the sample format.",
-            "12. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
-            "13. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
-            "14. Use `outputs/run_comparison.md` for the ablation story.",
-            "15. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "16. Use the README GIFs and rollout demo as visual evidence.",
-            "17. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "3. Use `outputs/troubleshooting_guide.md` if any artifact is missing or a run needs debugging.",
+            "4. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
+            "5. Use `outputs/project_progress.md` to check which evidence stages are complete.",
+            "6. Use `outputs/project_card.md` as the one-page overview.",
+            "7. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
+            "8. Use `outputs/interview_flashcards.md` for quick interview practice.",
+            "9. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
+            "10. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
+            "11. Use `outputs/failure_review.md` to explain failure behavior.",
+            "12. Use `outputs/dataset_inspection.md` to explain the sample format.",
+            "13. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
+            "14. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
+            "15. Use `outputs/run_comparison.md` for the ablation story.",
+            "16. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "17. Use the README GIFs and rollout demo as visual evidence.",
+            "18. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
@@ -224,8 +227,10 @@ def main() -> int:
 
     out_path = resolve(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(build_index(), encoding="utf-8")
+    run([python, "scripts/generate_troubleshooting_guide.py"])
     run([python, "scripts/check_project_progress.py"])
+    run([python, "scripts/generate_troubleshooting_guide.py"])
+    out_path.write_text(build_index(), encoding="utf-8")
     missing = [row["artifact"] for row in required_artifacts() if row["exists"] != "yes"]
     if missing:
         raise FileNotFoundError("Missing evidence artifacts: " + ", ".join(missing))

@@ -7,6 +7,7 @@ MiniMind-VLA is released as a tiny, reproducible VLA internship project starter.
 - Environment check command for Python, dependencies, repo files, and output write access.
 - CPU smoke command for the full train/eval/demo loop.
 - First-run checklist for reviewing CPU smoke artifacts before moving to the baseline path.
+- Troubleshooting guide for common missing-artifact, weak-run, and report-prep symptoms.
 - ACT-style PushT baseline and chunk-size ablation config.
 - Rollout evaluation with success rate, final distance, rollout length, and action smoothness.
 - Static README assets generated from local run artifacts.

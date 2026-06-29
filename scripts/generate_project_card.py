@@ -85,6 +85,7 @@ def evidence_rows() -> list[dict[str, str]]:
     evidence = [
         ("environment", "outputs/environment_check.md", "local readiness"),
         ("first run", "outputs/first_run_checklist.md", "smallest runnable loop checklist"),
+        ("troubleshooting", "outputs/troubleshooting_guide.md", "symptom-to-command recovery guide"),
         ("dataset", "outputs/dataset_inspection.md", "one VLA sample and action chunk"),
         ("baseline report", "outputs/act_pusht_baseline/project_report.md", "main technical story"),
         ("baseline diagnostic", "outputs/act_pusht_baseline/run_diagnostic.md", "claim-safety check"),

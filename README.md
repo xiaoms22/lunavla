@@ -20,6 +20,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 | --- | --- | --- |
 | Check it | `python scripts/check_environment.py` | Python/dependency/path readiness before the first run. |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
+| Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
 | Practice it | `python scripts/generate_interview_flashcards.py` | Evidence-backed interview flashcards tied to code and run artifacts. |
@@ -56,9 +57,10 @@ pip install -r requirements.txt
 python scripts/check_environment.py
 python scripts/run_cpu_smoke.py
 python scripts/generate_first_run_checklist.py
+python scripts/generate_troubleshooting_guide.py
 ```
 
-The environment check catches Python, dependency, path, and write-permission issues before training. The smoke command runs training, evaluation, summary generation, project report generation, resume-pack generation, run diagnosis, and a static HTML rollout browser. The first-run checklist tells you which generated files to open first. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
+The environment check catches Python, dependency, path, and write-permission issues before training. The smoke command runs training, evaluation, summary generation, project report generation, resume-pack generation, run diagnosis, and a static HTML rollout browser. The first-run checklist tells you which generated files to open first; the troubleshooting guide tells you what to rerun if something is missing. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
 
 Inspect one dataset sample before training:
 
@@ -89,6 +91,7 @@ python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline
 python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
 python scripts/generate_first_run_checklist.py
+python scripts/generate_troubleshooting_guide.py
 python scripts/generate_failure_review.py
 python scripts/check_readme_assets.py
 python scripts/check_project_progress.py
@@ -145,6 +148,7 @@ MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship
 - an ACT-style action chunk policy;
 - config-driven training and checkpoint export;
 - first-run checklist for checking the smallest runnable loop before moving on;
+- troubleshooting guide for mapping common symptoms to files and recovery commands;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
 - failure-case logging with first-pass category counts, result summaries, project reports, run diagnostics, resume/interview packs, README assets, and a static rollout browser.
 - failure review across smoke, baseline, and ablation runs.

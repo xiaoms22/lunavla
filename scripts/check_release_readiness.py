@@ -24,6 +24,7 @@ CORE_FILES = [
     "scripts/build_evidence_pack.py",
     "scripts/build_submission_pack.py",
     "scripts/generate_first_run_checklist.py",
+    "scripts/generate_troubleshooting_guide.py",
     "scripts/check_environment.py",
     "scripts/check_readme_assets.py",
     "scripts/check_project_progress.py",
@@ -55,6 +56,7 @@ README_ASSETS = [
 GENERATED_EVIDENCE = [
     "outputs/environment_check.md",
     "outputs/first_run_checklist.md",
+    "outputs/troubleshooting_guide.md",
     "outputs/readme_asset_check.md",
     "outputs/project_progress.md",
     "outputs/project_card.md",
@@ -87,6 +89,7 @@ GENERATED_EVIDENCE = [
     "outputs/submission_pack/manifest.json",
     "outputs/submission_pack/environment_check.md",
     "outputs/submission_pack/first_run_checklist.md",
+    "outputs/submission_pack/troubleshooting_guide.md",
     "outputs/submission_pack/readme_asset_check.md",
     "outputs/submission_pack/project_progress.md",
     "outputs/submission_pack/project_card.md",
@@ -112,6 +115,7 @@ GENERATED_EVIDENCE = [
 PUBLIC_COMMANDS = [
     "python scripts/run_cpu_smoke.py",
     "python scripts/generate_first_run_checklist.py",
+    "python scripts/generate_troubleshooting_guide.py",
     "python scripts/check_environment.py",
     "python scripts/check_readme_assets.py",
     "python scripts/check_project_progress.py",

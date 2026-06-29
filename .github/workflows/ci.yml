@@ -83,6 +83,9 @@ jobs:
       - name: Build evidence index
         run: python scripts/build_evidence_pack.py --skip-runs
 
+      - name: Generate troubleshooting guide
+        run: python scripts/generate_troubleshooting_guide.py
+
       - name: Check release readiness
         run: python scripts/check_release_readiness.py
 
@@ -93,6 +96,7 @@ jobs:
           path: |
             outputs/environment_check.md
             outputs/first_run_checklist.md
+            outputs/troubleshooting_guide.md
             outputs/readme_asset_check.md
             outputs/project_progress.md
             outputs/project_card.md
