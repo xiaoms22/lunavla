@@ -35,6 +35,9 @@ jobs:
       - name: Check public repo quality
         run: python scripts/check_repo_quality.py
 
+      - name: Check environment
+        run: python scripts/check_environment.py
+
       - name: Inspect dataset sample
         run: python scripts/inspect_dataset.py
 
@@ -61,6 +64,7 @@ jobs:
         with:
           name: minimind-vla-ci-evidence
           path: |
+            outputs/environment_check.md
             outputs/cpu_smoke/summary_report.md
             outputs/cpu_smoke/project_report.md
             outputs/cpu_smoke/resume_pack.md

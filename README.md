@@ -18,6 +18,7 @@ This repo follows the spirit of MiniMind: low cost, reproducible, readable from 
 
 | Step | Start Here | What You Get |
 | --- | --- | --- |
+| Check it | `python scripts/check_environment.py` | Python/dependency/path readiness before the first run. |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Report it | `python scripts/diagnose_run.py --run-dir outputs/act_pusht_baseline` | A claim-safety check, resume-safe bullets, a two-minute pitch, and honest boundaries. |
@@ -44,10 +45,11 @@ python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --ou
 
 ```bash
 pip install -r requirements.txt
+python scripts/check_environment.py
 python scripts/run_cpu_smoke.py
 ```
 
-This single command runs training, evaluation, summary generation, project report generation, resume-pack generation, run diagnosis, and a static HTML rollout browser. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
+The environment check catches Python, dependency, path, and write-permission issues before training. The smoke command runs training, evaluation, summary generation, project report generation, resume-pack generation, run diagnosis, and a static HTML rollout browser. Local artifacts are written to `outputs/cpu_smoke/` and ignored by Git.
 
 Inspect one dataset sample before training:
 
@@ -120,6 +122,7 @@ python scripts/check_release_readiness.py
 MiniMind-VLA is intentionally small, but it includes the pieces a VLA internship project should be able to explain:
 
 - data records with `observation`, `action`, `episode_id`, `timestep`, `success`, and `metadata`;
+- environment checks for Python, dependencies, repo files, and output write access;
 - a PushT-style demonstration generator;
 - an ACT-style action chunk policy;
 - config-driven training and checkpoint export;

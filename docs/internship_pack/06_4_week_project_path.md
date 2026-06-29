@@ -4,12 +4,13 @@ This path turns MiniMind-VLA from a runnable repo into a project a VLA beginner 
 
 ## Week 1: Run And Read
 
+- Run `python scripts/check_environment.py`.
 - Run `python scripts/inspect_dataset.py`.
 - Run `python scripts/run_cpu_smoke.py`.
 - Read `dataset/pusht_dataset.py`, `model/minivla_policy.py`, and `trainer/train_act_pusht.py`.
 - Write down the shape of one training sample.
 
-Deliverable: one paragraph explaining `observation -> action chunk`.
+Deliverable: environment check plus one paragraph explaining `observation -> action chunk`.
 
 ## Week 2: Baseline
 
@@ -32,6 +33,7 @@ Deliverable: one ablation report with metric deltas and a short conclusion.
 
 - Run `python scripts/build_evidence_pack.py --skip-runs`.
 - Run `python scripts/build_submission_pack.py`.
+- Include `outputs/environment_check.md` as reproducibility context.
 - Fill in the project report template.
 - Generate a first draft with `python scripts/generate_project_report.py --run-dir outputs/act_pusht_baseline`.
 - Generate interview material with `python scripts/generate_resume_pack.py --run-dir outputs/act_pusht_baseline`.

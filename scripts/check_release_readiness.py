@@ -23,6 +23,7 @@ CORE_FILES = [
     "scripts/run_ablation_evidence.py",
     "scripts/build_evidence_pack.py",
     "scripts/build_submission_pack.py",
+    "scripts/check_environment.py",
     "scripts/generate_project_report.py",
     "scripts/generate_resume_pack.py",
     "scripts/diagnose_run.py",
@@ -43,6 +44,7 @@ README_ASSETS = [
 ]
 
 GENERATED_EVIDENCE = [
+    "outputs/environment_check.md",
     "outputs/dataset_inspection.md",
     "outputs/cpu_smoke/summary_report.md",
     "outputs/cpu_smoke/project_report.md",
@@ -65,6 +67,7 @@ GENERATED_EVIDENCE = [
     "outputs/evidence_index.md",
     "outputs/submission_pack/SUBMISSION_README.md",
     "outputs/submission_pack/manifest.json",
+    "outputs/submission_pack/environment_check.md",
     "outputs/submission_pack/project_report.md",
     "outputs/submission_pack/resume_pack.md",
     "outputs/submission_pack/run_diagnostic.md",
@@ -81,6 +84,7 @@ GENERATED_EVIDENCE = [
 
 PUBLIC_COMMANDS = [
     "python scripts/run_cpu_smoke.py",
+    "python scripts/check_environment.py",
     "python scripts/inspect_dataset.py",
     "python scripts/validate_configs.py",
     "python scripts/run_baseline_evidence.py",
