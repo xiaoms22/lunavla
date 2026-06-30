@@ -180,6 +180,7 @@ GENERATED_EVIDENCE = [
     "outputs/submission_pack/policy_ladder.csv",
     "outputs/submission_pack/readme_asset_check.md",
     "outputs/submission_pack/project_progress.md",
+    "outputs/submission_pack/final_package_checklist.md",
     "outputs/submission_pack/project_card.md",
     "outputs/submission_pack/experiment_ledger.md",
     "outputs/submission_pack/experiment_ledger.json",

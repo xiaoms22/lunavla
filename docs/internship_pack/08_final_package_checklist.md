@@ -21,6 +21,12 @@ The main review folder is:
 outputs/submission_pack/
 ```
 
+After `python scripts/build_submission_pack.py`, this checklist is copied into:
+
+```text
+outputs/submission_pack/final_package_checklist.md
+```
+
 ## Required Deliverables
 
 | deliverable | artifact to open | what it should prove |
