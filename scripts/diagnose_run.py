@@ -95,6 +95,7 @@ def artifact_checks(run_dir: Path) -> tuple[list[dict[str, str]], list[Path]]:
         run_dir / "checkpoint.pt",
         run_dir / "training_summary.json",
         run_dir / "eval_summary.json",
+        run_dir / "action_statistics.json",
         run_dir / "summary_report.md",
         run_dir / "project_report.md",
         run_dir / "resume_pack.md",
@@ -264,6 +265,23 @@ def build_checks(run_dir: Path, training: dict[str, Any], evaluation: dict[str, 
             f"final_loss={final_loss:.6g}",
             "Use loss as an optimization signal, not as the only project result.",
         )
+    action_stats_path = training.get("action_stats_path") or evaluation.get("action_stats_path")
+    if action_stats_path and action_stats_path != "n/a" and (run_dir / "action_statistics.json").exists():
+        add_check(
+            checks,
+            "action statistics",
+            "pass",
+            f"stats={action_stats_path}",
+            "Use action mean/std to explain scale, clipping, and normalization boundaries.",
+        )
+    else:
+        add_check(
+            checks,
+            "action statistics",
+            "warn",
+            "No action_statistics.json was found for this run.",
+            "Rerun training or run scripts/generate_action_statistics.py before discussing action scale.",
+        )
     return checks
 
 
@@ -297,6 +315,7 @@ def file_rows(run_dir: Path) -> list[dict[str, str]]:
     return [
         {"file": relative(run_dir / "summary_report.md"), "why": "metric summary"},
         {"file": relative(run_dir / "project_report.md"), "why": "technical report draft"},
+        {"file": relative(run_dir / "action_statistics.json"), "why": "action scale and normalization stats"},
         {"file": relative(run_dir / "resume_pack.md"), "why": "resume and interview wording"},
         {"file": relative(run_dir / "web_demo.html"), "why": "rollout browser"},
         {"file": relative(run_dir / "failure_cases.jsonl"), "why": "failure examples"},
@@ -311,6 +330,9 @@ def build_markdown(run_dir: Path, training: dict[str, Any], evaluation: dict[str
         {"metric": "project_name", "value": training.get("project_name", run_dir.name)},
         {"metric": "records", "value": training.get("records", "n/a")},
         {"metric": "chunk_size", "value": training.get("chunk_size", "n/a")},
+        {"metric": "action_stats_path", "value": training.get("action_stats_path", evaluation.get("action_stats_path", "n/a"))},
+        {"metric": "action_mean", "value": training.get("action_mean", evaluation.get("action_mean", "n/a"))},
+        {"metric": "action_std", "value": training.get("action_std", evaluation.get("action_std", "n/a"))},
         {"metric": "final_loss", "value": training.get("final_loss", "n/a")},
         {"metric": "episodes", "value": evaluation.get("episodes", "n/a")},
         {"metric": "success_rate", "value": evaluation.get("success_rate", "n/a")},

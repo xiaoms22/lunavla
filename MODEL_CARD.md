@@ -26,6 +26,10 @@ MiniVLAPolicy is a tiny linear ACT-style action chunk predictor used for smoke t
 
 - Action chunk: flattened sequence of 2D actions.
 
+## Action Scale
+
+Training runs save `action_statistics.json` beside the checkpoint. The stats record the demonstration action mean/std and explain the normalization boundary between train-time normalized actions and eval-time executable actions.
+
 ## Evaluation
 
 Evaluation uses rollout success rate, mean final distance, rollout length, action smoothness, and failure cases. It is behavioral, not just loss-based.

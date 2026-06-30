@@ -118,6 +118,7 @@ def failure_category_table(evaluation: dict[str, Any], failures: list[dict[str, 
 def build_report(run_dir: Path, title: str) -> str:
     training = read_json(run_dir / "training_summary.json")
     evaluation = read_json(run_dir / "eval_summary.json")
+    action_stats = read_json(run_dir / "action_statistics.json")
     failures = read_jsonl(run_dir / "failure_cases.jsonl")
     rollout_path = first_rollout_path(run_dir)
 
@@ -159,6 +160,27 @@ def build_report(run_dir: Path, title: str) -> str:
             ]
         )
     )
+
+    if action_stats:
+        action_summary = action_stats.get("action", {})
+        normalization = action_stats.get("normalization", {})
+        lines.extend(["", "## Action Statistics", ""])
+        lines.extend(
+            metric_table(
+                [
+                    ("stats file", relative(run_dir / "action_statistics.json")),
+                    ("stats source", action_stats.get("source", evaluation.get("action_stats_source", "n/a"))),
+                    ("mean", action_summary.get("mean", training.get("action_mean", "n/a"))),
+                    ("std", action_summary.get("std", training.get("action_std", "n/a"))),
+                    ("min", action_summary.get("min", training.get("action_min", "n/a"))),
+                    ("max", action_summary.get("max", training.get("action_max", "n/a"))),
+                    ("clip limit", action_summary.get("clip_limit", "n/a")),
+                    ("clipped fraction", action_summary.get("clipped_fraction", "n/a")),
+                    ("train formula", normalization.get("train_formula", "n/a")),
+                    ("eval formula", normalization.get("eval_formula", "n/a")),
+                ]
+            )
+        )
 
     lines.extend(
         [

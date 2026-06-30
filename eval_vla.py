@@ -192,6 +192,7 @@ def main() -> int:
 
     eval_config = metadata.get("eval", {})
     dataset_config = metadata.get("dataset", {})
+    action_stats = metadata.get("action_stats", {})
     episodes = int(args.episodes or eval_config.get("episodes", 10))
     rollout_steps = int(eval_config.get("rollout_steps", 40))
     success_distance = float(eval_config.get("success_distance", 0.10))
@@ -241,6 +242,10 @@ def main() -> int:
         "checkpoint": str(checkpoint_path),
         "policy_name": getattr(policy, "policy_name", "unknown"),
         "policy_interface": metadata.get("policy_interface", {}),
+        "action_stats_source": action_stats.get("source", "missing"),
+        "action_stats_path": action_stats.get("path", "n/a"),
+        "action_mean": action_stats.get("mean", []),
+        "action_std": action_stats.get("std", []),
         "episodes": episodes,
         "success_count": success_count,
         "success_rate": round(success_count / max(episodes, 1), 4),

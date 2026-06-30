@@ -41,7 +41,9 @@ def main() -> int:
 
     training = read_json(run_dir / "training_summary.json")
     evaluation = read_json(run_dir / "eval_summary.json")
+    action_stats = read_json(run_dir / "action_statistics.json")
     failure_count = evaluation.get("failure_count", count_jsonl(run_dir / "failure_cases.jsonl"))
+    action_summary = action_stats.get("action", {})
 
     table = {
         "project_name": training.get("project_name", "unknown"),
@@ -50,6 +52,9 @@ def main() -> int:
         "final_loss": training.get("final_loss", "n/a"),
         "chunk_size": training.get("chunk_size", "n/a"),
         "records": training.get("records", "n/a"),
+        "action_stats_path": training.get("action_stats_path", evaluation.get("action_stats_path", "n/a")),
+        "action_mean": action_summary.get("mean", training.get("action_mean", "n/a")),
+        "action_std": action_summary.get("std", training.get("action_std", "n/a")),
         "success_rate": evaluation.get("success_rate", "n/a"),
         "mean_final_distance": evaluation.get("mean_final_distance", "n/a"),
         "mean_rollout_length": evaluation.get("mean_rollout_length", "n/a"),
@@ -80,6 +85,7 @@ def main() -> int:
             "## Interpretation",
             "",
             "- `final_loss` checks whether the imitation objective is numerically moving.",
+            "- `action_mean` and `action_std` record the demonstration action scale used for diagnostics.",
             "- `success_rate` is the headline rollout metric for internship project evidence.",
             "- `failure_subtasks` shows where the rollout ended when the policy did not solve the task.",
             "- `failure_cases` should be read with `docs/failure_taxonomy.md` before adding claims to a resume.",

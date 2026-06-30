@@ -93,6 +93,14 @@ def rows(run_dir: Path) -> list[dict[str, str]]:
             "exists": exists_label("outputs/action_chunk_lesson.md") + " / " + exists_label("outputs/run_comparison.md"),
         },
         {
+            "skill": "Action normalization diagnostics",
+            "code evidence": "`dataset/action_stats.py`, `scripts/generate_action_statistics.py`",
+            "run evidence": "`outputs/action_statistics.md`, `outputs/action_statistics.json`",
+            "command": "`python scripts/generate_action_statistics.py`",
+            "how to explain": "Action mean/std describe the demonstration scale; normalized training targets and executable rollout actions must not be confused.",
+            "exists": exists_label("outputs/action_statistics.md") + " / " + exists_label("outputs/action_statistics.json"),
+        },
+        {
             "skill": "Rollout evaluation",
             "code evidence": "`eval_vla.py`",
             "run evidence": f"`{relative(run_dir / 'summary_report.md')}`",

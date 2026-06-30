@@ -79,6 +79,18 @@ STAGES = [
         ],
     },
     {
+        "stage": "action statistics",
+        "goal": "Action scale, normalization formulas, and stats source are visible.",
+        "command": "python scripts/generate_action_statistics.py",
+        "artifacts": [
+            "outputs/action_statistics.json",
+            "outputs/action_statistics.md",
+            "outputs/cpu_smoke/action_statistics.json",
+            "outputs/bc_pusht_cpu_smoke/action_statistics.json",
+            "outputs/act_pusht_baseline/action_statistics.json",
+        ],
+    },
+    {
         "stage": "ablation evidence",
         "goal": "The chunk-size ablation can be compared against the baseline.",
         "command": "python scripts/run_ablation_evidence.py",

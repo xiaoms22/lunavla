@@ -74,6 +74,11 @@ def concept_rows(run_dir: Path) -> list[dict[str, str]]:
             "evidence": "outputs/action_chunk_lesson.md",
         },
         {
+            "concept": "action normalization",
+            "what to explain": "mean/std describe action scale; normalized training actions and executable rollout actions are different",
+            "evidence": "outputs/action_statistics.md",
+        },
+        {
             "concept": "rollout evaluation",
             "what to explain": "predicted actions are fed back into state updates to test closed-loop behavior",
             "evidence": "eval_vla.py",
@@ -97,6 +102,8 @@ def metric_rows(run_dir: Path) -> list[dict[str, Any]]:
     return [
         {"metric": "records", "value": training.get("records", "n/a"), "why it matters": "amount of demonstration data"},
         {"metric": "chunk_size", "value": training.get("chunk_size", "n/a"), "why it matters": "action horizon predicted by the policy"},
+        {"metric": "action_mean", "value": training.get("action_mean", "n/a"), "why it matters": "center of demonstration action scale"},
+        {"metric": "action_std", "value": training.get("action_std", "n/a"), "why it matters": "scale used to explain normalization"},
         {"metric": "final_loss", "value": training.get("final_loss", "n/a"), "why it matters": "imitation objective fit"},
         {"metric": "episodes", "value": evaluation.get("episodes", "n/a"), "why it matters": "rollout sample count"},
         {"metric": "success_rate", "value": evaluation.get("success_rate", "n/a"), "why it matters": "headline behavior metric"},
@@ -136,6 +143,11 @@ def question_rows(run_dir: Path) -> list[dict[str, str]]:
             "good answer should mention": "temporal action prediction horizon and ablation deltas",
         },
         {
+            "question": "Why do action statistics belong in the run artifacts?",
+            "look at": "outputs/action_statistics.md",
+            "good answer should mention": "action scale, normalization formulas, checkpoint provenance, and executable rollout actions",
+        },
+        {
             "question": "What failed, and how would you inspect it?",
             "look at": "outputs/failure_review.md",
             "good answer should mention": "failure category, rollout browser, and next minimal check",
@@ -169,9 +181,10 @@ def build_checkpoint(run_dir: Path) -> str:
             "",
             "1. State the goal: a tiny observation-to-action learning loop for VLA beginners.",
             "2. Explain the data: generated PushT-style demonstrations become observation and action-chunk targets.",
-            "3. Explain the policy: an ACT-style model predicts a short sequence of actions.",
-            "4. Explain evaluation: rollouts report success rate, final distance, smoothness, and failure cases.",
-            "5. Explain the boundary: teaching-scale imitation-learning evidence, not real-robot deployment.",
+            "3. Explain the scale: action stats record mean/std and the normalization boundary.",
+            "4. Explain the policy: an ACT-style model predicts a short sequence of actions.",
+            "5. Explain evaluation: rollouts report success rate, final distance, smoothness, and failure cases.",
+            "6. Explain the boundary: teaching-scale imitation-learning evidence, not real-robot deployment.",
             "",
             "## Rebuild",
             "",

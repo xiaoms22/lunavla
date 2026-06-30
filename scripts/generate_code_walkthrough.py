@@ -22,6 +22,12 @@ READING_STEPS: list[dict[str, Any]] = [
         "output": "outputs/action_chunk_lesson.md",
     },
     {
+        "step": "action scale",
+        "files": ["dataset/action_stats.py", "scripts/generate_action_statistics.py", "docs/tutorials/action_normalization.md"],
+        "question": "Where do action mean/std and normalization boundaries come from?",
+        "output": "outputs/action_statistics.md",
+    },
+    {
         "step": "training loop",
         "files": ["trainer/train_act_pusht.py", "trainer/trainer_utils.py", "configs/act_pusht_baseline.yaml"],
         "question": "Which config values control dataset size, chunk size, epochs, and artifacts?",
@@ -56,9 +62,10 @@ READING_STEPS: list[dict[str, Any]] = [
 TRACE_STEPS = [
     ("1", "A generated PushT-style record stores observation, action, timestep, success, and metadata."),
     ("2", "The dataset turns the current observation plus instruction features into one model input vector."),
-    ("3", "The training target is a flattened action chunk made from short future expert actions."),
-    ("4", "The policy predicts an action chunk, and the evaluator feeds predicted actions back into rollout state updates."),
-    ("5", "Reports combine loss, success rate, final distance, smoothness, failure cases, and visual assets."),
+    ("3", "Action statistics record the scale of demonstration actions before reports compare policies."),
+    ("4", "The training target is a flattened action chunk made from short future expert actions."),
+    ("5", "The policy predicts an action chunk, and the evaluator feeds predicted actions back into rollout state updates."),
+    ("6", "Reports combine loss, success rate, final distance, action stats, failure cases, and visual assets."),
 ]
 
 
@@ -68,6 +75,12 @@ EXERCISES = [
         "command": "python scripts/inspect_dataset.py",
         "evidence": "outputs/dataset_inspection.md",
         "check": "Point to the observation vector and flattened action chunk target.",
+    },
+    {
+        "task": "Trace action scale",
+        "command": "python scripts/generate_action_statistics.py",
+        "evidence": "outputs/action_statistics.md",
+        "check": "Explain train-time normalized actions versus eval-time executable actions.",
     },
     {
         "task": "Trace one run",

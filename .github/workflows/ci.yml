@@ -77,6 +77,9 @@ jobs:
       - name: Run baseline evidence path
         run: python scripts/run_baseline_evidence.py
 
+      - name: Generate action statistics
+        run: python scripts/generate_action_statistics.py
+
       - name: Generate policy ladder
         run: python scripts/generate_policy_ladder.py
 
@@ -134,6 +137,8 @@ jobs:
             outputs/command_reference.md
             outputs/code_walkthrough.md
             outputs/action_chunk_lesson.md
+            outputs/action_statistics.json
+            outputs/action_statistics.md
             outputs/policy_ladder.md
             outputs/policy_ladder.csv
             outputs/readme_asset_check.md
@@ -147,20 +152,24 @@ jobs:
             outputs/learner_showcase.md
             outputs/failure_review.md
             outputs/cpu_smoke/summary_report.md
+            outputs/cpu_smoke/action_statistics.json
             outputs/cpu_smoke/project_report.md
             outputs/cpu_smoke/resume_pack.md
             outputs/cpu_smoke/run_diagnostic.md
             outputs/cpu_smoke/web_demo.html
             outputs/bc_pusht_cpu_smoke/summary_report.md
+            outputs/bc_pusht_cpu_smoke/action_statistics.json
             outputs/bc_pusht_cpu_smoke/project_report.md
             outputs/bc_pusht_cpu_smoke/run_diagnostic.md
             outputs/bc_pusht_cpu_smoke/web_demo.html
             outputs/dataset_inspection.md
             outputs/act_pusht_baseline/summary_report.md
+            outputs/act_pusht_baseline/action_statistics.json
             outputs/act_pusht_baseline/project_report.md
             outputs/act_pusht_baseline/resume_pack.md
             outputs/act_pusht_baseline/run_diagnostic.md
             outputs/act_pusht_ablation_chunk_size/summary_report.md
+            outputs/act_pusht_ablation_chunk_size/action_statistics.json
             outputs/act_pusht_ablation_chunk_size/project_report.md
             outputs/act_pusht_ablation_chunk_size/resume_pack.md
             outputs/act_pusht_ablation_chunk_size/run_diagnostic.md

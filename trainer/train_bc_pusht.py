@@ -10,7 +10,14 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from dataset import build_training_batch, load_dataset_from_config, save_jsonl
+from dataset import (
+    build_training_batch,
+    compact_action_statistics,
+    compute_action_statistics,
+    load_dataset_from_config,
+    save_jsonl,
+    write_action_statistics,
+)
 from model import BCMLPPolicy
 from trainer.trainer_utils import append_jsonl, ensure_dir, load_yaml, write_csv, write_json, write_run_card
 
@@ -36,6 +43,10 @@ def main() -> int:
     records = load_dataset_from_config(config["dataset"])
     save_jsonl(records, output_dir / "train_records.jsonl")
     inputs, targets = build_training_batch(records, chunk_size=chunk_size)
+    action_stats = compute_action_statistics(records, source="training_records", action_dim=2)
+    action_stats_path = output_dir / "action_statistics.json"
+    write_action_statistics(action_stats_path, action_stats)
+    action_stats_ref = action_stats_path.relative_to(ROOT).as_posix()
 
     train_config = config["training"]
     policy_config = config["policy"]
@@ -77,6 +88,7 @@ def main() -> int:
             "policy_name": policy.policy_name,
             "contract": "forward(batch)->losses; predict_action(sample)->action_chunk",
         },
+        "action_stats": compact_action_statistics(action_stats, path=action_stats_ref),
     }
     policy.save(checkpoint_path, metadata=metadata)
 
@@ -90,6 +102,11 @@ def main() -> int:
         "target_dim": int(targets.shape[1]),
         "chunk_size": chunk_size,
         "hidden_dim": policy.hidden_dim,
+        "action_stats_path": action_stats_ref,
+        "action_mean": action_stats["action"]["mean"],
+        "action_std": action_stats["action"]["std"],
+        "action_min": action_stats["action"]["min"],
+        "action_max": action_stats["action"]["max"],
         "num_steps": num_steps,
         "final_loss": loss_rows[-1]["loss"],
     }

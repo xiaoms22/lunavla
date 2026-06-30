@@ -78,6 +78,12 @@ def flashcards(run_dir: Path) -> list[dict[str, str]]:
             "evidence": "outputs/action_chunk_lesson.md",
         },
         {
+            "topic": "Action scale",
+            "question": "Why record action statistics?",
+            "answer": f"The run records action_mean={value(training, 'action_mean')} and action_std={value(training, 'action_std')} so action scale, clipping, and normalization boundaries are explicit instead of hidden in the checkpoint.",
+            "evidence": "outputs/action_statistics.md",
+        },
+        {
             "topic": "Rollout evaluation",
             "question": "Why is rollout evaluation necessary?",
             "answer": "Low training loss can still fail after predictions are fed back into the state. Rollouts measure closed-loop behavior with success rate, final distance, rollout length, and action smoothness.",

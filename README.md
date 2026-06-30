@@ -30,6 +30,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
+| Scale it | `python scripts/generate_action_statistics.py` | Action mean/std, clip fraction, and normalization formulas for the demonstration data. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
 | Practice it | `python scripts/generate_interview_flashcards.py` | Evidence-backed interview flashcards tied to code and run artifacts. |
 | Map it | `python scripts/generate_skill_evidence_map.py` | A skill-to-code-to-artifact map for project reports and interview prep. |
@@ -139,6 +140,12 @@ Generate the BC-to-ACT policy ladder after BC smoke and baseline evidence exist:
 python scripts/generate_policy_ladder.py
 ```
 
+Generate action statistics and normalization notes:
+
+```bash
+python scripts/generate_action_statistics.py
+```
+
 Or run the same baseline path step by step:
 
 ```bash
@@ -220,6 +227,7 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - command reference for mapping public commands to generated artifacts;
 - code walkthrough for reading the runnable implementation in order;
 - action chunk lesson for understanding ACT-style future-action targets;
+- action statistics for explaining action scale, clipping, and normalization boundaries;
 - policy ladder report that compares BC and ACT with rollout metrics;
 - Task Layer diagnostics that label rollout frames as `approach_block`, `align_push`, `push_to_goal`, or `settle`;
 - rollout evaluation with success rate, final distance, rollout length, and action smoothness;
@@ -258,6 +266,7 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - [docs/visual_attributions.md](docs/visual_attributions.md): sources and licenses for README ecosystem media.
 - [docs/tutorials/action_chunking_act.md](docs/tutorials/action_chunking_act.md): a static ACT/action-chunking tutorial.
 - [docs/tutorials/behavior_cloning_from_scratch.md](docs/tutorials/behavior_cloning_from_scratch.md): a from-scratch behavior cloning tutorial.
+- [docs/tutorials/action_normalization.md](docs/tutorials/action_normalization.md): why action stats matter before larger robot-learning stacks.
 
 ## Share A Run
 
