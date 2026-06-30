@@ -46,7 +46,9 @@ Use this path after the baseline, ablation, policy ladder, and report pack run s
 ## Stronger Presentation
 
 - Replace README assets with your own checked run.
+- Start with `python scripts/generate_homepage_summary.py` after extended evaluation exists.
 - Add a short result table to your portfolio.
+- Read `outputs/homepage_summary.md` before copying any README or portfolio result claim.
 - Include the project card, experiment ledger, and submission pack.
 - Keep resume claims tied to exact configs and metrics.
 

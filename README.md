@@ -56,7 +56,16 @@ The PushT comparison below uses saved local LeRobot evaluation media. Use the as
 
 ```bash
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
+python scripts/generate_homepage_summary.py
 ```
+
+![LunaVLA checked results](images/homepage_results.svg)
+
+| Checked run | Episodes | Success rate | Mean final distance | What to say |
+| --- | --- | --- | --- | --- |
+| ACT baseline | 20 | 1.0 | 0.08754 | Strong for this teaching eval; inspect saved rollouts before claiming robustness. |
+| BC MLP | 20 | 0.35 | 0.178983 | Often gets near the goal but does not reliably satisfy the success threshold. |
+| Noisy JSONL | 20 | 0.5 | 0.135869 | Mixed result; compare success rate with final distance and inspect failure cases. |
 
 | ACT PushT eval | Diffusion Policy PushT eval |
 | --- | --- |

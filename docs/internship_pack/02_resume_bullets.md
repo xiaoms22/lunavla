@@ -46,6 +46,10 @@ Use only the strongest bullet that matches work you actually completed. Replace 
 
 > Reran rollout evaluation with more episodes, saved additional rollout traces, and compared success rate with mean final distance plus success/failure examples before writing evaluation conclusions.
 
+## Presentation Pack Completed
+
+> Built a README-facing result card and submission pack that tie homepage metrics to generated reports, experiment ledgers, rollout evidence, and claim-safety boundaries.
+
 ## Data Quality Comparison Completed
 
 > Compared clean and noisier local JSONL demonstrations under the same ACT-style train/eval setup, then reported changes in rollout success rate, final distance, action smoothness, and failure cases to analyze data quality effects.

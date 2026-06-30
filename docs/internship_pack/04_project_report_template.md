@@ -57,6 +57,10 @@ Record:
 
 If you ran `python scripts/run_extended_evaluation.py`, summarize the more-episode result. Cite success rate, mean final distance, one success example, and one failure example when available.
 
+## Homepage Result Card
+
+If you ran `python scripts/generate_homepage_summary.py`, cite the checked result table from `outputs/homepage_summary.md`. Use the generated `images/homepage_results.svg` only for README or portfolio display, and keep the written conclusion tied to the report files.
+
 ## Action Statistics
 
 Record mean, standard deviation, min/max, clipping fraction, and the explanation you would give in an interview.

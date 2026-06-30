@@ -54,6 +54,7 @@ CORE_FILES = [
     "scripts/generate_action_statistics.py",
     "scripts/generate_action_analysis_report.py",
     "scripts/run_extended_evaluation.py",
+    "scripts/generate_homepage_summary.py",
     "scripts/generate_policy_ladder.py",
     "scripts/prepare_homepage_media.py",
     "scripts/check_negative_paths.py",
@@ -80,6 +81,7 @@ CORE_FILES = [
 
 README_ASSETS = [
     "images/lunavla-architecture.svg",
+    "images/homepage_results.svg",
     "images/pusht_act_eval.gif",
     "images/pusht_diffusion_policy_eval.gif",
     "images/policy_ladder.svg",
@@ -107,6 +109,7 @@ GENERATED_EVIDENCE = [
     "outputs/extended_evaluation_report.md",
     "outputs/extended_evaluation_report.csv",
     "outputs/extended_evaluation/act_pusht_baseline_20ep/eval_summary.json",
+    "outputs/homepage_summary.md",
     "outputs/policy_ladder.md",
     "outputs/policy_ladder.csv",
     "outputs/policy_tuning_comparison.md",
@@ -209,6 +212,7 @@ PUBLIC_COMMANDS = [
     "python scripts/generate_action_statistics.py",
     "python scripts/generate_action_analysis_report.py",
     "python scripts/run_extended_evaluation.py",
+    "python scripts/generate_homepage_summary.py",
     "python scripts/export_pusht_jsonl_dataset.py",
     "python scripts/run_jsonl_data_smoke.py",
     "python scripts/run_data_quality_comparison.py",

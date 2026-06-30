@@ -136,6 +136,20 @@ STAGES = [
         ],
     },
     {
+        "stage": "homepage presentation",
+        "goal": "README-visible result claims are tied to checked metrics and submission-ready evidence.",
+        "command": "python scripts/generate_homepage_summary.py; python scripts/build_submission_pack.py",
+        "artifacts": [
+            "outputs/homepage_summary.md",
+            "images/homepage_results.svg",
+            "outputs/project_card.md",
+            "outputs/experiment_ledger.md",
+            "outputs/submission_pack/SUBMISSION_README.md",
+            "outputs/submission_pack/homepage_summary.md",
+            "outputs/submission_pack/assets/homepage_results.svg",
+        ],
+    },
+    {
         "stage": "ablation evidence",
         "goal": "The chunk-size ablation can be compared against the baseline.",
         "command": "python scripts/run_ablation_evidence.py",

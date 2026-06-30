@@ -56,6 +56,7 @@ Deliverable: one policy-tuning comparison, one ablation report with config diff,
 - Run `python scripts/generate_skill_evidence_map.py`.
 - Run `python scripts/generate_project_card.py`.
 - Run `python scripts/generate_experiment_ledger.py`.
+- Run `python scripts/generate_homepage_summary.py`.
 - Run `python scripts/generate_showcase_issue.py`.
 - Include `outputs/quickstart_summary.md` as the one-command starter summary.
 - Include `outputs/environment_check.md` as reproducibility context.
@@ -66,6 +67,7 @@ Deliverable: one policy-tuning comparison, one ablation report with config diff,
 - Include `outputs/task_understanding_report.md` as the phase/subtask rollout analysis.
 - Include `outputs/action_analysis_report.md` as the train-vs-eval action-scale analysis.
 - Include `outputs/extended_evaluation_report.md` as the stronger rollout-evaluation evidence.
+- Include `outputs/homepage_summary.md` and `images/homepage_results.svg` as the checked homepage result card.
 - Include `outputs/readme_asset_check.md` as visual evidence context.
 - Include `outputs/project_progress.md` as the evidence coverage checklist.
 - Include `outputs/project_card.md` as the one-page overview.
