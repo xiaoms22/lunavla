@@ -50,6 +50,7 @@ Use this path after the baseline, ablation, policy ladder, and report pack run s
 - Add a short result table to your portfolio.
 - Read `outputs/homepage_summary.md` before copying any README or portfolio result claim.
 - Include the project card, experiment ledger, and submission pack.
+- Finish with `python scripts/check_reviewer_readiness.py` before sharing the repo.
 - Keep resume claims tied to exact configs and metrics.
 
 ## Safe Extension Boundary

@@ -93,6 +93,10 @@ Explain what changed behavior, what remained unstable, and what you would tune n
 
 Paste the matching bullet from `docs/internship_pack/02_resume_bullets.md` and adjust it only with metrics that appear in your generated reports.
 
+## Reviewer Readiness
+
+Run `python scripts/check_reviewer_readiness.py` and summarize any failed checks before sharing the report. Do not use the report externally until command evidence, artifacts, boundary statements, and leak scan are all passing.
+
 ## Honest Boundary
 
 End with one sentence that makes the scope clear:

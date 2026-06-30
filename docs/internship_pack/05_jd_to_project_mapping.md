@@ -19,6 +19,7 @@ Use this table to connect job-description keywords to concrete repo evidence. Do
 | data quality | Clean/noisy demonstration comparison | `python scripts/run_data_quality_comparison.py`, `outputs/data_quality_comparison.md` |
 | experiment reporting | Reproducible project communication | `scripts/generate_project_report.py`, `scripts/build_submission_pack.py` |
 | project presentation | README-visible claims tied to generated evidence | `python scripts/generate_homepage_summary.py`, `outputs/homepage_summary.md`, `images/homepage_results.svg` |
+| reviewer readiness | Final check before sharing or interviewing | `python scripts/check_reviewer_readiness.py`, `outputs/reviewer_readiness.md` |
 | GitHub project evidence | A reviewer can rerun, inspect, and verify your work | README commands, configs, generated report paths |
 
 ## Interview Framing

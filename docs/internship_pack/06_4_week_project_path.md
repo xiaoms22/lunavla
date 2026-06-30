@@ -51,6 +51,7 @@ Deliverable: one policy-tuning comparison, one ablation report with config diff,
 - Run `python scripts/build_evidence_pack.py --skip-runs`.
 - Run `python scripts/build_submission_pack.py`.
 - Run `python scripts/check_project_progress.py`.
+- Run `python scripts/check_reviewer_readiness.py`.
 - Run `python scripts/generate_learning_checkpoint.py`.
 - Run `python scripts/generate_interview_flashcards.py`.
 - Run `python scripts/generate_skill_evidence_map.py`.
@@ -70,6 +71,7 @@ Deliverable: one policy-tuning comparison, one ablation report with config diff,
 - Include `outputs/homepage_summary.md` and `images/homepage_results.svg` as the checked homepage result card.
 - Include `outputs/readme_asset_check.md` as visual evidence context.
 - Include `outputs/project_progress.md` as the evidence coverage checklist.
+- Include `outputs/reviewer_readiness.md` as the final external-review checklist.
 - Include `outputs/project_card.md` as the one-page overview.
 - Include `outputs/learning_checkpoint.md` as the concept review checklist.
 - Include `outputs/interview_flashcards.md` as the evidence-backed interview practice sheet.
@@ -84,7 +86,7 @@ Deliverable: one policy-tuning comparison, one ablation report with config diff,
 - Choose a matching resume bullet.
 - Practice the two-minute interview pitch.
 
-Deliverable: evidence index, submission pack, public project README, report, resume/interview pack, and interview script.
+Deliverable: evidence index, reviewer readiness report, submission pack, public project README, report, resume/interview pack, and interview script.
 
 ## Completion Rule
 

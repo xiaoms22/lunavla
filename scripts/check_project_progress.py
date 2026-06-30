@@ -175,6 +175,17 @@ STAGES = [
             "outputs/evidence_index.md",
         ],
     },
+    {
+        "stage": "reviewer readiness",
+        "goal": "A reviewer can verify commands, artifacts, boundaries, and claim safety from one report.",
+        "command": "python scripts/check_reviewer_readiness.py",
+        "artifacts": [
+            "outputs/reviewer_readiness.md",
+            "outputs/submission_pack/SUBMISSION_README.md",
+            "outputs/act_pusht_baseline/run_diagnostic.md",
+            "outputs/homepage_summary.md",
+        ],
+    },
 ]
 
 

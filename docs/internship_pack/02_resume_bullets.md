@@ -50,6 +50,10 @@ Use only the strongest bullet that matches work you actually completed. Replace 
 
 > Built a README-facing result card and submission pack that tie homepage metrics to generated reports, experiment ledgers, rollout evidence, and claim-safety boundaries.
 
+## Reviewer Readiness Completed
+
+> Added a reviewer-readiness checklist that verifies public commands, generated artifacts, boundary statements, and claim-safe project evidence before sharing the repo or using it in applications.
+
 ## Data Quality Comparison Completed
 
 > Compared clean and noisier local JSONL demonstrations under the same ACT-style train/eval setup, then reported changes in rollout success rate, final distance, action smoothness, and failure cases to analyze data quality effects.

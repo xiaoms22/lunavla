@@ -47,6 +47,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Track it | `python scripts/check_project_progress.py` | A stage checklist for generated project evidence. |
 | Package it | `python scripts/generate_project_card.py` | A one-page project card with commands, metrics, evidence, and boundaries. |
 | Audit it | `python scripts/generate_experiment_ledger.py` | A config, metric, command, and artifact ledger for reproducible claims. |
+| Finalize it | `python scripts/check_reviewer_readiness.py` | A final reviewer checklist for commands, artifacts, boundaries, and public-safe claims. |
 | Share it | `python scripts/generate_showcase_issue.py` | A copyable learner showcase draft for public sharing. |
 | Extend it | `docs/internship_pack/07_advanced_project_path.md` | A safe path for improving the baseline after the runnable loop works. |
 
@@ -244,6 +245,7 @@ python scripts/build_submission_pack.py
 Check release readiness after the evidence artifacts exist:
 
 ```bash
+python scripts/check_reviewer_readiness.py
 python scripts/check_release_readiness.py
 ```
 

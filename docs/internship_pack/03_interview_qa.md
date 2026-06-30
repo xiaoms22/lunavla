@@ -52,6 +52,10 @@ Run `python scripts/run_extended_evaluation.py` after checkpoints exist. It incr
 
 Run `python scripts/generate_homepage_summary.py` after extended evaluation. It produces `outputs/homepage_summary.md` and `images/homepage_results.svg`, so the README result card, portfolio table, and interview claims point back to generated metrics instead of hand-written numbers.
 
+## How do you know the project is ready for review?
+
+Run `python scripts/check_reviewer_readiness.py`. It checks that public commands have generated artifacts, homepage claims point to evidence, boundary statements are visible, and the public docs do not expose internal planning material.
+
 ## How do you explain BC vs ACT?
 
 BC is the simplest next-action imitation baseline. ACT predicts action chunks, which can better represent temporally correlated behavior. LunaVLA compares them as a learning ladder, not as a claim of state-of-the-art performance.

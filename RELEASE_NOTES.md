@@ -30,6 +30,7 @@ LunaVLA is released as a tiny, reproducible VLA internship project starter.
 - Homepage ecosystem media from official LeRobot and LIBERO sources with attribution.
 - README asset check for ensuring GIFs, PNGs, SVGs, and the asset manifest are usable.
 - Project progress check for mapping generated artifacts to report-ready stages.
+- Reviewer readiness check for verifying commands, artifacts, boundaries, and public-safe claims.
 - Project card generator for a one-page command, metric, evidence, and boundary summary.
 - Experiment ledger generator for linking commands, config hashes, metrics, and artifacts.
 - Learning checkpoint generator for concept-to-evidence self-check questions.

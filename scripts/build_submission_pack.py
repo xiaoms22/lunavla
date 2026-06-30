@@ -118,6 +118,7 @@ def build_summary(run_dir: Path, comparison: Path, evidence_index: Path, out_dir
         "- policy tuning comparison for explaining hidden-size changes with rollout evidence;",
         "- README asset check for visual evidence quality;",
         "- project progress report for artifact coverage;",
+        "- reviewer readiness report for final command, artifact, and boundary checks when available;",
         "- one-page project card for quick review;",
         "- experiment ledger for commands, configs, metrics, and artifacts;",
         "- learning checkpoint for concept-to-evidence review;",
@@ -168,20 +169,21 @@ def build_summary(run_dir: Path, comparison: Path, evidence_index: Path, out_dir
             "14. Open `policy_tuning_comparison.md` to explain the BC hidden-size comparison.",
             "15. Open `readme_asset_check.md` to confirm visual evidence is intact.",
             "16. Open `project_progress.md` to check artifact coverage.",
-            "17. Open `project_card.md` for the one-page overview.",
-            "18. Open `experiment_ledger.md` to audit commands, config hashes, metrics, and artifacts.",
-            "19. Open `learning_checkpoint.md` to practice the explanation.",
-            "20. Open `interview_flashcards.md` for evidence-backed answers.",
-            "21. Open `skill_evidence_map.md` to connect skills to files and artifacts.",
-            "22. Open `learner_showcase.md` for a copyable public sharing draft.",
-            "23. Open `failure_review.md` for failure behavior and inspection notes.",
-            "24. Open `project_report.md` for the technical story.",
-            "25. Open `run_diagnostic.md` before deciding what the run proves.",
-            "26. Open `resume_pack.md` for the resume bullet and interview pitch.",
-            "27. Open `rollout_browser.html` to inspect rollout behavior.",
-            "28. Use `ablation_comparison.md` only for claims about the chunk-size ablation.",
-            "29. Use `config_diff.md` to confirm the ablation setup.",
-            "30. Use files under `assets/` for README screenshots or a project page.",
+            "17. Open `reviewer_readiness.md` if it exists to confirm final share readiness.",
+            "18. Open `project_card.md` for the one-page overview.",
+            "19. Open `experiment_ledger.md` to audit commands, config hashes, metrics, and artifacts.",
+            "20. Open `learning_checkpoint.md` to practice the explanation.",
+            "21. Open `interview_flashcards.md` for evidence-backed answers.",
+            "22. Open `skill_evidence_map.md` to connect skills to files and artifacts.",
+            "23. Open `learner_showcase.md` for a copyable public sharing draft.",
+            "24. Open `failure_review.md` for failure behavior and inspection notes.",
+            "25. Open `project_report.md` for the technical story.",
+            "26. Open `run_diagnostic.md` before deciding what the run proves.",
+            "27. Open `resume_pack.md` for the resume bullet and interview pitch.",
+            "28. Open `rollout_browser.html` to inspect rollout behavior.",
+            "29. Use `ablation_comparison.md` only for claims about the chunk-size ablation.",
+            "30. Use `config_diff.md` to confirm the ablation setup.",
+            "31. Use files under `assets/` for README screenshots or a project page.",
             "",
             "## Honest Boundary",
             "",
@@ -258,6 +260,10 @@ def main() -> int:
         (ROOT / "images/policy_ladder.svg", out_dir / "assets/policy_ladder.svg"),
     ]
     copied = [copy_file(src, dst) for src, dst in required_sources]
+    optional_sources = [
+        (ROOT / "outputs/reviewer_readiness.md", out_dir / "reviewer_readiness.md"),
+    ]
+    copied.extend(copy_file(src, dst) for src, dst in optional_sources if src.exists())
 
     summary = build_summary(run_dir, comparison, evidence_index, out_dir, copied)
     (out_dir / "SUBMISSION_README.md").write_text(summary, encoding="utf-8")
