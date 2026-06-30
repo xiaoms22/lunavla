@@ -11,7 +11,7 @@ Use this table to connect job-description keywords to concrete repo evidence. Do
 | rollout evaluation | Behavior over time, not just training loss | `eval_vla.py`, saved rollouts, `web_demo.html` |
 | failure analysis | Debugging wrong direction, stuck behavior, and subtask failures | `docs/failure_taxonomy.md`, `python scripts/generate_failure_review.py` |
 | task decomposition | Phase/subtask context for explaining behavior | `dataset/task_context.py`, `python scripts/check_task_layer.py` |
-| action representation | Action scale, smoothness, chunks, and normalization | `docs/tutorials/03_action_normalization.md`, action statistics reports |
+| action representation | Action scale, smoothness, chunks, and normalization | `docs/tutorials/action_normalization.md`, action statistics reports |
 | experiment reporting | Reproducible project communication | `scripts/generate_project_report.py`, `scripts/build_submission_pack.py` |
 | GitHub project evidence | A reviewer can rerun, inspect, and verify your work | README commands, configs, generated report paths |
 

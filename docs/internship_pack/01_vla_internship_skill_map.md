@@ -20,7 +20,7 @@ VLA bridge later: language/task context and heavier robot-learning stacks can be
 | Task Layer | Track phase/subtask context without requiring an LLM | `dataset/task_context.py`, `python scripts/check_task_layer.py` |
 | Rollout evaluation | Judge behavior by repeated policy actions, not loss alone | `eval_vla.py`, saved rollout JSON, `web_demo.html` |
 | Failure analysis | Explain where and why rollout behavior fails | `docs/failure_taxonomy.md`, `python scripts/generate_failure_review.py` |
-| Action statistics | Explain action scale, clipping, and normalization | `python scripts/generate_action_statistics.py`, `docs/tutorials/03_action_normalization.md` |
+| Action statistics | Explain action scale, clipping, and normalization | `python scripts/generate_action_statistics.py`, `docs/tutorials/action_normalization.md` |
 | Project communication | Convert code and metrics into a report, resume bullet, and interview pitch | `scripts/generate_project_report.py`, `scripts/generate_resume_pack.py` |
 
 ## What A Beginner Should Be Able To Say
