@@ -287,6 +287,12 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 
 Mock PushT is the low-cost teaching layer. The optional JSONL smoke path shows how the same records can be saved as a local file and reloaded through config before moving to heavier robotics stacks.
 
+## From IL/VA To Larger VLA Systems
+
+LunaVLA starts with the IL/VA core because that is the smallest loop a beginner can run and explain: demonstrations become action targets, policies predict actions or action chunks, and rollout evaluation checks behavior. Larger VLA systems add stronger vision/language backbones, richer robot datasets, language-conditioned task variation, benchmark adapters, and deployment constraints after this core loop is understood.
+
+Use LunaVLA as a first runnable bridge before studying LeRobot, OpenVLA, or openpi-style systems. Do not describe this repo as a reproduction of those projects; describe it as a small project that teaches the data, policy, rollout, report, and failure-analysis habits needed before moving into them.
+
 ## Internship Pack
 
 If your goal is to turn the runnable loop into learning, resume, or interview evidence, start here:
