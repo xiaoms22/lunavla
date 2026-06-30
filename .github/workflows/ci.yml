@@ -56,6 +56,9 @@ jobs:
       - name: Run CPU smoke loop
         run: python scripts/run_cpu_smoke.py
 
+      - name: Check Task Layer diagnostics
+        run: python scripts/check_task_layer.py --run-dir outputs/cpu_smoke --require-generated
+
       - name: Generate first run checklist
         run: python scripts/generate_first_run_checklist.py
 

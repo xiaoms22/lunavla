@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import argparse
+import importlib.util
 import re
 import subprocess
 import sys
@@ -37,6 +38,7 @@ CORE_FILES = [
     "scripts/generate_action_chunk_lesson.py",
     "scripts/prepare_homepage_media.py",
     "scripts/check_negative_paths.py",
+    "scripts/check_task_layer.py",
     "scripts/check_repo_quality.py",
     "scripts/check_environment.py",
     "scripts/check_readme_assets.py",
@@ -148,6 +150,7 @@ PUBLIC_COMMANDS = [
     "python scripts/generate_action_chunk_lesson.py",
     "python scripts/prepare_homepage_media.py",
     "python scripts/check_negative_paths.py",
+    "python scripts/check_task_layer.py",
     "python scripts/check_environment.py",
     "python scripts/check_readme_assets.py",
     "python scripts/check_project_progress.py",
@@ -213,6 +216,38 @@ def require_text(path: str, phrases: list[str]) -> None:
             fail(f"{path} is missing `{phrase}`")
 
 
+def readme_python_commands() -> list[str]:
+    text = read_text("README.md")
+    commands = set(re.findall(r"`(python [^`]+)`", text))
+    for block in re.findall(r"```(?:bash)?\n(.*?)```", text, re.S):
+        for raw_line in block.splitlines():
+            line = raw_line.strip()
+            if line.startswith("python "):
+                commands.add(line)
+    return sorted(commands)
+
+
+def command_reference_commands() -> set[str]:
+    path = ROOT / "scripts" / "generate_command_reference.py"
+    spec = importlib.util.spec_from_file_location("generate_command_reference", path)
+    if spec is None or spec.loader is None:
+        fail("could not load scripts/generate_command_reference.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    commands = getattr(module, "COMMANDS", None)
+    if not isinstance(commands, list):
+        fail("scripts/generate_command_reference.py does not expose COMMANDS")
+    return {str(item.get("command", "")) for item in commands if isinstance(item, dict)}
+
+
+def check_command_reference_covers_readme() -> None:
+    reference_commands = command_reference_commands()
+    required_commands = sorted(set(PUBLIC_COMMANDS) | set(readme_python_commands()))
+    missing = [command for command in required_commands if command not in reference_commands]
+    if missing:
+        fail("command reference missing public command(s): " + ", ".join(f"`{command}`" for command in missing))
+
+
 def iter_markdown_links(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     links = re.findall(r"!?\[[^\]]*\]\(([^)]+)\)", text)
@@ -259,6 +294,25 @@ def check_negative_paths() -> None:
         fail("negative path checks failed" + (f": {details}" if details else ""))
 
 
+def check_task_layer() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/check_task_layer.py",
+            "--run-dir",
+            "outputs/act_pusht_baseline",
+            "--require-generated",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        details = "\n".join(part for part in [result.stdout.strip(), result.stderr.strip()] if part)
+        fail("task layer checks failed" + (f": {details}" if details else ""))
+
+
 def main() -> int:
     args = parse_args()
     require_paths(CORE_FILES, "core release files")
@@ -267,10 +321,12 @@ def main() -> int:
         require_paths(GENERATED_EVIDENCE, "generated evidence artifacts")
     require_text("README.md", PUBLIC_COMMANDS)
     require_text("README.md", README_REQUIRED_PHRASES)
+    check_command_reference_covers_readme()
     check_readme_assets()
     check_cards_are_linked()
     check_markdown_links()
     check_negative_paths()
+    check_task_layer()
     print("release readiness check passed")
     return 0
 

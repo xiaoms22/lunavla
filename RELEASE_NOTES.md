@@ -13,6 +13,8 @@ LunaVLA is released as a tiny, reproducible VLA internship project starter.
 - Command reference generator for mapping public commands to generated artifacts.
 - Code walkthrough generator for reading the runnable implementation in order.
 - Negative-path release checks for malformed configs and missing submission-pack sources.
+- Release readiness check that keeps README-visible commands covered by the generated command reference.
+- Task Layer check for generated record labels, rollout frame context, eval summaries, reports, and rollout browser details.
 - ACT-style PushT baseline and chunk-size ablation config.
 - Config diff generator for auditing the baseline vs ablation setup.
 - Rollout evaluation with success rate, final distance, rollout length, and action smoothness.

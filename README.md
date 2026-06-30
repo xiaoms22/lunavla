@@ -23,6 +23,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Find it | `python scripts/generate_command_reference.py` | A command-to-artifact map for choosing the next step. |
 | Read it | `python scripts/generate_code_walkthrough.py` | A guided reading order for the runnable code path. |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
+| Verify it | `python scripts/check_task_layer.py` | A fast check that records, rollout frames, summaries, reports, and the browser expose Task Layer context. |
 | Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
@@ -101,6 +102,12 @@ Check fast negative cases for release utilities:
 
 ```bash
 python scripts/check_negative_paths.py
+```
+
+Check Task Layer evidence after smoke or baseline artifacts exist:
+
+```bash
+python scripts/check_task_layer.py
 ```
 
 Run the baseline evidence path:
