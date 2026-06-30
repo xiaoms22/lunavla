@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 from dataset.pusht_dataset import _instruction_features
 from dataset.task_context import build_pusht_task_context
-from model import MiniVLAPolicy, MiniVLAPolicyBase
+from model import MiniVLAPolicyBase, load_policy
 from trainer.trainer_utils import append_jsonl, ensure_dir, write_json
 
 
@@ -184,7 +184,7 @@ def rollout_episode(
 def main() -> int:
     args = parse_args()
     checkpoint_path = (ROOT / args.checkpoint).resolve() if not Path(args.checkpoint).is_absolute() else Path(args.checkpoint)
-    policy, metadata = MiniVLAPolicy.load(checkpoint_path)
+    policy, metadata = load_policy(checkpoint_path)
     output_dir = ensure_dir(args.output_dir or checkpoint_path.parent)
     failure_path = output_dir / "failure_cases.jsonl"
     if failure_path.exists():

@@ -70,6 +70,19 @@ COMMANDS: list[dict[str, Any]] = [
         "next": "Fix policy interface compatibility before adding BC, ACT, or future policy variants.",
     },
     {
+        "stage": "bc smoke",
+        "command": "python scripts/run_bc_smoke.py",
+        "purpose": "Train and evaluate the from-scratch behavior cloning MLP smoke baseline.",
+        "outputs": [
+            "outputs/bc_pusht_cpu_smoke/checkpoint.pt",
+            "outputs/bc_pusht_cpu_smoke/summary_report.md",
+            "outputs/bc_pusht_cpu_smoke/project_report.md",
+            "outputs/bc_pusht_cpu_smoke/run_diagnostic.md",
+            "outputs/bc_pusht_cpu_smoke/web_demo.html",
+        ],
+        "next": "Compare BC's one-step supervised objective against ACT-style action chunking.",
+    },
+    {
         "stage": "find",
         "command": "python scripts/generate_command_reference.py",
         "purpose": "Generate the public command-to-artifact map.",

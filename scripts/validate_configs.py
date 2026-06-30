@@ -10,7 +10,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_SECTIONS = ["model", "project_name", "framework", "policy", "task", "dataset", "training", "eval", "artifacts"]
 SUPPORTED_DATASETS = {"mock_pusht", "jsonl"}
-SUPPORTED_POLICIES = {"act"}
+SUPPORTED_POLICIES = {"act", "bc"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -20,6 +20,7 @@ def parse_args() -> argparse.Namespace:
         nargs="*",
         default=[
             "configs/act_pusht_cpu_smoke.yaml",
+            "configs/bc_pusht_cpu_smoke.yaml",
             "configs/act_pusht_baseline.yaml",
             "configs/act_pusht_ablation_chunk_size.yaml",
         ],
@@ -96,13 +97,16 @@ def validate_config(path: Path) -> list[str]:
     require(model.get("action_dim") == 2, "`model.action_dim` must be 2 for the current action space", errors)
     require(positive_int(model.get("chunk_size")), "`model.chunk_size` must be a positive integer", errors)
 
-    require(policy.get("name") in SUPPORTED_POLICIES, "`policy.name` must be `act`", errors)
+    require(policy.get("name") in SUPPORTED_POLICIES, f"`policy.name` must be one of {sorted(SUPPORTED_POLICIES)}", errors)
     require(positive_int(policy.get("chunk_size")), "`policy.chunk_size` must be a positive integer", errors)
     require(
         model.get("chunk_size") == policy.get("chunk_size"),
         "`model.chunk_size` and `policy.chunk_size` must match",
         errors,
     )
+    if policy.get("name") == "bc":
+        require(policy.get("chunk_size") == 1, "`policy.chunk_size` must be 1 for next-action BC", errors)
+        require(positive_int(policy.get("hidden_dim")), "`policy.hidden_dim` must be a positive integer for BC", errors)
 
     source = dataset.get("source", "mock_pusht")
     require(source in SUPPORTED_DATASETS, f"`dataset.source` must be one of {sorted(SUPPORTED_DATASETS)}", errors)

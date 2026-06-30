@@ -62,6 +62,9 @@ jobs:
       - name: Check policy interface
         run: python scripts/check_policy_interface.py
 
+      - name: Run BC smoke loop
+        run: python scripts/run_bc_smoke.py
+
       - name: Generate first run checklist
         run: python scripts/generate_first_run_checklist.py
 
@@ -143,6 +146,10 @@ jobs:
             outputs/cpu_smoke/resume_pack.md
             outputs/cpu_smoke/run_diagnostic.md
             outputs/cpu_smoke/web_demo.html
+            outputs/bc_pusht_cpu_smoke/summary_report.md
+            outputs/bc_pusht_cpu_smoke/project_report.md
+            outputs/bc_pusht_cpu_smoke/run_diagnostic.md
+            outputs/bc_pusht_cpu_smoke/web_demo.html
             outputs/dataset_inspection.md
             outputs/act_pusht_baseline/summary_report.md
             outputs/act_pusht_baseline/project_report.md

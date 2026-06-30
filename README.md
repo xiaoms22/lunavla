@@ -25,6 +25,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
 | Verify it | `python scripts/check_task_layer.py` | A fast check that records, rollout frames, summaries, reports, and the browser expose Task Layer context. |
 | Contract it | `python scripts/check_policy_interface.py` | A small interface check for `forward`, `predict_action`, `save_pretrained`, and `from_pretrained`. |
+| Clone it | `python scripts/run_bc_smoke.py` | A from-scratch behavior cloning MLP smoke run with rollout evidence. |
 | Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
@@ -117,6 +118,12 @@ Check the tiny policy interface contract:
 python scripts/check_policy_interface.py
 ```
 
+Run the behavior cloning smoke baseline:
+
+```bash
+python scripts/run_bc_smoke.py
+```
+
 Run the baseline evidence path:
 
 ```bash
@@ -195,6 +202,7 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - environment checks for Python, dependencies, repo files, and output write access;
 - one-command quickstart for the smallest beginner path;
 - a PushT-style demonstration generator;
+- a from-scratch behavior cloning MLP smoke baseline;
 - an ACT-style action chunk policy;
 - a minimal policy interface with `forward`, `predict_action`, `save_pretrained`, and `from_pretrained`;
 - config-driven training and checkpoint export;
@@ -239,6 +247,7 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - [RELEASE_NOTES.md](RELEASE_NOTES.md): what this public release includes.
 - [docs/visual_attributions.md](docs/visual_attributions.md): sources and licenses for README ecosystem media.
 - [docs/tutorials/action_chunking_act.md](docs/tutorials/action_chunking_act.md): a static ACT/action-chunking tutorial.
+- [docs/tutorials/behavior_cloning_from_scratch.md](docs/tutorials/behavior_cloning_from_scratch.md): a from-scratch behavior cloning tutorial.
 
 ## Share A Run
 
