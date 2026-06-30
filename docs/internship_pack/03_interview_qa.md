@@ -24,6 +24,10 @@ ACT predicts a short sequence of actions instead of only the next action. In Lun
 
 The Task Layer adds structured context such as phase, subtask, and instruction metadata. It helps explain where a rollout failed, for example `approach_block`, `align_push`, `push_to_goal`, or `settle`, without requiring an LLM dependency.
 
+## How do you analyze failed subtasks?
+
+Run `python scripts/generate_task_understanding_report.py` after saving rollout JSON. It reads frame-level phase/subtask labels, counts which final phase failed most often, and adds a rule-based `phase_regression` label when a failed episode gets closer or reaches a later phase before drifting away.
+
 ## What are action statistics?
 
 Action statistics summarize the scale and range of demonstration actions. Mean, standard deviation, min/max, and clipping information help explain why action normalization matters and why train-time targets differ from executable rollout actions.

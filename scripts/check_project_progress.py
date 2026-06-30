@@ -79,6 +79,16 @@ STAGES = [
         ],
     },
     {
+        "stage": "task understanding",
+        "goal": "Saved rollout traces are summarized by phase, failed subtask, and first-pass task label.",
+        "command": "python scripts/generate_task_understanding_report.py",
+        "artifacts": [
+            "outputs/act_pusht_baseline/rollouts/episode_000.json",
+            "outputs/task_understanding_report.md",
+            "outputs/task_understanding_report.csv",
+        ],
+    },
+    {
         "stage": "policy ladder",
         "goal": "The BC and ACT-style policies are compared as a learning progression.",
         "command": "python scripts/generate_policy_ladder.py",

@@ -57,6 +57,10 @@ Record:
 
 Record mean, standard deviation, min/max, clipping fraction, and the explanation you would give in an interview.
 
+## Task Understanding
+
+If you ran `python scripts/generate_task_understanding_report.py`, summarize which phase/subtask failed most often and whether any rollout received the first-pass `phase_regression` label.
+
 ## Optional Data Quality Comparison
 
 If you ran `python scripts/run_data_quality_comparison.py`, summarize how the noisy JSONL file changed success rate, final distance, action smoothness, and failure cases compared with the cleaner file.

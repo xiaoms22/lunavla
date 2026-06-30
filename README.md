@@ -24,6 +24,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Read it | `python scripts/generate_code_walkthrough.py` | A guided reading order for the runnable code path. |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
 | Verify it | `python scripts/check_task_layer.py` | A fast check that records, rollout frames, summaries, reports, and the browser expose Task Layer context. |
+| Trace it | `python scripts/generate_task_understanding_report.py` | A rollout-trace report that counts failed phases/subtasks and first-pass task labels. |
 | Contract it | `python scripts/check_policy_interface.py` | A small interface check for `forward`, `predict_action`, `save_pretrained`, and `from_pretrained`. |
 | Clone it | `python scripts/run_bc_smoke.py` | A from-scratch behavior cloning MLP smoke run with rollout evidence. |
 | Tune it | `python scripts/run_policy_tuning_comparison.py` | Compare two BC hidden sizes with the same dataset, eval fields, and report format. |
@@ -117,6 +118,7 @@ Check Task Layer evidence after smoke or baseline artifacts exist:
 
 ```bash
 python scripts/check_task_layer.py
+python scripts/generate_task_understanding_report.py
 ```
 
 Check the tiny policy interface contract:

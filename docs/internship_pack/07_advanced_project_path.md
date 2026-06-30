@@ -23,6 +23,7 @@ Use this path after the baseline, ablation, policy ladder, and report pack run s
 
 - Inspect phase/subtask labels in rollout traces.
 - Count which subtask failed most often.
+- Start with `python scripts/generate_task_understanding_report.py` after saved rollout JSON exists.
 - Add one new first-pass failure label only after reading saved rollout JSON.
 - Keep the Task Layer rule-based unless you have a verified no-API fallback.
 

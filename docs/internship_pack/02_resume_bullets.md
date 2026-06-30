@@ -10,6 +10,10 @@ Use only the strongest bullet that matches work you actually completed. Replace 
 
 > Built and inspected a PushT-style demonstration pipeline with structured observation/action records, optional task instruction fields, phase/subtask labels, and rollout metadata for failure analysis.
 
+## Task Understanding Completed
+
+> Analyzed saved rollout traces by phase and subtask, counted where failures ended, and added a rule-based first-pass `phase_regression` label for episodes that got closer before drifting away.
+
 ## BC Baseline Completed
 
 > Implemented a from-scratch behavior-cloning baseline for observation-to-action prediction, including config-driven training, checkpoint export, rollout evaluation, and a generated project report.

@@ -99,6 +99,8 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/command_reference.md", "Map each public command to its purpose and generated artifacts."),
         artifact_row("outputs/code_walkthrough.md", "Guide beginners through the runnable code path."),
         artifact_row("outputs/action_chunk_lesson.md", "Explain ACT-style future-action chunks with a real sample."),
+        artifact_row("outputs/task_understanding_report.md", "Inspect phase/subtask behavior in saved rollout traces."),
+        artifact_row("outputs/task_understanding_report.csv", "Machine-readable task-understanding rollout table."),
         artifact_row("outputs/action_statistics.json", "Machine-readable action scale and normalization statistics."),
         artifact_row("outputs/action_statistics.md", "Action normalization and scale report."),
         artifact_row("outputs/policy_ladder.md", "Compare BC and ACT-style policies as a learning progression."),
@@ -266,6 +268,7 @@ def main() -> int:
     run([python, "scripts/generate_command_reference.py"])
     run([python, "scripts/generate_code_walkthrough.py"])
     run([python, "scripts/generate_action_chunk_lesson.py"])
+    run([python, "scripts/generate_task_understanding_report.py"])
     run([python, "scripts/generate_action_statistics.py"])
     run([python, "scripts/generate_policy_ladder.py"])
     run([python, "scripts/check_readme_assets.py"])
