@@ -304,6 +304,7 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - `docs/internship_pack/05_jd_to_project_mapping.md`: map JD keywords to code evidence.
 - `docs/internship_pack/06_4_week_project_path.md`: four-week learning path.
 - `docs/internship_pack/07_advanced_project_path.md`: stronger project path after the baseline works.
+- `docs/internship_pack/08_final_package_checklist.md`: final repo, report, demo, resume, and interview checklist.
 
 ## Release Materials
 

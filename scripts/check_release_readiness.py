@@ -22,6 +22,7 @@ CORE_FILES = [
     "docs/tutorials/action_chunking_act.md",
     "docs/tutorials/behavior_cloning_from_scratch.md",
     "docs/tutorials/action_normalization.md",
+    "docs/internship_pack/08_final_package_checklist.md",
     "images/ecosystem/source_manifest.json",
     "configs/act_pusht_cpu_smoke.yaml",
     "configs/bc_pusht_cpu_smoke.yaml",
