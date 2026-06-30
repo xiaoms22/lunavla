@@ -66,6 +66,19 @@ STAGES = [
         ],
     },
     {
+        "stage": "policy tuning",
+        "goal": "Two BC hidden sizes are compared with the same data and eval shape.",
+        "command": "python scripts/run_policy_tuning_comparison.py",
+        "artifacts": [
+            "outputs/bc_pusht_cpu_smoke/summary_report.md",
+            "outputs/bc_pusht_hidden64_smoke/summary_report.md",
+            "outputs/policy_tuning_comparison.md",
+            "outputs/policy_tuning_comparison.csv",
+            "outputs/policy_tuning_comparison_deltas.csv",
+            "outputs/policy_tuning_config_diff.md",
+        ],
+    },
+    {
         "stage": "policy ladder",
         "goal": "The BC and ACT-style policies are compared as a learning progression.",
         "command": "python scripts/generate_policy_ladder.py",

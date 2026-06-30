@@ -14,6 +14,7 @@ Use this path after the baseline, ablation, policy ladder, and report pack run s
 ## Stronger Policy
 
 - Tune hidden dimension, learning rate, and chunk size.
+- Start with `python scripts/run_policy_tuning_comparison.py` for a BC hidden-size comparison with fixed data and eval settings.
 - Compare tiny linear, BC, and ACT-style policies using the same summary fields.
 - Track final loss, success rate, mean final distance, rollout length, and action smoothness together.
 - Explain policy changes through rollout behavior, not only a metric table.

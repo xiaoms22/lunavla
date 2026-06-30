@@ -22,6 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Compare LunaVLA run directories.")
     parser.add_argument("--runs", nargs="+", required=True, help="Run directories under outputs/ or absolute paths.")
     parser.add_argument("--out", default="outputs/run_comparison.md", help="Markdown output path.")
+    parser.add_argument("--config-diff", default="outputs/config_diff.md", help="Optional config diff report path.")
     return parser.parse_args()
 
 
@@ -70,8 +71,11 @@ def run_row(run_dir: Path) -> dict[str, Any]:
     eval_summary = read_json(run_dir / "eval_summary.json")
     return {
         "run": run_dir.name,
+        "policy_name": train.get("policy_name", "n/a"),
         "records": train.get("records", "n/a"),
         "chunk_size": train.get("chunk_size", "n/a"),
+        "hidden_dim": train.get("hidden_dim", "n/a"),
+        "learning_rate": train.get("learning_rate", "n/a"),
         "final_loss": train.get("final_loss", "n/a"),
         "success_rate": eval_summary.get("success_rate", "n/a"),
         "mean_final_distance": eval_summary.get("mean_final_distance", "n/a"),
@@ -83,7 +87,7 @@ def run_row(run_dir: Path) -> dict[str, Any]:
 
 def changed_fields(rows: list[dict[str, Any]]) -> list[str]:
     fields: list[str] = []
-    for key in ["records", "chunk_size"]:
+    for key in ["policy_name", "records", "chunk_size", "hidden_dim", "learning_rate"]:
         values = {str(row.get(key, "n/a")) for row in rows}
         if len(values) > 1:
             fields.append(key)
@@ -158,7 +162,7 @@ def summary_bullets(rows: list[dict[str, Any]], deltas: list[dict[str, Any]]) ->
     bullets = []
     if changed:
         changes = ", ".join(f"`{field}` `{baseline.get(field)}` -> `{candidate.get(field)}`" for field in changed)
-        bullets.append(f"- The checked ablation changes {changes}.")
+        bullets.append(f"- The checked comparison changes {changes}.")
     else:
         bullets.append("- No setup field changed in the summary; verify that the intended config was used.")
 
@@ -183,7 +187,7 @@ def summary_bullets(rows: list[dict[str, Any]], deltas: list[dict[str, Any]]) ->
             f"`{format_delta(as_number(smooth_delta['candidate']) - as_number(smooth_delta['baseline']))}`; "
             "use rollout inspection before calling this better or worse."
         )
-    bullets.append("- Treat this as a teaching-scale ablation. Strong claims need more eval episodes or repeated seeds.")
+    bullets.append("- Treat this as a teaching-scale comparison. Strong claims need more eval episodes or repeated seeds.")
     return bullets
 
 
@@ -191,10 +195,11 @@ def main() -> int:
     args = parse_args()
     rows = [run_row(resolve(run)) for run in args.runs]
     out_path = resolve(args.out)
+    config_diff_path = resolve(args.config_diff)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     deltas = delta_rows(rows)
-    lines = ["# LunaVLA Ablation Comparison", ""]
+    lines = ["# LunaVLA Run Comparison", ""]
     if rows:
         lines.extend(
             [
@@ -202,7 +207,9 @@ def main() -> int:
                 "",
                 "What behavior changes when one policy or training setting changes?",
                 "",
-                "Config audit: `outputs/config_diff.md`",
+                f"Config audit: `{config_diff_path.relative_to(ROOT).as_posix()}`"
+                if config_diff_path.exists()
+                else "Config audit: not generated for this comparison.",
                 "",
                 "## Runs",
                 "",
@@ -241,7 +248,7 @@ def main() -> int:
                 "## Resume-Safe Claim",
                 "",
                 (
-                    "I ran a controlled chunk-size ablation for a tiny ACT-style policy and compared final loss, "
+                    "I ran a controlled teaching-scale policy comparison and compared final loss, "
                     "rollout success rate, final distance, rollout length, action smoothness, and failure cases. "
                     "The claim is limited to this teaching-scale PushT-style setup."
                 ),

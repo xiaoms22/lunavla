@@ -111,6 +111,7 @@ def main() -> int:
         "action_min": action_stats["action"]["min"],
         "action_max": action_stats["action"]["max"],
         "num_steps": num_steps,
+        "learning_rate": learning_rate,
         "final_loss": loss_rows[-1]["loss"],
     }
     write_csv(output_dir / "loss_curve.csv", loss_rows)

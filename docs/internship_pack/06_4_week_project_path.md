@@ -31,7 +31,9 @@ Deliverable: baseline result table, task-layer check, action-statistics note, RE
 ## Week 3: Ablation And Policy Ladder
 
 - Run `python scripts/run_bc_smoke.py`.
+- Run `python scripts/run_policy_tuning_comparison.py`.
 - Run `python scripts/run_ablation_evidence.py`.
+- Read `outputs/policy_tuning_comparison.md` and explain whether the hidden-size change helped rollout behavior.
 - Read `outputs/run_comparison.md` and inspect at least one rollout from each run.
 - Read `outputs/config_diff.md` before writing the ablation conclusion.
 - Read each run diagnostic before writing the ablation conclusion.
@@ -39,7 +41,7 @@ Deliverable: baseline result table, task-layer check, action-statistics note, RE
 - Run `python scripts/generate_failure_review.py`.
 - Explain how BC, ACT, and chunk size change behavior.
 
-Deliverable: one ablation report with config diff, metric deltas, policy-ladder explanation, failure review, and a short conclusion.
+Deliverable: one policy-tuning comparison, one ablation report with config diff, metric deltas, policy-ladder explanation, failure review, and a short conclusion.
 
 ## Week 4: Report And Interview Pack
 

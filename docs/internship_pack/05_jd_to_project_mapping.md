@@ -7,6 +7,7 @@ Use this table to connect job-description keywords to concrete repo evidence. Do
 | VLA / embodied AI | You understand the observation-to-action loop and its limits | README, `docs/internship_pack/01_vla_internship_skill_map.md` |
 | imitation learning | Demonstration-to-policy training | `trainer/train_act_pusht.py`, `trainer/train_bc_pusht.py` |
 | behavior cloning | Next-action supervised imitation baseline | `python scripts/run_bc_smoke.py` |
+| model tuning | Controlled BC hidden-size comparison | `python scripts/run_policy_tuning_comparison.py`, `outputs/policy_tuning_comparison.md` |
 | ACT | Action chunk prediction and chunk-size ablation | `configs/act_pusht_baseline.yaml`, `configs/act_pusht_ablation_chunk_size.yaml` |
 | rollout evaluation | Behavior over time, not just training loss | `eval_vla.py`, saved rollouts, `web_demo.html` |
 | failure analysis | Debugging wrong direction, stuck behavior, and subtask failures | `docs/failure_taxonomy.md`, `python scripts/generate_failure_review.py` |

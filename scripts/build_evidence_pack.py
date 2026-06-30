@@ -103,6 +103,11 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/action_statistics.md", "Action normalization and scale report."),
         artifact_row("outputs/policy_ladder.md", "Compare BC and ACT-style policies as a learning progression."),
         artifact_row("outputs/policy_ladder.csv", "Machine-readable BC vs ACT policy ladder table."),
+        artifact_row("outputs/policy_tuning_comparison.md", "BC hidden-size tuning comparison report."),
+        artifact_row("outputs/policy_tuning_comparison.csv", "Machine-readable BC tuning comparison table."),
+        artifact_row("outputs/policy_tuning_comparison_deltas.csv", "Machine-readable BC tuning metric deltas."),
+        artifact_row("outputs/policy_tuning_config_diff.md", "Config-level audit for the BC tuning comparison."),
+        artifact_row("outputs/policy_tuning_config_diff.json", "Machine-readable BC tuning config diff."),
         artifact_row("outputs/readme_asset_check.md", "Confirm README images and animations are renderable."),
         artifact_row("outputs/project_progress.md", "Show which public project evidence stages are complete."),
         artifact_row("outputs/project_card.md", "One-page project evidence card."),
@@ -120,6 +125,12 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/cpu_smoke/resume_pack.md", "Smallest resume and interview pack a learner can inspect."),
         artifact_row("outputs/cpu_smoke/run_diagnostic.md", "Smallest run diagnostic and claim-safety check."),
         artifact_row("outputs/cpu_smoke/web_demo.html", "Static rollout browser from the CPU smoke path."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/summary_report.md", "Hidden-64 BC tuning metric summary."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/action_statistics.json", "Hidden-64 BC action statistics."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/project_report.md", "Hidden-64 BC project report."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/resume_pack.md", "Hidden-64 BC resume and interview pack."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/run_diagnostic.md", "Hidden-64 BC run diagnostic and claim-safety check."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/web_demo.html", "Hidden-64 BC rollout browser."),
         artifact_row("outputs/act_pusht_baseline/summary_report.md", "Baseline metric summary."),
         artifact_row("outputs/act_pusht_baseline/action_statistics.json", "Baseline action statistics stored with the run."),
         artifact_row("outputs/act_pusht_baseline/project_report.md", "Baseline project report."),
@@ -245,6 +256,7 @@ def main() -> int:
         run([python, "scripts/validate_configs.py"])
         run([python, "scripts/run_quickstart.py"])
         run([python, "scripts/run_bc_smoke.py"])
+        run([python, "scripts/run_policy_tuning_comparison.py", "--episodes", str(args.episodes)])
         run([python, "scripts/run_baseline_evidence.py", "--episodes", str(args.episodes)])
         run([python, "scripts/run_ablation_evidence.py", "--episodes", str(args.episodes), "--skip-baseline"])
     else:

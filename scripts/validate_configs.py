@@ -21,6 +21,7 @@ def parse_args() -> argparse.Namespace:
         default=[
             "configs/act_pusht_cpu_smoke.yaml",
             "configs/bc_pusht_cpu_smoke.yaml",
+            "configs/bc_pusht_hidden64_smoke.yaml",
             "configs/act_pusht_jsonl_smoke.yaml",
             "configs/act_pusht_jsonl_noisy_smoke.yaml",
             "configs/act_pusht_baseline.yaml",

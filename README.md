@@ -26,6 +26,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Verify it | `python scripts/check_task_layer.py` | A fast check that records, rollout frames, summaries, reports, and the browser expose Task Layer context. |
 | Contract it | `python scripts/check_policy_interface.py` | A small interface check for `forward`, `predict_action`, `save_pretrained`, and `from_pretrained`. |
 | Clone it | `python scripts/run_bc_smoke.py` | A from-scratch behavior cloning MLP smoke run with rollout evidence. |
+| Tune it | `python scripts/run_policy_tuning_comparison.py` | Compare two BC hidden sizes with the same dataset, eval fields, and report format. |
 | Ladder it | `python scripts/generate_policy_ladder.py` | A BC-to-ACT comparison that explains why rollout evidence matters beyond supervised loss. |
 | Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
@@ -128,6 +129,12 @@ Run the behavior cloning smoke baseline:
 
 ```bash
 python scripts/run_bc_smoke.py
+```
+
+Run a small BC hidden-size tuning comparison:
+
+```bash
+python scripts/run_policy_tuning_comparison.py
 ```
 
 Run the baseline evidence path:

@@ -40,6 +40,10 @@ The main metrics are final training loss, success rate, mean final distance, mea
 
 BC is the simplest next-action imitation baseline. ACT predicts action chunks, which can better represent temporally correlated behavior. LunaVLA compares them as a learning ladder, not as a claim of state-of-the-art performance.
 
+## What does the BC hidden-size comparison teach?
+
+It changes only the MLP hidden dimension while keeping the PushT-style data and eval path fixed. The point is to show that a larger supervised policy should still be judged by rollout behavior, final distance, smoothness, and failure cases rather than by training loss alone.
+
 ## What would you improve next?
 
 Good extensions include better demonstrations, harder starts, stronger observation features, BC/ACT tuning, action normalization experiments, richer failure labels, local JSONL data loading, and clearer report assets.

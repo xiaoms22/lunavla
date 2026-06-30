@@ -26,6 +26,10 @@ Use only the strongest bullet that matches work you actually completed. Replace 
 
 > Compared tiny linear, BC, and ACT-style policies in a small policy ladder, using shared train/eval/report artifacts to explain how policy capacity and action chunks affect rollout behavior.
 
+## Policy Tuning Comparison Completed
+
+> Ran a controlled BC hidden-size comparison on the same PushT-style demonstration loop, using rollout success, final distance, action smoothness, and failure cases to explain why tuning should be judged with behavior evidence, not loss alone.
+
 ## Action Statistics Completed
 
 > Added action-statistics reporting for a tiny IL/VA training loop, connecting action mean/std/min/max, clipping behavior, normalization notes, and rollout diagnostics to evidence-backed project claims.
