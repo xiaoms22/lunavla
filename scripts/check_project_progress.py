@@ -66,6 +66,19 @@ STAGES = [
         ],
     },
     {
+        "stage": "policy ladder",
+        "goal": "The BC and ACT-style policies are compared as a learning progression.",
+        "command": "python scripts/generate_policy_ladder.py",
+        "artifacts": [
+            "outputs/bc_pusht_cpu_smoke/summary_report.md",
+            "outputs/cpu_smoke/summary_report.md",
+            "outputs/act_pusht_baseline/summary_report.md",
+            "outputs/policy_ladder.md",
+            "outputs/policy_ladder.csv",
+            "images/policy_ladder.svg",
+        ],
+    },
+    {
         "stage": "ablation evidence",
         "goal": "The chunk-size ablation can be compared against the baseline.",
         "command": "python scripts/run_ablation_evidence.py",
