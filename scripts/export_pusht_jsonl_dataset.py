@@ -65,6 +65,10 @@ def build_report(config_path: Path, out_path: Path, records: list[Any], dataset_
                 ("num episodes", dataset_config.get("num_episodes", "n/a")),
                 ("steps per episode", dataset_config.get("steps_per_episode", "n/a")),
                 ("seed", dataset_config.get("seed", "n/a")),
+                ("start low", dataset_config.get("start_low", 0.05)),
+                ("start high", dataset_config.get("start_high", 0.95)),
+                ("goal", dataset_config.get("goal", [0.80, 0.20])),
+                ("action noise std", dataset_config.get("action_noise_std", 0.004)),
                 ("language instruction", dataset_config.get("language_instruction", "n/a")),
             ]
         )
@@ -105,6 +109,13 @@ def main() -> int:
         steps_per_episode=int(dataset_config.get("steps_per_episode", 16)),
         seed=int(dataset_config.get("seed", 123)),
         language_instruction=dataset_config.get("language_instruction", "push the T block to the goal"),
+        goal=dataset_config.get("goal", [0.80, 0.20]),
+        start_low=float(dataset_config.get("start_low", 0.05)),
+        start_high=float(dataset_config.get("start_high", 0.95)),
+        action_gain=float(dataset_config.get("action_gain", 0.35)),
+        action_clip=float(dataset_config.get("action_clip", 0.12)),
+        action_noise_std=float(dataset_config.get("action_noise_std", 0.004)),
+        success_distance=float(dataset_config.get("success_distance", 0.08)),
     )
     save_jsonl(records, out_path)
     report_path.parent.mkdir(parents=True, exist_ok=True)

@@ -28,6 +28,10 @@ The Task Layer adds structured context such as phase, subtask, and instruction m
 
 Action statistics summarize the scale and range of demonstration actions. Mean, standard deviation, min/max, and clipping information help explain why action normalization matters and why train-time targets differ from executable rollout actions.
 
+## What does the clean vs noisy JSONL comparison show?
+
+It keeps the policy, chunk size, training steps, and evaluation setting fixed, then changes the local JSONL demonstrations. This makes the result easier to explain as a data-quality experiment: noisier actions or harder starts can increase loss, reduce rollout success, and create more failure cases.
+
 ## What metrics do you report?
 
 The main metrics are final training loss, success rate, mean final distance, mean rollout length, mean action smoothness, failure-case count, failure categories, failure subtasks, and action statistics.

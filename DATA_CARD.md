@@ -28,6 +28,8 @@ The generator samples initial positions, defines a fixed goal, and creates exper
 
 Run `python scripts/run_jsonl_data_smoke.py` to export `data/examples/pusht_jsonl_smoke.jsonl`, reload it with `dataset.source: jsonl`, and generate a separate train/eval/report folder under `outputs/act_pusht_jsonl_smoke/`.
 
+Run `python scripts/run_data_quality_comparison.py` to compare this clean local file against `data/examples/pusht_jsonl_noisy_smoke.jsonl` with the same policy and evaluation shape.
+
 ## Action Statistics
 
 Run `python scripts/generate_action_statistics.py` to compute demonstration action mean, standard deviation, min/max, percentiles, and clipping fraction. The stats are saved with each run and used for reporting action scale and normalization boundaries.

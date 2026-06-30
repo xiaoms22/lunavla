@@ -30,6 +30,10 @@ Use only the strongest bullet that matches work you actually completed. Replace 
 
 > Added action-statistics reporting for a tiny IL/VA training loop, connecting action mean/std/min/max, clipping behavior, normalization notes, and rollout diagnostics to evidence-backed project claims.
 
+## Data Quality Comparison Completed
+
+> Compared clean and noisier local JSONL demonstrations under the same ACT-style train/eval setup, then reported changes in rollout success rate, final distance, action smoothness, and failure cases to analyze data quality effects.
+
 ## Full Report Completed
 
 > Produced a reproducible LunaVLA project report connecting dataset design, BC/ACT policy learning, action-chunk ablations, rollout metrics, failure taxonomy, action statistics, and interview-ready conclusions.

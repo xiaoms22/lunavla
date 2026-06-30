@@ -22,6 +22,7 @@ def parse_args() -> argparse.Namespace:
             "configs/act_pusht_cpu_smoke.yaml",
             "configs/bc_pusht_cpu_smoke.yaml",
             "configs/act_pusht_jsonl_smoke.yaml",
+            "configs/act_pusht_jsonl_noisy_smoke.yaml",
             "configs/act_pusht_baseline.yaml",
             "configs/act_pusht_ablation_chunk_size.yaml",
         ],
@@ -115,11 +116,27 @@ def validate_config(path: Path) -> list[str]:
         require(positive_int(dataset.get("num_episodes")), "`dataset.num_episodes` must be a positive integer", errors)
         require(positive_int(dataset.get("steps_per_episode")), "`dataset.steps_per_episode` must be a positive integer", errors)
         require(positive_int(dataset.get("seed")), "`dataset.seed` must be a positive integer", errors)
+        if "action_noise_std" in dataset:
+            require(non_negative_number(dataset.get("action_noise_std")), "`dataset.action_noise_std` must be non-negative", errors)
+        if "start_low" in dataset and "start_high" in dataset:
+            require(
+                non_negative_number(dataset.get("start_low")) and non_negative_number(dataset.get("start_high")) and dataset.get("start_low") < dataset.get("start_high"),
+                "`dataset.start_low` must be smaller than `dataset.start_high`",
+                errors,
+            )
     if source == "jsonl":
         data_path = dataset.get("path")
         require(isinstance(data_path, str) and bool(data_path), "`dataset.path` is required when source is jsonl", errors)
         if isinstance(data_path, str) and data_path:
             require(resolve(data_path).exists(), f"`dataset.path` does not exist: {data_path}", errors)
+        if "action_noise_std" in dataset:
+            require(non_negative_number(dataset.get("action_noise_std")), "`dataset.action_noise_std` must be non-negative", errors)
+        if "start_low" in dataset and "start_high" in dataset:
+            require(
+                non_negative_number(dataset.get("start_low")) and non_negative_number(dataset.get("start_high")) and dataset.get("start_low") < dataset.get("start_high"),
+                "`dataset.start_low` must be smaller than `dataset.start_high`",
+                errors,
+            )
 
     require(training.get("device") in {"cpu", "cuda"}, "`training.device` must be `cpu` or `cuda`", errors)
     require(positive_int(training.get("batch_size")), "`training.batch_size` must be a positive integer", errors)

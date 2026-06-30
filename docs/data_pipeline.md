@@ -46,6 +46,14 @@ python scripts/run_jsonl_data_smoke.py
 
 This writes `data/examples/pusht_jsonl_smoke.jsonl`, inspects the file-backed dataset, trains a small ACT-style policy, and generates a report under `outputs/act_pusht_jsonl_smoke/`.
 
+Compare clean and noisier local JSONL demonstrations:
+
+```bash
+python scripts/run_data_quality_comparison.py
+```
+
+This keeps the policy and evaluation shape fixed, then compares rollout behavior across `data/examples/pusht_jsonl_smoke.jsonl` and `data/examples/pusht_jsonl_noisy_smoke.jsonl`.
+
 ## Why Rollout Matters
 
 Training loss only checks whether actions match demonstrations one step at a time. Rollout evaluation feeds predicted actions back into the environment state, so it exposes behavior drift, overshooting, and unstable action chunks.

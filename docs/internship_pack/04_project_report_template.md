@@ -57,6 +57,10 @@ Record:
 
 Record mean, standard deviation, min/max, clipping fraction, and the explanation you would give in an interview.
 
+## Optional Data Quality Comparison
+
+If you ran `python scripts/run_data_quality_comparison.py`, summarize how the noisy JSONL file changed success rate, final distance, action smoothness, and failure cases compared with the cleaner file.
+
 ## Failure Analysis
 
 List 2-3 failed episodes and classify them with `docs/failure_taxonomy.md`. Include the failed subtask or phase when available.

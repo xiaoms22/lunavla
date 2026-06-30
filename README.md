@@ -32,6 +32,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
 | Scale it | `python scripts/generate_action_statistics.py` | Action mean/std, clip fraction, and normalization formulas for the demonstration data. |
 | Load it | `python scripts/run_jsonl_data_smoke.py` | Export local PushT-style JSONL, reload it with `dataset.source: jsonl`, then train/eval/report. |
+| Stress it | `python scripts/run_data_quality_comparison.py` | Compare clean vs noisy local JSONL demonstrations with the same policy/eval shape. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
 | Practice it | `python scripts/generate_interview_flashcards.py` | Evidence-backed interview flashcards tied to code and run artifacts. |
 | Map it | `python scripts/generate_skill_evidence_map.py` | A skill-to-code-to-artifact map for project reports and interview prep. |
@@ -152,6 +153,7 @@ Run the optional JSONL data smoke path after the baseline works:
 ```bash
 python scripts/export_pusht_jsonl_dataset.py
 python scripts/run_jsonl_data_smoke.py
+python scripts/run_data_quality_comparison.py
 ```
 
 Or run the same baseline path step by step:
@@ -227,6 +229,7 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - one-command quickstart for the smallest beginner path;
 - a PushT-style demonstration generator;
 - a local JSONL export/reload smoke path for learning `dataset.source: jsonl`;
+- a clean-vs-noisy JSONL data-quality comparison for explaining how demonstrations affect rollout behavior;
 - a from-scratch behavior cloning MLP smoke baseline;
 - an ACT-style action chunk policy;
 - a minimal policy interface with `forward`, `predict_action`, `save_pretrained`, and `from_pretrained`;
