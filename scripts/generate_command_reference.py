@@ -514,6 +514,16 @@ COMMANDS: list[dict[str, Any]] = [
         "next": "Use this as the final checklist before sharing the repo or writing resume claims.",
     },
     {
+        "stage": "final package",
+        "command": "python scripts/check_final_package.py",
+        "purpose": "Verify the final repo, baseline report, ablation report, rollout demo, failure taxonomy, resume bullet, and two-minute explanation deliverables.",
+        "outputs": [
+            "outputs/final_package_check.md",
+            "outputs/submission_pack/final_package_check.md",
+        ],
+        "next": "Fix missing deliverables before sharing the repo or using it in applications.",
+    },
+    {
         "stage": "release check",
         "command": "python scripts/check_release_readiness.py",
         "purpose": "Check public files, generated evidence, links, and required commands.",
@@ -589,7 +599,7 @@ def build_reference() -> str:
         "13. Run `python scripts/generate_policy_ladder.py` after BC smoke and baseline evidence exist.",
         "14. Run `python scripts/generate_action_chunk_lesson.py` again after the baseline checkpoint exists.",
         "15. Run `python scripts/run_ablation_evidence.py` after the baseline report exists.",
-        "16. Finish with `python scripts/build_evidence_pack.py --skip-runs`, `python scripts/build_submission_pack.py`, and `python scripts/check_reviewer_readiness.py`.",
+        "16. Finish with `python scripts/build_evidence_pack.py --skip-runs`, `python scripts/build_submission_pack.py`, `python scripts/check_final_package.py`, and `python scripts/check_reviewer_readiness.py`.",
         "",
         "## Command Map",
         "",
@@ -619,6 +629,7 @@ def build_reference() -> str:
             "- To explain ablation setup: read `outputs/config_diff.md`.",
             "- To prepare for interviews: read `outputs/interview_flashcards.md` and `outputs/skill_evidence_map.md`.",
             "- To finish review readiness: read `outputs/reviewer_readiness.md`.",
+            "- To verify the final deliverables: read `outputs/final_package_check.md`.",
             "- To package the work: read `outputs/project_card.md` and `outputs/submission_pack/SUBMISSION_README.md`.",
             "",
             "## Rebuild",

@@ -12,6 +12,7 @@ python scripts/run_baseline_evidence.py
 python scripts/run_ablation_evidence.py
 python scripts/build_evidence_pack.py --skip-runs
 python scripts/build_submission_pack.py
+python scripts/check_final_package.py
 python scripts/check_reviewer_readiness.py
 ```
 
@@ -25,6 +26,13 @@ After `python scripts/build_submission_pack.py`, this checklist is copied into:
 
 ```text
 outputs/submission_pack/final_package_checklist.md
+```
+
+The final package checker writes:
+
+```text
+outputs/final_package_check.md
+outputs/submission_pack/final_package_check.md
 ```
 
 ## Required Deliverables
