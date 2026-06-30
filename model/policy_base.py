@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 import numpy as np
 
 
 PolicyBatch = dict[str, np.ndarray]
-PolicySample = dict[str, Any] | np.ndarray
+PolicySample = Union[dict[str, Any], np.ndarray]
 
 
 class MiniVLAPolicyBase(ABC):
