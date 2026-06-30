@@ -25,10 +25,11 @@ Deliverable: environment check, first-run checklist, and one paragraph explainin
 - Run `python scripts/generate_task_understanding_report.py`.
 - Run `python scripts/generate_action_statistics.py --config configs/act_pusht_baseline.yaml --run-dir outputs/act_pusht_baseline`.
 - Run `python scripts/generate_action_analysis_report.py`.
+- Run `python scripts/run_extended_evaluation.py`.
 - Run `python scripts/check_readme_assets.py` after exporting README assets.
 - Optionally rerun `python scripts/run_baseline_evidence.py --episodes 50` for a stronger report.
 
-Deliverable: baseline result table, task-layer check, task-understanding note, action-statistics note, action-analysis note, README asset check, and rollout screenshot.
+Deliverable: baseline result table, task-layer check, task-understanding note, action-statistics note, action-analysis note, extended-evaluation note, README asset check, and rollout screenshot.
 
 ## Week 3: Ablation And Policy Ladder
 
@@ -64,6 +65,7 @@ Deliverable: one policy-tuning comparison, one ablation report with config diff,
 - Include `outputs/code_walkthrough.md` as the code reading guide.
 - Include `outputs/task_understanding_report.md` as the phase/subtask rollout analysis.
 - Include `outputs/action_analysis_report.md` as the train-vs-eval action-scale analysis.
+- Include `outputs/extended_evaluation_report.md` as the stronger rollout-evaluation evidence.
 - Include `outputs/readme_asset_check.md` as visual evidence context.
 - Include `outputs/project_progress.md` as the evidence coverage checklist.
 - Include `outputs/project_card.md` as the one-page overview.

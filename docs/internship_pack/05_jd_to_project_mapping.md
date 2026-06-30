@@ -10,6 +10,7 @@ Use this table to connect job-description keywords to concrete repo evidence. Do
 | model tuning | Controlled BC hidden-size comparison | `python scripts/run_policy_tuning_comparison.py`, `outputs/policy_tuning_comparison.md` |
 | ACT | Action chunk prediction and chunk-size ablation | `configs/act_pusht_baseline.yaml`, `configs/act_pusht_ablation_chunk_size.yaml` |
 | rollout evaluation | Behavior over time, not just training loss | `eval_vla.py`, saved rollouts, `web_demo.html` |
+| evaluation robustness | More episodes, saved demos, success/failure examples | `python scripts/run_extended_evaluation.py`, `outputs/extended_evaluation_report.md` |
 | failure analysis | Debugging wrong direction, stuck behavior, and subtask failures | `docs/failure_taxonomy.md`, `python scripts/generate_failure_review.py` |
 | task decomposition | Phase/subtask context for explaining behavior | `dataset/task_context.py`, `python scripts/check_task_layer.py` |
 | task understanding | Rollout trace phase analysis and failed-subtask counts | `python scripts/generate_task_understanding_report.py`, `outputs/task_understanding_report.md` |

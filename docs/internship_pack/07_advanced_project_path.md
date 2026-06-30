@@ -39,6 +39,7 @@ Use this path after the baseline, ablation, policy ladder, and report pack run s
 
 - Increase evaluation episode count.
 - Save more rollout demos.
+- Start with `python scripts/run_extended_evaluation.py` after checkpoints exist.
 - Compare success rate with mean final distance instead of relying on one metric.
 - Inspect at least one success and one failure before writing a conclusion.
 

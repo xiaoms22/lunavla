@@ -125,6 +125,17 @@ STAGES = [
         ],
     },
     {
+        "stage": "extended evaluation",
+        "goal": "More rollout episodes are evaluated with success/failure examples and distance-aware conclusions.",
+        "command": "python scripts/run_extended_evaluation.py",
+        "artifacts": [
+            "outputs/extended_evaluation_report.md",
+            "outputs/extended_evaluation_report.csv",
+            "outputs/extended_evaluation/act_pusht_baseline_20ep/eval_summary.json",
+            "outputs/extended_evaluation/act_pusht_baseline_20ep/rollouts/episode_000.json",
+        ],
+    },
+    {
         "stage": "ablation evidence",
         "goal": "The chunk-size ablation can be compared against the baseline.",
         "command": "python scripts/run_ablation_evidence.py",

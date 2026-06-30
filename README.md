@@ -34,6 +34,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
 | Scale it | `python scripts/generate_action_statistics.py` | Action mean/std, clip fraction, and normalization formulas for the demonstration data. |
 | Analyze it | `python scripts/generate_action_analysis_report.py` | Compare train-time action targets with eval-time executable rollout actions. |
+| Evaluate it | `python scripts/run_extended_evaluation.py` | Rerun more rollout episodes, save demos, and compare success rate with final distance. |
 | Load it | `python scripts/run_jsonl_data_smoke.py` | Export local PushT-style JSONL, reload it with `dataset.source: jsonl`, then train/eval/report. |
 | Stress it | `python scripts/run_data_quality_comparison.py` | Compare clean vs noisy local JSONL demonstrations with the same policy/eval shape. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
@@ -144,6 +145,12 @@ Run the baseline evidence path:
 
 ```bash
 python scripts/run_baseline_evidence.py
+```
+
+Run a stronger evaluation pass after checkpoints exist:
+
+```bash
+python scripts/run_extended_evaluation.py
 ```
 
 Generate the BC-to-ACT policy ladder after BC smoke and baseline evidence exist:

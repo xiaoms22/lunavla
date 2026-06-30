@@ -18,6 +18,7 @@ LunaVLA is released as a tiny, reproducible VLA internship project starter.
 - BC hidden-size tuning comparison for learning why policy tuning should be judged with rollout evidence.
 - Task understanding report for reading saved rollout traces, counting failed phases/subtasks, and adding a first-pass `phase_regression` label.
 - Action analysis report for comparing train-time demonstration targets with eval-time executable rollout actions.
+- Extended evaluation report for rerunning more rollout episodes, saving demos, and comparing success rate with mean final distance.
 - Negative-path release checks for malformed configs and missing submission-pack sources.
 - Release readiness check that keeps README-visible commands covered by the generated command reference.
 - Task Layer check for generated record labels, rollout frame context, eval summaries, reports, and rollout browser details.

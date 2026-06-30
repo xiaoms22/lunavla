@@ -53,6 +53,10 @@ Record:
 | ablation | ACT | | | | | |
 | optional | BC | | | | | |
 
+## Extended Evaluation
+
+If you ran `python scripts/run_extended_evaluation.py`, summarize the more-episode result. Cite success rate, mean final distance, one success example, and one failure example when available.
+
 ## Action Statistics
 
 Record mean, standard deviation, min/max, clipping fraction, and the explanation you would give in an interview.

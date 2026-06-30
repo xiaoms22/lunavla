@@ -105,6 +105,9 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/action_statistics.md", "Action normalization and scale report."),
         artifact_row("outputs/action_analysis_report.md", "Compare train-time action targets with eval-time rollout actions."),
         artifact_row("outputs/action_analysis_report.csv", "Machine-readable train/eval action analysis table."),
+        artifact_row("outputs/extended_evaluation_report.md", "More-episode rollout evaluation with success/failure examples."),
+        artifact_row("outputs/extended_evaluation_report.csv", "Machine-readable extended evaluation table."),
+        artifact_row("outputs/extended_evaluation/act_pusht_baseline_20ep/eval_summary.json", "Baseline extended evaluation summary."),
         artifact_row("outputs/policy_ladder.md", "Compare BC and ACT-style policies as a learning progression."),
         artifact_row("outputs/policy_ladder.csv", "Machine-readable BC vs ACT policy ladder table."),
         artifact_row("outputs/policy_tuning_comparison.md", "BC hidden-size tuning comparison report."),
@@ -273,6 +276,7 @@ def main() -> int:
     run([python, "scripts/generate_task_understanding_report.py"])
     run([python, "scripts/generate_action_statistics.py"])
     run([python, "scripts/generate_action_analysis_report.py"])
+    run([python, "scripts/run_extended_evaluation.py"])
     run([python, "scripts/generate_policy_ladder.py"])
     run([python, "scripts/check_readme_assets.py"])
     run([python, "scripts/generate_learning_checkpoint.py"])

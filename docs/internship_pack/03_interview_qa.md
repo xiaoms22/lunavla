@@ -44,6 +44,10 @@ It keeps the policy, chunk size, training steps, and evaluation setting fixed, t
 
 The main metrics are final training loss, success rate, mean final distance, mean rollout length, mean action smoothness, failure-case count, failure categories, failure subtasks, and action statistics.
 
+## Why run extended evaluation?
+
+Run `python scripts/run_extended_evaluation.py` after checkpoints exist. It increases the number of rollout episodes, saves more rollout JSON demos, and forces the conclusion to cite both success rate and mean final distance plus at least one success or failure example.
+
 ## How do you explain BC vs ACT?
 
 BC is the simplest next-action imitation baseline. ACT predicts action chunks, which can better represent temporally correlated behavior. LunaVLA compares them as a learning ladder, not as a claim of state-of-the-art performance.

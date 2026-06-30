@@ -42,6 +42,10 @@ Use only the strongest bullet that matches work you actually completed. Replace 
 
 > Compared train-time demonstration action targets with eval-time executable rollout actions across runs, using clipped fraction, max action magnitude, and rollout metrics to explain action-scale risks before policy tuning.
 
+## Extended Evaluation Completed
+
+> Reran rollout evaluation with more episodes, saved additional rollout traces, and compared success rate with mean final distance plus success/failure examples before writing evaluation conclusions.
+
 ## Data Quality Comparison Completed
 
 > Compared clean and noisier local JSONL demonstrations under the same ACT-style train/eval setup, then reported changes in rollout success rate, final distance, action smoothness, and failure cases to analyze data quality effects.
