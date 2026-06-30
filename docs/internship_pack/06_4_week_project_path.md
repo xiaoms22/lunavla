@@ -1,6 +1,6 @@
-﻿# Four-Week Project Path
+# Four-Week Project Path
 
-This path turns LunaVLA from a runnable repo into a project a VLA beginner can understand, report, and explain clearly.
+This path turns LunaVLA from a runnable repo into a project a VLA beginner can understand, report, and explain clearly. The learning target is the IL/VA core of VLA: data, policy, rollout, metrics, failure analysis, and honest communication.
 
 ## Week 1: Run And Read
 
@@ -12,30 +12,34 @@ This path turns LunaVLA from a runnable repo into a project a VLA beginner can u
 - Run `python scripts/generate_troubleshooting_guide.py`.
 - Run `python scripts/generate_command_reference.py`.
 - Run `python scripts/generate_code_walkthrough.py`.
-- Read `dataset/pusht_dataset.py`, `model/minivla_policy.py`, and `trainer/train_act_pusht.py`.
-- Write down the shape of one training sample.
+- Read `dataset/pusht_dataset.py`, `dataset/task_context.py`, `model/minivla_policy.py`, and `trainer/train_act_pusht.py`.
+- Write down the shape of one training sample and one rollout frame.
 
-Deliverable: environment check, first-run checklist, and one paragraph explaining `observation -> action chunk`.
+Deliverable: environment check, first-run checklist, and one paragraph explaining `observation -> action chunk -> rollout`.
 
-## Week 2: Baseline
+## Week 2: Baseline And Evidence
 
 - Run `python scripts/run_baseline_evidence.py`.
 - Inspect the summary, run diagnostic, project report, web demo, and README assets.
+- Run `python scripts/check_task_layer.py`.
+- Run `python scripts/generate_action_statistics.py --config configs/act_pusht_baseline.yaml --run-dir outputs/act_pusht_baseline`.
 - Run `python scripts/check_readme_assets.py` after exporting README assets.
 - Optionally rerun `python scripts/run_baseline_evidence.py --episodes 50` for a stronger report.
 
-Deliverable: baseline result table, run diagnostic, README asset check, and rollout screenshot.
+Deliverable: baseline result table, task-layer check, action-statistics note, README asset check, and rollout screenshot.
 
-## Week 3: Ablation
+## Week 3: Ablation And Policy Ladder
 
+- Run `python scripts/run_bc_smoke.py`.
 - Run `python scripts/run_ablation_evidence.py`.
 - Read `outputs/run_comparison.md` and inspect at least one rollout from each run.
 - Read `outputs/config_diff.md` before writing the ablation conclusion.
 - Read each run diagnostic before writing the ablation conclusion.
+- Run `python scripts/generate_policy_ladder.py`.
 - Run `python scripts/generate_failure_review.py`.
-- Explain how chunk size changes behavior.
+- Explain how BC, ACT, and chunk size change behavior.
 
-Deliverable: one ablation report with config diff, metric deltas, failure review, and a short conclusion.
+Deliverable: one ablation report with config diff, metric deltas, policy-ladder explanation, failure review, and a short conclusion.
 
 ## Week 4: Report And Interview Pack
 
@@ -71,3 +75,7 @@ Deliverable: one ablation report with config diff, metric deltas, failure review
 - Practice the two-minute interview pitch.
 
 Deliverable: evidence index, submission pack, public project README, report, resume/interview pack, and interview script.
+
+## Completion Rule
+
+Only call the project "done" when a reviewer can open the repo, run the public commands, inspect the generated artifacts, and see that every resume/interview claim is supported by a file.

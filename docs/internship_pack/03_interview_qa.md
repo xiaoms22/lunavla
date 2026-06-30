@@ -1,25 +1,45 @@
-﻿# Interview Q&A
+# Interview Q&A
 
-## What is VLA in this project?
+## Is LunaVLA really VLA?
 
-VLA means Vision-Language-Action. In this tiny project, the interface is VLA-shaped: observations describe the environment state, an optional text instruction describes task intent, and actions are evaluated through rollout behavior.
+LunaVLA is VLA-shaped, but the current public core is more accurately an IL/VA starter. It teaches the observation-to-action and rollout-evaluation loop first. The language field is present as task context, but the public baseline does not claim to be an OpenVLA/openpi-style language-conditioned robot foundation model.
+
+## Why keep the name LunaVLA?
+
+The long-term learning path points toward VLA systems, but the repo starts with the smallest teachable core: demonstrations, action chunks, behavior cloning, ACT-style policies, rollout metrics, and reports. This makes the project useful before adding heavier language or world-model components.
 
 ## What is behavior cloning?
 
-Behavior cloning trains a policy to imitate expert demonstrations. LunaVLA generates simple PushT-style demonstrations and trains a policy to predict the expert action chunk from the current observation.
+Behavior cloning is supervised imitation learning. A demonstration provides an observation and expert action; the model learns to predict the action from the observation.
+
+## Why can low training loss still fail?
+
+Training loss measures one-step or chunk-level fit to demonstrations. Rollout evaluation feeds the policy's own predictions back into the environment, so small errors can accumulate and push the state away from the goal.
 
 ## Why use action chunks?
 
-ACT predicts a short sequence of actions instead of only one action. This is useful because actions are temporally correlated, and chunk size becomes an interpretable ablation variable.
+ACT predicts a short sequence of actions instead of only the next action. In LunaVLA, `chunk_size` is an interpretable variable: changing it can affect final loss, success rate, smoothness, and failure modes.
 
-## Why is rollout evaluation important?
+## What is the Task Layer?
 
-Low training loss can still fail when predictions are fed back into the environment. Rollout evaluation checks whether repeated predicted actions actually move the object toward the goal.
+The Task Layer adds structured context such as phase, subtask, and instruction metadata. It helps explain where a rollout failed, for example `approach_block`, `align_push`, `push_to_goal`, or `settle`, without requiring an LLM dependency.
+
+## What are action statistics?
+
+Action statistics summarize the scale and range of demonstration actions. Mean, standard deviation, min/max, and clipping information help explain why action normalization matters and why train-time targets differ from executable rollout actions.
 
 ## What metrics do you report?
 
-The main metrics are success rate, mean final distance, mean rollout length, action smoothness, final training loss, and failure-case count.
+The main metrics are final training loss, success rate, mean final distance, mean rollout length, mean action smoothness, failure-case count, failure categories, failure subtasks, and action statistics.
 
-## What can you improve after the baseline?
+## How do you explain BC vs ACT?
 
-Good extensions include better observation features, stronger policy capacity, cleaner demonstrations, chunk-size tuning, richer failure labels, and a more polished project report.
+BC is the simplest next-action imitation baseline. ACT predicts action chunks, which can better represent temporally correlated behavior. LunaVLA compares them as a learning ladder, not as a claim of state-of-the-art performance.
+
+## What would you improve next?
+
+Good extensions include better demonstrations, harder starts, stronger observation features, BC/ACT tuning, action normalization experiments, richer failure labels, local JSONL data loading, and clearer report assets.
+
+## What should you not claim?
+
+Do not claim real-robot deployment, foundation-model reproduction, OpenVLA/openpi/pi0 equivalence, or production robotics performance. Tie every claim to a command, config, metric, and artifact.
