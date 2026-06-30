@@ -39,6 +39,7 @@ CORE_FILES = [
     "scripts/prepare_homepage_media.py",
     "scripts/check_negative_paths.py",
     "scripts/check_task_layer.py",
+    "scripts/check_policy_interface.py",
     "scripts/check_repo_quality.py",
     "scripts/check_environment.py",
     "scripts/check_readme_assets.py",
@@ -151,6 +152,7 @@ PUBLIC_COMMANDS = [
     "python scripts/prepare_homepage_media.py",
     "python scripts/check_negative_paths.py",
     "python scripts/check_task_layer.py",
+    "python scripts/check_policy_interface.py",
     "python scripts/check_environment.py",
     "python scripts/check_readme_assets.py",
     "python scripts/check_project_progress.py",
@@ -313,6 +315,19 @@ def check_task_layer() -> None:
         fail("task layer checks failed" + (f": {details}" if details else ""))
 
 
+def check_policy_interface() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/check_policy_interface.py"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        details = "\n".join(part for part in [result.stdout.strip(), result.stderr.strip()] if part)
+        fail("policy interface checks failed" + (f": {details}" if details else ""))
+
+
 def main() -> int:
     args = parse_args()
     require_paths(CORE_FILES, "core release files")
@@ -327,6 +342,7 @@ def main() -> int:
     check_markdown_links()
     check_negative_paths()
     check_task_layer()
+    check_policy_interface()
     print("release readiness check passed")
     return 0
 

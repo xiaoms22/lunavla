@@ -6,14 +6,18 @@ from typing import Any
 
 import numpy as np
 
+from .policy_base import MiniVLAPolicyBase, PolicyBatch, PolicySample
 
-class MiniVLAPolicy:
+
+class MiniVLAPolicy(MiniVLAPolicyBase):
     """A tiny linear VLA policy for smoke tests and repository scaffolding.
 
     The model predicts an action chunk from observation + instruction features.
     It is intentionally small so the GitHub repo can be verified without a robot
     simulator or a GPU.
     """
+
+    policy_name = "tiny_linear"
 
     def __init__(
         self,
@@ -45,6 +49,20 @@ class MiniVLAPolicy:
             inputs = inputs[None, :]
         return inputs @ self.weights + self.bias
 
+    def forward(self, batch: PolicyBatch) -> dict[str, float]:
+        inputs = np.asarray(batch["inputs"], dtype=np.float32)
+        targets = np.asarray(batch["targets"], dtype=np.float32)
+        predictions = self.predict(inputs)
+        loss = float(np.mean((predictions - targets) ** 2))
+        return {"loss": loss, "mse_loss": loss}
+
+    def predict_action(self, sample: PolicySample) -> np.ndarray:
+        if isinstance(sample, dict):
+            inputs = np.asarray(sample["inputs"], dtype=np.float32)
+        else:
+            inputs = np.asarray(sample, dtype=np.float32)
+        return self.predict(inputs)[0]
+
     def train_step(self, inputs: np.ndarray, targets: np.ndarray, learning_rate: float) -> float:
         predictions = self.predict(inputs)
         error = predictions - targets
@@ -60,6 +78,7 @@ class MiniVLAPolicy:
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
         payload = {
+            "policy_name": getattr(self, "policy_name", self.__class__.policy_name),
             "input_dim": self.input_dim,
             "action_dim": self.action_dim,
             "chunk_size": self.chunk_size,
@@ -68,6 +87,12 @@ class MiniVLAPolicy:
             "metadata": metadata,
         }
         target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    def save_pretrained(self, run_dir: str | Path, metadata: dict[str, Any] | None = None) -> Path:
+        run_path = Path(run_dir)
+        checkpoint_path = run_path if run_path.suffix else run_path / "checkpoint.pt"
+        self.save(checkpoint_path, metadata=metadata or {})
+        return checkpoint_path
 
     @classmethod
     def load(cls, path: str | Path) -> tuple["MiniVLAPolicy", dict[str, Any]]:
@@ -79,4 +104,11 @@ class MiniVLAPolicy:
             weights=np.asarray(payload["weights"], dtype=np.float32),
             bias=np.asarray(payload["bias"], dtype=np.float32),
         )
+        policy.policy_name = str(payload.get("policy_name", policy.policy_name))
         return policy, payload.get("metadata", {})
+
+    @classmethod
+    def from_pretrained(cls, run_dir: str | Path) -> tuple["MiniVLAPolicy", dict[str, Any]]:
+        run_path = Path(run_dir)
+        checkpoint_path = run_path if run_path.suffix else run_path / "checkpoint.pt"
+        return cls.load(checkpoint_path)

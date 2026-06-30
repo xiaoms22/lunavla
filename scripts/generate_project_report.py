@@ -145,6 +145,8 @@ def build_report(run_dir: Path, title: str) -> str:
         metric_table(
             [
                 ("run directory", relative(run_dir)),
+                ("policy name", training.get("policy_name", evaluation.get("policy_name", "n/a"))),
+                ("policy interface", training.get("policy_interface", "n/a")),
                 ("checkpoint", training.get("checkpoint", "n/a")),
                 ("records", training.get("records", "n/a")),
                 ("input dim", training.get("input_dim", "n/a")),

@@ -45,6 +45,8 @@ def main() -> int:
 
     table = {
         "project_name": training.get("project_name", "unknown"),
+        "policy_name": training.get("policy_name", evaluation.get("policy_name", "n/a")),
+        "policy_interface": training.get("policy_interface", "n/a"),
         "final_loss": training.get("final_loss", "n/a"),
         "chunk_size": training.get("chunk_size", "n/a"),
         "records": training.get("records", "n/a"),

@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 from dataset.pusht_dataset import _instruction_features
 from dataset.task_context import build_pusht_task_context
-from model import MiniVLAPolicy
+from model import MiniVLAPolicy, MiniVLAPolicyBase
 from trainer.trainer_utils import append_jsonl, ensure_dir, write_json
 
 
@@ -110,7 +110,7 @@ def classify_failure(rollout: dict[str, Any], success_distance: float) -> dict[s
 
 
 def rollout_episode(
-    policy: MiniVLAPolicy,
+    policy: MiniVLAPolicyBase,
     seed: int,
     rollout_steps: int,
     success_distance: float,
@@ -131,7 +131,7 @@ def rollout_episode(
 
     for timestep in range(rollout_steps):
         model_input = make_input(position, goal, instruction)
-        action_chunk = policy.predict(model_input)[0]
+        action_chunk = policy.predict_action(model_input)
         action = np.clip(action_chunk[:2], -0.12, 0.12)
         position = np.clip(position + action, 0.0, 1.0)
         distance = float(np.linalg.norm(goal - position))
@@ -239,6 +239,8 @@ def main() -> int:
 
     summary = {
         "checkpoint": str(checkpoint_path),
+        "policy_name": getattr(policy, "policy_name", "unknown"),
+        "policy_interface": metadata.get("policy_interface", {}),
         "episodes": episodes,
         "success_count": success_count,
         "success_rate": round(success_count / max(episodes, 1), 4),

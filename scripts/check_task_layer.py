@@ -22,11 +22,16 @@ EXPECTED_CONTEXT_KEYS = {"task_id", "subtask_id", "phase", "instruction"}
 
 
 class GoalSeekingPolicy:
+    policy_name = "goal_seeking_check"
+
     def predict(self, model_input: np.ndarray) -> np.ndarray:
+        return self.predict_action(model_input).reshape(1, 2)
+
+    def predict_action(self, model_input: np.ndarray) -> np.ndarray:
         position = np.asarray(model_input[:2], dtype=np.float32)
         goal = np.asarray(model_input[2:4], dtype=np.float32)
         action = np.clip((goal - position) * 0.25, -0.08, 0.08)
-        return action.reshape(1, 2).astype(np.float32)
+        return action.astype(np.float32)
 
 
 def parse_args() -> argparse.Namespace:

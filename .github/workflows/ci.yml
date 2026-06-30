@@ -59,6 +59,9 @@ jobs:
       - name: Check Task Layer diagnostics
         run: python scripts/check_task_layer.py --run-dir outputs/cpu_smoke --require-generated
 
+      - name: Check policy interface
+        run: python scripts/check_policy_interface.py
+
       - name: Generate first run checklist
         run: python scripts/generate_first_run_checklist.py
 

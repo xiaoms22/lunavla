@@ -70,11 +70,18 @@ def main() -> int:
         "training": config["training"],
         "eval": config.get("eval", {}),
         "config_path": str(config_path.as_posix()),
+        "policy_interface": {
+            "policy_class": policy.__class__.__name__,
+            "policy_name": getattr(policy, "policy_name", "unknown"),
+            "contract": "forward(batch)->losses; predict_action(sample)->action_chunk",
+        },
     }
     policy.save(checkpoint_path, metadata=metadata)
 
     summary = {
         "project_name": config["project_name"],
+        "policy_name": getattr(policy, "policy_name", "unknown"),
+        "policy_interface": "MiniVLAPolicyBase",
         "checkpoint": str(checkpoint_path.relative_to(ROOT).as_posix()),
         "records": len(records),
         "input_dim": int(inputs.shape[1]),

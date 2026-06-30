@@ -63,6 +63,13 @@ COMMANDS: list[dict[str, Any]] = [
         "next": "Regenerate smoke or baseline artifacts if generated Task Layer evidence is missing.",
     },
     {
+        "stage": "policy interface",
+        "command": "python scripts/check_policy_interface.py",
+        "purpose": "Verify forward, predict_action, save_pretrained, and from_pretrained on the tiny policy contract.",
+        "outputs": [],
+        "next": "Fix policy interface compatibility before adding BC, ACT, or future policy variants.",
+    },
+    {
         "stage": "find",
         "command": "python scripts/generate_command_reference.py",
         "purpose": "Generate the public command-to-artifact map.",
