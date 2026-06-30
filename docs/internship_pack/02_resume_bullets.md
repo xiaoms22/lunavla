@@ -38,6 +38,10 @@ Use only the strongest bullet that matches work you actually completed. Replace 
 
 > Added action-statistics reporting for a tiny IL/VA training loop, connecting action mean/std/min/max, clipping behavior, normalization notes, and rollout diagnostics to evidence-backed project claims.
 
+## Action Analysis Completed
+
+> Compared train-time demonstration action targets with eval-time executable rollout actions across runs, using clipped fraction, max action magnitude, and rollout metrics to explain action-scale risks before policy tuning.
+
 ## Data Quality Comparison Completed
 
 > Compared clean and noisier local JSONL demonstrations under the same ACT-style train/eval setup, then reported changes in rollout success rate, final distance, action smoothness, and failure cases to analyze data quality effects.

@@ -32,6 +32,10 @@ Run `python scripts/generate_task_understanding_report.py` after saving rollout 
 
 Action statistics summarize the scale and range of demonstration actions. Mean, standard deviation, min/max, and clipping information help explain why action normalization matters and why train-time targets differ from executable rollout actions.
 
+## How do you connect train-time and eval-time actions?
+
+Run `python scripts/generate_action_analysis_report.py`. It compares demonstration action targets from training records with executable rollout actions after eval clipping, so you can explain whether a policy is saturating, producing tiny actions, or staying within the teaching-scale action range.
+
 ## What does the clean vs noisy JSONL comparison show?
 
 It keeps the policy, chunk size, training steps, and evaluation setting fixed, then changes the local JSONL demonstrations. This makes the result easier to explain as a data-quality experiment: noisier actions or harder starts can increase loss, reduce rollout success, and create more failure cases.

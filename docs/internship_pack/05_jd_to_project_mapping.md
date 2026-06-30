@@ -14,6 +14,7 @@ Use this table to connect job-description keywords to concrete repo evidence. Do
 | task decomposition | Phase/subtask context for explaining behavior | `dataset/task_context.py`, `python scripts/check_task_layer.py` |
 | task understanding | Rollout trace phase analysis and failed-subtask counts | `python scripts/generate_task_understanding_report.py`, `outputs/task_understanding_report.md` |
 | action representation | Action scale, smoothness, chunks, and normalization | `docs/tutorials/action_normalization.md`, action statistics reports |
+| action diagnostics | Train-target vs eval-executable action analysis | `python scripts/generate_action_analysis_report.py`, `outputs/action_analysis_report.md` |
 | data quality | Clean/noisy demonstration comparison | `python scripts/run_data_quality_comparison.py`, `outputs/data_quality_comparison.md` |
 | experiment reporting | Reproducible project communication | `scripts/generate_project_report.py`, `scripts/build_submission_pack.py` |
 | GitHub project evidence | A reviewer can rerun, inspect, and verify your work | README commands, configs, generated report paths |

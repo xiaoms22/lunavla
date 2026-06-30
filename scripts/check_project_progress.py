@@ -114,6 +114,17 @@ STAGES = [
         ],
     },
     {
+        "stage": "action analysis",
+        "goal": "Train-time action targets and eval-time executable actions are compared across runs.",
+        "command": "python scripts/generate_action_analysis_report.py",
+        "artifacts": [
+            "outputs/action_analysis_report.md",
+            "outputs/action_analysis_report.csv",
+            "outputs/act_pusht_baseline/action_statistics.json",
+            "outputs/act_pusht_baseline/rollouts/episode_000.json",
+        ],
+    },
+    {
         "stage": "ablation evidence",
         "goal": "The chunk-size ablation can be compared against the baseline.",
         "command": "python scripts/run_ablation_evidence.py",

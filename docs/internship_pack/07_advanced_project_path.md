@@ -31,6 +31,7 @@ Use this path after the baseline, ablation, policy ladder, and report pack run s
 
 - Generate action statistics for each run.
 - Check action mean, standard deviation, min/max, and clipped fraction.
+- Start with `python scripts/generate_action_analysis_report.py` to compare train-time targets with eval-time executable actions.
 - Explain how train-time action targets relate to eval-time executable actions.
 - Add an action-normalization ablation only after the baseline report is stable.
 

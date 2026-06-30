@@ -103,6 +103,8 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/task_understanding_report.csv", "Machine-readable task-understanding rollout table."),
         artifact_row("outputs/action_statistics.json", "Machine-readable action scale and normalization statistics."),
         artifact_row("outputs/action_statistics.md", "Action normalization and scale report."),
+        artifact_row("outputs/action_analysis_report.md", "Compare train-time action targets with eval-time rollout actions."),
+        artifact_row("outputs/action_analysis_report.csv", "Machine-readable train/eval action analysis table."),
         artifact_row("outputs/policy_ladder.md", "Compare BC and ACT-style policies as a learning progression."),
         artifact_row("outputs/policy_ladder.csv", "Machine-readable BC vs ACT policy ladder table."),
         artifact_row("outputs/policy_tuning_comparison.md", "BC hidden-size tuning comparison report."),
@@ -270,6 +272,7 @@ def main() -> int:
     run([python, "scripts/generate_action_chunk_lesson.py"])
     run([python, "scripts/generate_task_understanding_report.py"])
     run([python, "scripts/generate_action_statistics.py"])
+    run([python, "scripts/generate_action_analysis_report.py"])
     run([python, "scripts/generate_policy_ladder.py"])
     run([python, "scripts/check_readme_assets.py"])
     run([python, "scripts/generate_learning_checkpoint.py"])

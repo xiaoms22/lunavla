@@ -33,6 +33,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
 | Scale it | `python scripts/generate_action_statistics.py` | Action mean/std, clip fraction, and normalization formulas for the demonstration data. |
+| Analyze it | `python scripts/generate_action_analysis_report.py` | Compare train-time action targets with eval-time executable rollout actions. |
 | Load it | `python scripts/run_jsonl_data_smoke.py` | Export local PushT-style JSONL, reload it with `dataset.source: jsonl`, then train/eval/report. |
 | Stress it | `python scripts/run_data_quality_comparison.py` | Compare clean vs noisy local JSONL demonstrations with the same policy/eval shape. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
@@ -155,6 +156,7 @@ Generate action statistics and normalization notes:
 
 ```bash
 python scripts/generate_action_statistics.py
+python scripts/generate_action_analysis_report.py
 ```
 
 Run the optional JSONL data smoke path after the baseline works:
