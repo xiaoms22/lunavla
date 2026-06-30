@@ -8,6 +8,7 @@ Use this path after the baseline, ablation, policy ladder, and report pack run s
 - Add noisier starts and harder goals.
 - Save demonstrations as JSONL and reload them with `dataset.source: jsonl`.
 - Compare clean demonstrations against noisy demonstrations with the same eval setting.
+- Start with `python scripts/run_jsonl_data_smoke.py` to verify the local-file data path before designing a custom dataset.
 
 ## Stronger Policy
 

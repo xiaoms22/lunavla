@@ -31,6 +31,7 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
 | Scale it | `python scripts/generate_action_statistics.py` | Action mean/std, clip fraction, and normalization formulas for the demonstration data. |
+| Load it | `python scripts/run_jsonl_data_smoke.py` | Export local PushT-style JSONL, reload it with `dataset.source: jsonl`, then train/eval/report. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
 | Practice it | `python scripts/generate_interview_flashcards.py` | Evidence-backed interview flashcards tied to code and run artifacts. |
 | Map it | `python scripts/generate_skill_evidence_map.py` | A skill-to-code-to-artifact map for project reports and interview prep. |
@@ -146,6 +147,13 @@ Generate action statistics and normalization notes:
 python scripts/generate_action_statistics.py
 ```
 
+Run the optional JSONL data smoke path after the baseline works:
+
+```bash
+python scripts/export_pusht_jsonl_dataset.py
+python scripts/run_jsonl_data_smoke.py
+```
+
 Or run the same baseline path step by step:
 
 ```bash
@@ -218,6 +226,7 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - environment checks for Python, dependencies, repo files, and output write access;
 - one-command quickstart for the smallest beginner path;
 - a PushT-style demonstration generator;
+- a local JSONL export/reload smoke path for learning `dataset.source: jsonl`;
 - a from-scratch behavior cloning MLP smoke baseline;
 - an ACT-style action chunk policy;
 - a minimal policy interface with `forward`, `predict_action`, `save_pretrained`, and `from_pretrained`;
@@ -244,7 +253,7 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - a learner showcase draft for sharing reproducible project evidence without overclaiming.
 - a compact `outputs/submission_pack/` folder for reviewing the final project evidence.
 
-Mock PushT is the low-cost teaching layer. Its value is helping you understand the data, policy, rollout, evaluation, and reporting loop before moving to heavier robotics stacks.
+Mock PushT is the low-cost teaching layer. The optional JSONL smoke path shows how the same records can be saved as a local file and reloaded through config before moving to heavier robotics stacks.
 
 ## Internship Pack
 
@@ -276,7 +285,8 @@ Use GitHub issues to report a bug, share an experiment, or post a learner showca
 
 ```text
 lunavla/
-  configs/              # CPU smoke, baseline, and ablation configs
+  configs/              # CPU smoke, JSONL smoke, baseline, and ablation configs
+  data/examples/        # Small tracked JSONL sample for the optional stronger-data path
   dataset/              # VLA record schema and PushT-style data generator
   docs/                 # learning notes, evaluation guide, and internship pack
   images/               # README-visible PushT media, architecture, and ecosystem assets

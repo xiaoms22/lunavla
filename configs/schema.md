@@ -12,6 +12,6 @@ All runnable configs keep the same top-level shape:
 - `eval`: evaluation episodes, rollout horizon, and success distance.
 - `artifacts`: output directory, checkpoint name, and report path.
 
-The runnable path uses `dataset.source: mock_pusht` so the repository can be verified without a simulator install. Use `dataset.source: jsonl` for small custom demonstrations that follow the same record schema.
+The runnable path uses `dataset.source: mock_pusht` so the repository can be verified without a simulator install. Use `dataset.source: jsonl` for small custom demonstrations that follow the same record schema. The public JSONL smoke config is `configs/act_pusht_jsonl_smoke.yaml`.
 
 Run `python scripts/validate_configs.py` after editing configs. It checks required sections, supported dataset sources, ACT chunk-size consistency, numeric training/eval fields, and artifact paths before a training run starts.

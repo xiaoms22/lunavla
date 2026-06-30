@@ -13,6 +13,7 @@ LunaVLA is released as a tiny, reproducible VLA internship project starter.
 - Command reference generator for mapping public commands to generated artifacts.
 - Code walkthrough generator for reading the runnable implementation in order.
 - Action statistics generator for recording mean/std, clipping, and normalization formulas.
+- Optional JSONL data smoke path for exporting local PushT-style demonstrations and reloading them with `dataset.source: jsonl`.
 - Negative-path release checks for malformed configs and missing submission-pack sources.
 - Release readiness check that keeps README-visible commands covered by the generated command reference.
 - Task Layer check for generated record labels, rollout frame context, eval summaries, reports, and rollout browser details.
