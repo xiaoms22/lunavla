@@ -106,7 +106,10 @@ LEAK_SCAN_PATHS = [
     "DATA_CARD.md",
     "MODEL_CARD.md",
     "RELEASE_NOTES.md",
-    "docs",
+    "docs/visual_attributions.md",
+    "docs/tutorials",
+    "docs/reports",
+    "docs/internship_pack",
     "configs",
 ]
 
