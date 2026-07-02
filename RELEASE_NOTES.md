@@ -13,6 +13,13 @@ LunaVLA is released as a tiny, reproducible VLA internship project starter.
 - Command reference generator for mapping public commands to generated artifacts.
 - Code walkthrough generator for reading the runnable implementation in order.
 - Action statistics generator for recording mean/std, clipping, and normalization formulas.
+- Optional JSONL data smoke path for exporting local PushT-style demonstrations and reloading them with `dataset.source: jsonl`.
+- Clean-vs-noisy JSONL data-quality comparison for learning how demonstration quality affects rollout behavior.
+- BC hidden-size tuning comparison for learning why policy tuning should be judged with rollout evidence.
+- Task understanding report for reading saved rollout traces, counting failed phases/subtasks, and adding a first-pass `phase_regression` label.
+- Action analysis report for comparing train-time demonstration targets with eval-time executable rollout actions.
+- Extended evaluation report for rerunning more rollout episodes, saving demos, and comparing success rate with mean final distance.
+- Homepage summary generator for tying README-visible result claims to checked metrics and generated reports.
 - Negative-path release checks for malformed configs and missing submission-pack sources.
 - Release readiness check that keeps README-visible commands covered by the generated command reference.
 - Task Layer check for generated record labels, rollout frame context, eval summaries, reports, and rollout browser details.
@@ -23,6 +30,7 @@ LunaVLA is released as a tiny, reproducible VLA internship project starter.
 - Homepage ecosystem media from official LeRobot and LIBERO sources with attribution.
 - README asset check for ensuring GIFs, PNGs, SVGs, and the asset manifest are usable.
 - Project progress check for mapping generated artifacts to report-ready stages.
+- Reviewer readiness check for verifying commands, artifacts, boundaries, and public-safe claims.
 - Project card generator for a one-page command, metric, evidence, and boundary summary.
 - Experiment ledger generator for linking commands, config hashes, metrics, and artifacts.
 - Learning checkpoint generator for concept-to-evidence self-check questions.

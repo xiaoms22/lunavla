@@ -99,12 +99,27 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/command_reference.md", "Map each public command to its purpose and generated artifacts."),
         artifact_row("outputs/code_walkthrough.md", "Guide beginners through the runnable code path."),
         artifact_row("outputs/action_chunk_lesson.md", "Explain ACT-style future-action chunks with a real sample."),
+        artifact_row("outputs/task_understanding_report.md", "Inspect phase/subtask behavior in saved rollout traces."),
+        artifact_row("outputs/task_understanding_report.csv", "Machine-readable task-understanding rollout table."),
         artifact_row("outputs/action_statistics.json", "Machine-readable action scale and normalization statistics."),
         artifact_row("outputs/action_statistics.md", "Action normalization and scale report."),
+        artifact_row("outputs/action_analysis_report.md", "Compare train-time action targets with eval-time rollout actions."),
+        artifact_row("outputs/action_analysis_report.csv", "Machine-readable train/eval action analysis table."),
+        artifact_row("outputs/extended_evaluation_report.md", "More-episode rollout evaluation with success/failure examples."),
+        artifact_row("outputs/extended_evaluation_report.csv", "Machine-readable extended evaluation table."),
+        artifact_row("outputs/extended_evaluation/act_pusht_baseline_20ep/eval_summary.json", "Baseline extended evaluation summary."),
+        artifact_row("outputs/homepage_summary.md", "README-facing result summary tied to checked metrics."),
+        artifact_row("images/homepage_results.svg", "README-visible checked-results card."),
         artifact_row("outputs/policy_ladder.md", "Compare BC and ACT-style policies as a learning progression."),
         artifact_row("outputs/policy_ladder.csv", "Machine-readable BC vs ACT policy ladder table."),
+        artifact_row("outputs/policy_tuning_comparison.md", "BC hidden-size tuning comparison report."),
+        artifact_row("outputs/policy_tuning_comparison.csv", "Machine-readable BC tuning comparison table."),
+        artifact_row("outputs/policy_tuning_comparison_deltas.csv", "Machine-readable BC tuning metric deltas."),
+        artifact_row("outputs/policy_tuning_config_diff.md", "Config-level audit for the BC tuning comparison."),
+        artifact_row("outputs/policy_tuning_config_diff.json", "Machine-readable BC tuning config diff."),
         artifact_row("outputs/readme_asset_check.md", "Confirm README images and animations are renderable."),
         artifact_row("outputs/project_progress.md", "Show which public project evidence stages are complete."),
+        artifact_row("outputs/reviewer_readiness.md", "Final reviewer checklist for commands, artifacts, boundaries, and claim safety."),
         artifact_row("outputs/project_card.md", "One-page project evidence card."),
         artifact_row("outputs/experiment_ledger.md", "Audit commands, configs, metrics, and run artifacts."),
         artifact_row("outputs/experiment_ledger.json", "Machine-readable experiment ledger."),
@@ -120,6 +135,12 @@ def required_artifacts() -> list[dict[str, str]]:
         artifact_row("outputs/cpu_smoke/resume_pack.md", "Smallest resume and interview pack a learner can inspect."),
         artifact_row("outputs/cpu_smoke/run_diagnostic.md", "Smallest run diagnostic and claim-safety check."),
         artifact_row("outputs/cpu_smoke/web_demo.html", "Static rollout browser from the CPU smoke path."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/summary_report.md", "Hidden-64 BC tuning metric summary."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/action_statistics.json", "Hidden-64 BC action statistics."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/project_report.md", "Hidden-64 BC project report."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/resume_pack.md", "Hidden-64 BC resume and interview pack."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/run_diagnostic.md", "Hidden-64 BC run diagnostic and claim-safety check."),
+        artifact_row("outputs/bc_pusht_hidden64_smoke/web_demo.html", "Hidden-64 BC rollout browser."),
         artifact_row("outputs/act_pusht_baseline/summary_report.md", "Baseline metric summary."),
         artifact_row("outputs/act_pusht_baseline/action_statistics.json", "Baseline action statistics stored with the run."),
         artifact_row("outputs/act_pusht_baseline/project_report.md", "Baseline project report."),
@@ -172,6 +193,7 @@ def build_index() -> str:
         "- The policy ladder explains why BC and ACT should be compared with rollout evidence, not loss alone.",
         "- The README-visible assets pass image and animation checks.",
         "- The project progress report maps generated artifacts to report-ready stages.",
+        "- The reviewer readiness report verifies final commands, artifacts, boundaries, and public-safe claims.",
         "- The project card compresses commands, metrics, evidence links, and boundaries into one page.",
         "- The experiment ledger ties commands, config hashes, metrics, and artifacts together.",
         "- The learning checkpoint maps VLA concepts to code, reports, and self-check questions.",
@@ -213,21 +235,22 @@ def build_index() -> str:
             "9. Use `outputs/policy_ladder.md` to explain BC vs ACT as a policy-learning progression.",
             "10. Use `outputs/readme_asset_check.md` to confirm the visual assets are intact.",
             "11. Use `outputs/project_progress.md` to check which evidence stages are complete.",
-            "12. Use `outputs/project_card.md` as the one-page overview.",
-            "13. Use `outputs/experiment_ledger.md` to audit commands, configs, metrics, and artifacts.",
-            "14. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
-            "15. Use `outputs/interview_flashcards.md` for quick interview practice.",
-            "16. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
-            "17. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
-            "18. Use `outputs/failure_review.md` to explain failure behavior.",
-            "19. Use `outputs/dataset_inspection.md` to explain the sample format.",
-            "20. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
-            "21. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
-            "22. Use `outputs/run_comparison.md` for the ablation story.",
-            "23. Use `outputs/config_diff.md` to confirm what changed in the ablation.",
-            "24. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
-            "25. Use the README GIFs, policy ladder, and rollout browser as visual evidence.",
-            "26. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
+            "12. Use `outputs/reviewer_readiness.md` as the final external-review checklist.",
+            "13. Use `outputs/project_card.md` as the one-page overview.",
+            "14. Use `outputs/experiment_ledger.md` to audit commands, configs, metrics, and artifacts.",
+            "15. Use `outputs/learning_checkpoint.md` to practice the core explanation.",
+            "16. Use `outputs/interview_flashcards.md` for quick interview practice.",
+            "17. Use `outputs/skill_evidence_map.md` to connect skills to code and run evidence.",
+            "18. Use `outputs/learner_showcase.md` for a copyable public sharing draft.",
+            "19. Use `outputs/failure_review.md` to explain failure behavior.",
+            "20. Use `outputs/dataset_inspection.md` to explain the sample format.",
+            "21. Use `outputs/act_pusht_baseline/project_report.md` for the baseline story.",
+            "22. Use `outputs/act_pusht_baseline/run_diagnostic.md` to decide which claims are safe.",
+            "23. Use `outputs/run_comparison.md` for the ablation story.",
+            "24. Use `outputs/config_diff.md` to confirm what changed in the ablation.",
+            "25. Use `outputs/act_pusht_baseline/resume_pack.md` for the resume bullet and interview pitch.",
+            "26. Use the README GIFs, policy ladder, and rollout browser as visual evidence.",
+            "27. Keep the boundary honest: this is a small reproducible learning loop, not a real-robot deployment claim.",
         ]
     )
     if missing:
@@ -245,6 +268,7 @@ def main() -> int:
         run([python, "scripts/validate_configs.py"])
         run([python, "scripts/run_quickstart.py"])
         run([python, "scripts/run_bc_smoke.py"])
+        run([python, "scripts/run_policy_tuning_comparison.py", "--episodes", str(args.episodes)])
         run([python, "scripts/run_baseline_evidence.py", "--episodes", str(args.episodes)])
         run([python, "scripts/run_ablation_evidence.py", "--episodes", str(args.episodes), "--skip-baseline"])
     else:
@@ -254,7 +278,11 @@ def main() -> int:
     run([python, "scripts/generate_command_reference.py"])
     run([python, "scripts/generate_code_walkthrough.py"])
     run([python, "scripts/generate_action_chunk_lesson.py"])
+    run([python, "scripts/generate_task_understanding_report.py"])
     run([python, "scripts/generate_action_statistics.py"])
+    run([python, "scripts/generate_action_analysis_report.py"])
+    run([python, "scripts/run_extended_evaluation.py"])
+    run([python, "scripts/generate_homepage_summary.py"])
     run([python, "scripts/generate_policy_ladder.py"])
     run([python, "scripts/check_readme_assets.py"])
     run([python, "scripts/generate_learning_checkpoint.py"])
@@ -273,10 +301,16 @@ def main() -> int:
     run([python, "scripts/check_project_progress.py"])
     run([python, "scripts/generate_troubleshooting_guide.py"])
     out_path.write_text(build_index(), encoding="utf-8")
-    missing = [row["artifact"] for row in required_artifacts() if row["exists"] != "yes"]
+    missing = [row["artifact"] for row in required_artifacts() if row["exists"] != "yes" and row["artifact"] != "outputs/reviewer_readiness.md"]
     if missing:
         raise FileNotFoundError("Missing evidence artifacts: " + ", ".join(missing))
     run([python, "scripts/build_submission_pack.py", "--evidence-index", relative(out_path)])
+    run([python, "scripts/check_reviewer_readiness.py"])
+    out_path.write_text(build_index(), encoding="utf-8")
+    run([python, "scripts/build_submission_pack.py", "--evidence-index", relative(out_path)])
+    missing = [row["artifact"] for row in required_artifacts() if row["exists"] != "yes"]
+    if missing:
+        raise FileNotFoundError("Missing evidence artifacts: " + ", ".join(missing))
     print(f"evidence index: {out_path}")
     return 0
 

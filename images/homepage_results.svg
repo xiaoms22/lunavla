@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="494" viewBox="0 0 1040 494">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<rect x="24" y="24" width="992" height="88" rx="12" fill="#ffffff" stroke="#d7deea"/>
+<text x="48" y="60" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#172033">LunaVLA checked results</text>
+<text x="48" y="88" font-family="Arial, sans-serif" font-size="15" fill="#536071">Extended rollout evaluation: success rate + final distance + evidence boundary</text>
+<rect x="24" y="114" width="992" height="66" rx="10" fill="#ffffff" stroke="#dfe5ef"/>
+<circle cx="58" cy="147" r="13" fill="#1d6f42"/>
+<text x="51" y="153" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff">1</text>
+<text x="88" y="139" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">ACT baseline</text>
+<text x="88" y="163" font-family="Arial, sans-serif" font-size="12.5" fill="#536071">strong for this teaching eval; still inspect saved rollouts before claiming robustness</text>
+<rect x="602" y="131" width="260" height="17" rx="8.5" fill="#e8edf5"/>
+<rect x="602" y="131" width="260" height="17" rx="8.5" fill="#1d6f42"/>
+<text x="878" y="144" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 1</text>
+<text x="602" y="168" font-family="Arial, sans-serif" font-size="12" fill="#536071">episodes 20 | final distance 0.08754 | failures 0</text>
+<rect x="24" y="196" width="992" height="66" rx="10" fill="#ffffff" stroke="#dfe5ef"/>
+<circle cx="58" cy="229" r="13" fill="#305cde"/>
+<text x="51" y="235" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff">2</text>
+<text x="88" y="221" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">BC MLP</text>
+<text x="88" y="245" font-family="Arial, sans-serif" font-size="12.5" fill="#536071">often gets near the goal but does not reliably satisfy the success threshold</text>
+<rect x="602" y="213" width="260" height="17" rx="8.5" fill="#e8edf5"/>
+<rect x="602" y="213" width="91" height="17" rx="8.5" fill="#305cde"/>
+<text x="878" y="226" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 0.35</text>
+<text x="602" y="250" font-family="Arial, sans-serif" font-size="12" fill="#536071">episodes 20 | final distance 0.179 | failures 13</text>
+<rect x="24" y="278" width="992" height="66" rx="10" fill="#ffffff" stroke="#dfe5ef"/>
+<circle cx="58" cy="311" r="13" fill="#d36b21"/>
+<text x="51" y="317" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff">3</text>
+<text x="88" y="303" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">Noisy JSONL</text>
+<text x="88" y="327" font-family="Arial, sans-serif" font-size="12.5" fill="#536071">mixed result; compare success rate with final distance and inspect failure cases</text>
+<rect x="602" y="295" width="260" height="17" rx="8.5" fill="#e8edf5"/>
+<rect x="602" y="295" width="130" height="17" rx="8.5" fill="#d36b21"/>
+<text x="878" y="308" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 0.5</text>
+<text x="602" y="332" font-family="Arial, sans-serif" font-size="12" fill="#536071">episodes 20 | final distance 0.1359 | failures 10</text>
+<rect x="24" y="360" width="992" height="66" rx="10" fill="#ffffff" stroke="#dfe5ef"/>
+<circle cx="58" cy="393" r="13" fill="#7a4cc2"/>
+<text x="51" y="399" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff">4</text>
+<text x="88" y="385" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">CPU smoke</text>
+<text x="88" y="409" font-family="Arial, sans-serif" font-size="12.5" fill="#536071">mixed result; compare success rate with final distance and inspect failure cases</text>
+<rect x="602" y="377" width="260" height="17" rx="8.5" fill="#e8edf5"/>
+<rect x="602" y="377" width="195" height="17" rx="8.5" fill="#7a4cc2"/>
+<text x="878" y="390" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 0.75</text>
+<text x="602" y="414" font-family="Arial, sans-serif" font-size="12" fill="#536071">episodes 20 | final distance 0.1318 | failures 5</text>
+<text x="48" y="470" font-family="Arial, sans-serif" font-size="12" fill="#536071">Teaching-scale PushT-style evidence. Not a real-robot benchmark.</text>
+</svg>

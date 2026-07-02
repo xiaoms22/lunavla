@@ -221,6 +221,7 @@ def build_report(rows: list[dict[str, Any]]) -> str:
             "```bash",
             "python scripts/prepare_homepage_media.py",
             "python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images",
+            "python scripts/generate_homepage_summary.py",
             "python scripts/generate_policy_ladder.py",
             "python scripts/check_readme_assets.py",
             "```",

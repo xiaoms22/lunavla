@@ -1,0 +1,39 @@
+model:
+  name: mini_vla
+  policy_type: act
+  observation_dim: 4
+  instruction_dim: 8
+  action_dim: 2
+  chunk_size: 4
+project_name: luna_vla_act_pusht_jsonl_noisy_smoke
+framework: lunavla
+policy:
+  name: act
+  chunk_size: 4
+task: pusht
+dataset:
+  source: jsonl
+  path: data/examples/pusht_jsonl_noisy_smoke.jsonl
+  num_episodes: 12
+  steps_per_episode: 16
+  seed: 321
+  start_low: 0.0
+  start_high: 1.0
+  goal: [0.80, 0.20]
+  action_noise_std: 0.03
+  language_instruction: push the T block to the goal
+training:
+  device: cpu
+  batch_size: 32
+  num_steps: 300
+  learning_rate: 0.04
+  seed: 42
+  log_interval: 50
+eval:
+  episodes: 5
+  rollout_steps: 36
+  success_distance: 0.12
+artifacts:
+  output_dir: outputs/act_pusht_jsonl_noisy_smoke
+  checkpoint_name: checkpoint.pt
+  report_path: outputs/act_pusht_jsonl_noisy_smoke/summary_report.md

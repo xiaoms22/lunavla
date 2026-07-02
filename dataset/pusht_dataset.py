@@ -29,42 +29,57 @@ def generate_mock_pusht_records(
     steps_per_episode: int,
     seed: int,
     language_instruction: str | None = "push the T block to the goal",
+    goal: list[float] | tuple[float, float] = (0.80, 0.20),
+    start_low: float = 0.05,
+    start_high: float = 0.95,
+    action_gain: float = 0.35,
+    action_clip: float = 0.12,
+    action_noise_std: float = 0.004,
+    success_distance: float = 0.08,
 ) -> list[VLADatum]:
     rng = np.random.default_rng(seed)
-    goal = np.array([0.80, 0.20], dtype=np.float32)
+    goal_array = np.array(goal, dtype=np.float32)
     records: list[VLADatum] = []
 
     for episode_id in range(num_episodes):
-        position = rng.uniform(low=0.05, high=0.95, size=2).astype(np.float32)
+        position = rng.uniform(low=start_low, high=start_high, size=2).astype(np.float32)
         for timestep in range(steps_per_episode):
             observation = position.copy()
-            delta = goal - position
-            expert_action = np.clip(delta * 0.35, -0.12, 0.12)
-            expert_action += rng.normal(0.0, 0.004, size=2).astype(np.float32)
+            delta = goal_array - position
+            expert_action = np.clip(delta * action_gain, -action_clip, action_clip)
+            expert_action += rng.normal(0.0, action_noise_std, size=2).astype(np.float32)
             position = np.clip(position + expert_action, 0.0, 1.0)
-            distance = float(np.linalg.norm(goal - position))
+            distance = float(np.linalg.norm(goal_array - position))
             task_context = build_pusht_task_context(
                 position=position,
-                goal=goal,
+                goal=goal_array,
                 instruction=language_instruction,
-                success_distance=0.08,
+                success_distance=success_distance,
             )
             records.append(
                 VLADatum(
                     observation=[
                         float(observation[0]),
                         float(observation[1]),
-                        float(goal[0]),
-                        float(goal[1]),
+                        float(goal_array[0]),
+                        float(goal_array[1]),
                     ],
                     action=[float(expert_action[0]), float(expert_action[1])],
                     episode_id=episode_id,
                     timestep=timestep,
-                    success=distance < 0.08,
+                    success=distance < success_distance,
                     language_instruction=language_instruction,
                     metadata={
                         "task": "pusht_mock",
                         "distance_to_goal": distance,
+                        "generation": {
+                            "start_low": start_low,
+                            "start_high": start_high,
+                            "action_gain": action_gain,
+                            "action_clip": action_clip,
+                            "action_noise_std": action_noise_std,
+                            "success_distance": success_distance,
+                        },
                         "task_context": task_context.to_dict(),
                     },
                     task_id=task_context.task_id,
@@ -105,6 +120,13 @@ def load_dataset_from_config(dataset_config: dict[str, Any]) -> list[VLADatum]:
             language_instruction=dataset_config.get(
                 "language_instruction", "push the T block to the goal"
             ),
+            goal=dataset_config.get("goal", [0.80, 0.20]),
+            start_low=float(dataset_config.get("start_low", 0.05)),
+            start_high=float(dataset_config.get("start_high", 0.95)),
+            action_gain=float(dataset_config.get("action_gain", 0.35)),
+            action_clip=float(dataset_config.get("action_clip", 0.12)),
+            action_noise_std=float(dataset_config.get("action_noise_std", 0.004)),
+            success_distance=float(dataset_config.get("success_distance", 0.08)),
         )
 
     if source == "jsonl":

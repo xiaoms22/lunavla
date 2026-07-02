@@ -328,6 +328,8 @@ def build_markdown(run_dir: Path, training: dict[str, Any], evaluation: dict[str
     overall = verdict(checks)
     metrics = [
         {"metric": "project_name", "value": training.get("project_name", run_dir.name)},
+        {"metric": "dataset_source", "value": training.get("dataset_source", "n/a")},
+        {"metric": "dataset_path", "value": training.get("dataset_path", "n/a")},
         {"metric": "records", "value": training.get("records", "n/a")},
         {"metric": "chunk_size", "value": training.get("chunk_size", "n/a")},
         {"metric": "action_stats_path", "value": training.get("action_stats_path", evaluation.get("action_stats_path", "n/a"))},

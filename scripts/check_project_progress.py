@@ -66,6 +66,29 @@ STAGES = [
         ],
     },
     {
+        "stage": "policy tuning",
+        "goal": "Two BC hidden sizes are compared with the same data and eval shape.",
+        "command": "python scripts/run_policy_tuning_comparison.py",
+        "artifacts": [
+            "outputs/bc_pusht_cpu_smoke/summary_report.md",
+            "outputs/bc_pusht_hidden64_smoke/summary_report.md",
+            "outputs/policy_tuning_comparison.md",
+            "outputs/policy_tuning_comparison.csv",
+            "outputs/policy_tuning_comparison_deltas.csv",
+            "outputs/policy_tuning_config_diff.md",
+        ],
+    },
+    {
+        "stage": "task understanding",
+        "goal": "Saved rollout traces are summarized by phase, failed subtask, and first-pass task label.",
+        "command": "python scripts/generate_task_understanding_report.py",
+        "artifacts": [
+            "outputs/act_pusht_baseline/rollouts/episode_000.json",
+            "outputs/task_understanding_report.md",
+            "outputs/task_understanding_report.csv",
+        ],
+    },
+    {
         "stage": "policy ladder",
         "goal": "The BC and ACT-style policies are compared as a learning progression.",
         "command": "python scripts/generate_policy_ladder.py",
@@ -88,6 +111,42 @@ STAGES = [
             "outputs/cpu_smoke/action_statistics.json",
             "outputs/bc_pusht_cpu_smoke/action_statistics.json",
             "outputs/act_pusht_baseline/action_statistics.json",
+        ],
+    },
+    {
+        "stage": "action analysis",
+        "goal": "Train-time action targets and eval-time executable actions are compared across runs.",
+        "command": "python scripts/generate_action_analysis_report.py",
+        "artifacts": [
+            "outputs/action_analysis_report.md",
+            "outputs/action_analysis_report.csv",
+            "outputs/act_pusht_baseline/action_statistics.json",
+            "outputs/act_pusht_baseline/rollouts/episode_000.json",
+        ],
+    },
+    {
+        "stage": "extended evaluation",
+        "goal": "More rollout episodes are evaluated with success/failure examples and distance-aware conclusions.",
+        "command": "python scripts/run_extended_evaluation.py",
+        "artifacts": [
+            "outputs/extended_evaluation_report.md",
+            "outputs/extended_evaluation_report.csv",
+            "outputs/extended_evaluation/act_pusht_baseline_20ep/eval_summary.json",
+            "outputs/extended_evaluation/act_pusht_baseline_20ep/rollouts/episode_000.json",
+        ],
+    },
+    {
+        "stage": "homepage presentation",
+        "goal": "README-visible result claims are tied to checked metrics and submission-ready evidence.",
+        "command": "python scripts/generate_homepage_summary.py; python scripts/build_submission_pack.py",
+        "artifacts": [
+            "outputs/homepage_summary.md",
+            "images/homepage_results.svg",
+            "outputs/project_card.md",
+            "outputs/experiment_ledger.md",
+            "outputs/submission_pack/SUBMISSION_README.md",
+            "outputs/submission_pack/homepage_summary.md",
+            "outputs/submission_pack/assets/homepage_results.svg",
         ],
     },
     {
@@ -114,6 +173,17 @@ STAGES = [
         "command": "python scripts/build_evidence_pack.py --skip-runs",
         "artifacts": [
             "outputs/evidence_index.md",
+        ],
+    },
+    {
+        "stage": "reviewer readiness",
+        "goal": "A reviewer can verify commands, artifacts, boundaries, and claim safety from one report.",
+        "command": "python scripts/check_reviewer_readiness.py",
+        "artifacts": [
+            "outputs/reviewer_readiness.md",
+            "outputs/submission_pack/SUBMISSION_README.md",
+            "outputs/act_pusht_baseline/run_diagnostic.md",
+            "outputs/homepage_summary.md",
         ],
     },
 ]

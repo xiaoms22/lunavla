@@ -98,6 +98,8 @@ def artifact_rows(run_dir: Path, comparison_path: Path | None) -> list[dict[str,
 def metric_rows(training: dict[str, Any], evaluation: dict[str, Any], failures: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         {"metric": "project_name", "value": training.get("project_name", "unknown")},
+        {"metric": "dataset_source", "value": training.get("dataset_source", "n/a")},
+        {"metric": "dataset_path", "value": training.get("dataset_path", "n/a")},
         {"metric": "records", "value": training.get("records", "n/a")},
         {"metric": "chunk_size", "value": training.get("chunk_size", "n/a")},
         {"metric": "final_loss", "value": training.get("final_loss", "n/a")},
@@ -114,6 +116,7 @@ def best_resume_bullet(training: dict[str, Any], evaluation: dict[str, Any], com
     success_rate = format_value(evaluation.get("success_rate", "n/a"))
     final_distance = format_value(evaluation.get("mean_final_distance", "n/a"))
     chunk_size = format_value(training.get("chunk_size", "n/a"))
+    data_phrase = "local JSONL demonstrations" if training.get("dataset_source") == "jsonl" else "generated demonstrations"
     if comparison_exists:
         return (
             "Implemented a tiny ACT-style imitation-learning project on a PushT-style task, then ran a "
@@ -121,8 +124,8 @@ def best_resume_bullet(training: dict[str, Any], evaluation: dict[str, Any], com
             f"rate `{success_rate}`, mean final distance `{final_distance}`, action smoothness, and failure categories."
         )
     return (
-        "Implemented a tiny ACT-style imitation-learning baseline on a PushT-style task, including generated "
-        f"demonstrations, action-chunk prediction, checkpoint export, rollout evaluation with success rate "
+        f"Implemented a tiny ACT-style imitation-learning baseline on a PushT-style task, including {data_phrase}, "
+        f"action-chunk prediction, checkpoint export, rollout evaluation with success rate "
         f"`{success_rate}`, mean final distance `{final_distance}`, and failure-case analysis."
     )
 
@@ -132,13 +135,14 @@ def build_pitch(training: dict[str, Any], evaluation: dict[str, Any]) -> list[st
     success_rate = format_value(evaluation.get("success_rate", "n/a"))
     final_distance = format_value(evaluation.get("mean_final_distance", "n/a"))
     chunk_size = format_value(training.get("chunk_size", "n/a"))
+    data_phrase = "loads local JSONL demonstrations" if training.get("dataset_source") == "jsonl" else "generates PushT-style demonstrations"
     return [
         (
             f"I built `{project_name}` as a small VLA-style project starter. The goal was to make the "
             "observation-to-action learning loop runnable and explainable for beginners."
         ),
         (
-            "The system generates PushT-style demonstrations, converts each record into observation and "
+            f"The system {data_phrase}, converts each record into observation and "
             f"instruction features, trains an ACT-style policy to predict action chunks of size `{chunk_size}`, "
             "then evaluates the policy through saved rollouts."
         ),

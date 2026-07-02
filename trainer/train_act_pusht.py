@@ -94,6 +94,9 @@ def main() -> int:
         "project_name": config["project_name"],
         "policy_name": getattr(policy, "policy_name", "unknown"),
         "policy_interface": "MiniVLAPolicyBase",
+        "dataset_source": config["dataset"].get("source", "unknown"),
+        "dataset_path": config["dataset"].get("path", "n/a"),
+        "dataset_split": config["dataset"].get("split", "n/a"),
         "checkpoint": str(checkpoint_path.relative_to(ROOT).as_posix()),
         "records": len(records),
         "input_dim": int(inputs.shape[1]),
@@ -105,6 +108,7 @@ def main() -> int:
         "action_min": action_stats["action"]["min"],
         "action_max": action_stats["action"]["max"],
         "num_steps": num_steps,
+        "learning_rate": learning_rate,
         "final_loss": loss_rows[-1]["loss"],
     }
     write_csv(output_dir / "loss_curve.csv", loss_rows)

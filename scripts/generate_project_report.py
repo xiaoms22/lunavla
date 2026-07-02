@@ -70,6 +70,38 @@ def metric_table(rows: list[tuple[str, Any]]) -> list[str]:
     return lines
 
 
+def dataset_story(training: dict[str, Any]) -> dict[str, str]:
+    source = str(training.get("dataset_source", "mock_pusht"))
+    if source == "jsonl":
+        return {
+            "data_phrase": "local JSONL demonstrations loaded through `dataset.source: jsonl`",
+            "safe_claim": (
+                "A safe claim should mention only the verified local-file loop: exported PushT-style JSONL "
+                "demonstrations, reloaded them through the dataset config, trained an ACT-style action-chunk "
+                "policy, evaluated saved rollouts, and reported success rate, distance, smoothness, action "
+                "statistics, and failure cases."
+            ),
+            "boundary": (
+                "- This run uses a local JSONL file with teaching-scale PushT-style demonstrations.\n"
+                "- It is useful for learning the file-data path before larger robot-learning datasets.\n"
+                "- It does not demonstrate real-robot data collection, deployment, or state-of-the-art robotics performance."
+            ),
+        }
+    return {
+        "data_phrase": "generated PushT-style demonstrations",
+        "safe_claim": (
+            "A safe claim should mention only the verified loop: generated demonstration data, trained an "
+            "ACT-style action-chunk policy, evaluated saved rollouts, and reported success rate, distance, "
+            "smoothness, action statistics, and failure cases."
+        ),
+        "boundary": (
+            "- This run uses a teaching-scale PushT-style mock environment.\n"
+            "- It is useful for learning the data, policy, rollout, evaluation, and reporting loop.\n"
+            "- It does not demonstrate real-robot deployment or state-of-the-art robotics performance."
+        ),
+    }
+
+
 def failure_table(failures: list[dict[str, Any]]) -> list[str]:
     if not failures:
         return [
@@ -126,6 +158,7 @@ def build_report(run_dir: Path, title: str) -> str:
     success_rate = evaluation.get("success_rate", "n/a")
     final_loss = training.get("final_loss", "n/a")
     mean_distance = evaluation.get("mean_final_distance", "n/a")
+    story = dataset_story(training)
 
     lines: list[str] = [
         f"# {title}",
@@ -134,7 +167,7 @@ def build_report(run_dir: Path, title: str) -> str:
         "",
         (
             f"This report summarizes `{project_name}`, a small ACT-style imitation-learning run for a "
-            "PushT-style observation-to-action task. The run trains from generated demonstrations, "
+            f"PushT-style observation-to-action task. The run trains from {story['data_phrase']}, "
             "evaluates behavior through rollouts, and records metrics that can be inspected before making "
             "any resume or interview claim."
         ),
@@ -148,6 +181,9 @@ def build_report(run_dir: Path, title: str) -> str:
                 ("run directory", relative(run_dir)),
                 ("policy name", training.get("policy_name", evaluation.get("policy_name", "n/a"))),
                 ("policy interface", training.get("policy_interface", "n/a")),
+                ("dataset source", training.get("dataset_source", "n/a")),
+                ("dataset path", training.get("dataset_path", "n/a")),
+                ("dataset split", training.get("dataset_split", "n/a")),
                 ("checkpoint", training.get("checkpoint", "n/a")),
                 ("records", training.get("records", "n/a")),
                 ("input dim", training.get("input_dim", "n/a")),
@@ -253,17 +289,11 @@ def build_report(run_dir: Path, title: str) -> str:
             "",
             "## Resume-Safe Claim",
             "",
-            (
-                "A safe claim should mention only the verified loop: generated demonstration data, trained an "
-                "ACT-style action-chunk policy, evaluated saved rollouts, and reported success rate, distance, "
-                "smoothness, and failure cases."
-            ),
+            story["safe_claim"],
             "",
             "## Honest Boundaries",
             "",
-            "- This run uses a teaching-scale PushT-style mock environment.",
-            "- It is useful for learning the data, policy, rollout, evaluation, and reporting loop.",
-            "- It does not demonstrate real-robot deployment or state-of-the-art robotics performance.",
+            story["boundary"],
             "",
             "## Next Reproducible Step",
             "",

@@ -24,13 +24,19 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Read it | `python scripts/generate_code_walkthrough.py` | A guided reading order for the runnable code path. |
 | Run it | `python scripts/run_cpu_smoke.py` | A tiny training run, rollout evaluation, summary, and rollout browser artifact. |
 | Verify it | `python scripts/check_task_layer.py` | A fast check that records, rollout frames, summaries, reports, and the browser expose Task Layer context. |
+| Trace it | `python scripts/generate_task_understanding_report.py` | A rollout-trace report that counts failed phases/subtasks and first-pass task labels. |
 | Contract it | `python scripts/check_policy_interface.py` | A small interface check for `forward`, `predict_action`, `save_pretrained`, and `from_pretrained`. |
 | Clone it | `python scripts/run_bc_smoke.py` | A from-scratch behavior cloning MLP smoke run with rollout evidence. |
+| Tune it | `python scripts/run_policy_tuning_comparison.py` | Compare two BC hidden sizes with the same dataset, eval fields, and report format. |
 | Ladder it | `python scripts/generate_policy_ladder.py` | A BC-to-ACT comparison that explains why rollout evidence matters beyond supervised loss. |
 | Fix it | `python scripts/generate_troubleshooting_guide.py` | A symptom-to-command guide when an artifact is missing or a run needs debugging. |
 | Understand it | `python scripts/inspect_dataset.py` | One VLA sample, model input vector, and ACT-style action chunk target. |
 | Chunk it | `python scripts/generate_action_chunk_lesson.py` | A data-backed ACT/action-chunk lesson tied to the current config and checkpoint. |
 | Scale it | `python scripts/generate_action_statistics.py` | Action mean/std, clip fraction, and normalization formulas for the demonstration data. |
+| Analyze it | `python scripts/generate_action_analysis_report.py` | Compare train-time action targets with eval-time executable rollout actions. |
+| Evaluate it | `python scripts/run_extended_evaluation.py` | Rerun more rollout episodes, save demos, and compare success rate with final distance. |
+| Load it | `python scripts/run_jsonl_data_smoke.py` | Export local PushT-style JSONL, reload it with `dataset.source: jsonl`, then train/eval/report. |
+| Stress it | `python scripts/run_data_quality_comparison.py` | Compare clean vs noisy local JSONL demonstrations with the same policy/eval shape. |
 | Explain it | `python scripts/generate_learning_checkpoint.py` | Concept-to-evidence self-check questions for VLA beginners. |
 | Practice it | `python scripts/generate_interview_flashcards.py` | Evidence-backed interview flashcards tied to code and run artifacts. |
 | Map it | `python scripts/generate_skill_evidence_map.py` | A skill-to-code-to-artifact map for project reports and interview prep. |
@@ -41,6 +47,8 @@ LunaVLA is inspired by MiniMind's low-cost learning spirit, but it is an indepen
 | Track it | `python scripts/check_project_progress.py` | A stage checklist for generated project evidence. |
 | Package it | `python scripts/generate_project_card.py` | A one-page project card with commands, metrics, evidence, and boundaries. |
 | Audit it | `python scripts/generate_experiment_ledger.py` | A config, metric, command, and artifact ledger for reproducible claims. |
+| Finalize it | `python scripts/check_reviewer_readiness.py` | A final reviewer checklist for commands, artifacts, boundaries, and public-safe claims. |
+| Complete it | `python scripts/check_final_package.py` | A final deliverable check for repo, reports, rollout demo, resume bullet, and two-minute explanation. |
 | Share it | `python scripts/generate_showcase_issue.py` | A copyable learner showcase draft for public sharing. |
 | Extend it | `docs/internship_pack/07_advanced_project_path.md` | A safe path for improving the baseline after the runnable loop works. |
 
@@ -50,7 +58,16 @@ The PushT comparison below uses saved local LeRobot evaluation media. Use the as
 
 ```bash
 python scripts/export_readme_assets.py --run-dir outputs/act_pusht_baseline --out-dir images
+python scripts/generate_homepage_summary.py
 ```
+
+![LunaVLA checked results](images/homepage_results.svg)
+
+| Checked run | Episodes | Success rate | Mean final distance | What to say |
+| --- | --- | --- | --- | --- |
+| ACT baseline | 20 | 1.0 | 0.08754 | Strong for this teaching eval; inspect saved rollouts before claiming robustness. |
+| BC MLP | 20 | 0.35 | 0.178983 | Often gets near the goal but does not reliably satisfy the success threshold. |
+| Noisy JSONL | 20 | 0.5 | 0.135869 | Mixed result; compare success rate with final distance and inspect failure cases. |
 
 | ACT PushT eval | Diffusion Policy PushT eval |
 | --- | --- |
@@ -114,6 +131,7 @@ Check Task Layer evidence after smoke or baseline artifacts exist:
 
 ```bash
 python scripts/check_task_layer.py
+python scripts/generate_task_understanding_report.py
 ```
 
 Check the tiny policy interface contract:
@@ -128,10 +146,22 @@ Run the behavior cloning smoke baseline:
 python scripts/run_bc_smoke.py
 ```
 
+Run a small BC hidden-size tuning comparison:
+
+```bash
+python scripts/run_policy_tuning_comparison.py
+```
+
 Run the baseline evidence path:
 
 ```bash
 python scripts/run_baseline_evidence.py
+```
+
+Run a stronger evaluation pass after checkpoints exist:
+
+```bash
+python scripts/run_extended_evaluation.py
 ```
 
 Generate the BC-to-ACT policy ladder after BC smoke and baseline evidence exist:
@@ -144,6 +174,15 @@ Generate action statistics and normalization notes:
 
 ```bash
 python scripts/generate_action_statistics.py
+python scripts/generate_action_analysis_report.py
+```
+
+Run the optional JSONL data smoke path after the baseline works:
+
+```bash
+python scripts/export_pusht_jsonl_dataset.py
+python scripts/run_jsonl_data_smoke.py
+python scripts/run_data_quality_comparison.py
 ```
 
 Or run the same baseline path step by step:
@@ -202,11 +241,13 @@ Build a compact submission pack for project review:
 
 ```bash
 python scripts/build_submission_pack.py
+python scripts/check_final_package.py
 ```
 
 Check release readiness after the evidence artifacts exist:
 
 ```bash
+python scripts/check_reviewer_readiness.py
 python scripts/check_release_readiness.py
 ```
 
@@ -218,6 +259,8 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - environment checks for Python, dependencies, repo files, and output write access;
 - one-command quickstart for the smallest beginner path;
 - a PushT-style demonstration generator;
+- a local JSONL export/reload smoke path for learning `dataset.source: jsonl`;
+- a clean-vs-noisy JSONL data-quality comparison for explaining how demonstrations affect rollout behavior;
 - a from-scratch behavior cloning MLP smoke baseline;
 - an ACT-style action chunk policy;
 - a minimal policy interface with `forward`, `predict_action`, `save_pretrained`, and `from_pretrained`;
@@ -244,7 +287,13 @@ LunaVLA is intentionally small, but it includes the pieces a VLA internship proj
 - a learner showcase draft for sharing reproducible project evidence without overclaiming.
 - a compact `outputs/submission_pack/` folder for reviewing the final project evidence.
 
-Mock PushT is the low-cost teaching layer. Its value is helping you understand the data, policy, rollout, evaluation, and reporting loop before moving to heavier robotics stacks.
+Mock PushT is the low-cost teaching layer. The optional JSONL smoke path shows how the same records can be saved as a local file and reloaded through config before moving to heavier robotics stacks.
+
+## From IL/VA To Larger VLA Systems
+
+LunaVLA starts with the IL/VA core because that is the smallest loop a beginner can run and explain: demonstrations become action targets, policies predict actions or action chunks, and rollout evaluation checks behavior. Larger VLA systems add stronger vision/language backbones, richer robot datasets, language-conditioned task variation, benchmark adapters, and deployment constraints after this core loop is understood.
+
+Use LunaVLA as a first runnable bridge before studying LeRobot, OpenVLA, or openpi-style systems. Do not describe this repo as a reproduction of those projects; describe it as a small project that teaches the data, policy, rollout, report, and failure-analysis habits needed before moving into them.
 
 ## Internship Pack
 
@@ -257,6 +306,7 @@ If your goal is to turn the runnable loop into learning, resume, or interview ev
 - `docs/internship_pack/05_jd_to_project_mapping.md`: map JD keywords to code evidence.
 - `docs/internship_pack/06_4_week_project_path.md`: four-week learning path.
 - `docs/internship_pack/07_advanced_project_path.md`: stronger project path after the baseline works.
+- `docs/internship_pack/08_final_package_checklist.md`: final repo, report, demo, resume, and interview checklist.
 
 ## Release Materials
 
@@ -276,7 +326,8 @@ Use GitHub issues to report a bug, share an experiment, or post a learner showca
 
 ```text
 lunavla/
-  configs/              # CPU smoke, baseline, and ablation configs
+  configs/              # CPU smoke, JSONL smoke, baseline, and ablation configs
+  data/examples/        # Small tracked JSONL sample for the optional stronger-data path
   dataset/              # VLA record schema and PushT-style data generator
   docs/                 # learning notes, evaluation guide, and internship pack
   images/               # README-visible PushT media, architecture, and ecosystem assets

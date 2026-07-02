@@ -14,7 +14,7 @@ BOOKKEEPING_PATHS = {
     "artifacts.output_dir",
     "artifacts.report_path",
 }
-EXPECTED_EXPERIMENT_PATHS = {
+DEFAULT_EXPECTED_EXPERIMENT_PATHS = {
     "model.chunk_size",
     "policy.chunk_size",
 }
@@ -26,6 +26,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate", default="configs/act_pusht_ablation_chunk_size.yaml", help="Ablation config path.")
     parser.add_argument("--out", default="outputs/config_diff.md", help="Markdown config diff path.")
     parser.add_argument("--json-out", default="outputs/config_diff.json", help="Machine-readable diff path.")
+    parser.add_argument(
+        "--expected-paths",
+        nargs="*",
+        default=sorted(DEFAULT_EXPECTED_EXPERIMENT_PATHS),
+        help="Config paths that are expected to change for this comparison.",
+    )
     return parser.parse_args()
 
 
@@ -58,15 +64,15 @@ def flatten(value: Any, prefix: str = "") -> dict[str, Any]:
     return {prefix: value}
 
 
-def classify(path: str) -> str:
+def classify(path: str, expected_paths: set[str]) -> str:
     if path in BOOKKEEPING_PATHS:
         return "bookkeeping"
-    if path in EXPECTED_EXPERIMENT_PATHS:
+    if path in expected_paths:
         return "expected experiment variable"
     return "extra experimental change"
 
 
-def diff_configs(baseline: dict[str, Any], candidate: dict[str, Any]) -> list[dict[str, Any]]:
+def diff_configs(baseline: dict[str, Any], candidate: dict[str, Any], expected_paths: set[str]) -> list[dict[str, Any]]:
     baseline_flat = flatten(baseline)
     candidate_flat = flatten(candidate)
     rows: list[dict[str, Any]] = []
@@ -79,7 +85,7 @@ def diff_configs(baseline: dict[str, Any], candidate: dict[str, Any]) -> list[di
                     "path": path,
                     "baseline": baseline_value,
                     "candidate": candidate_value,
-                    "kind": classify(path),
+                    "kind": classify(path, expected_paths),
                 }
             )
     return rows
@@ -101,20 +107,20 @@ def markdown_table(rows: list[dict[str, Any]]) -> list[str]:
     return lines
 
 
-def clean_ablation(rows: list[dict[str, Any]]) -> bool:
+def clean_ablation(rows: list[dict[str, Any]], expected_paths: set[str]) -> bool:
     extra = [row for row in rows if row["kind"] == "extra experimental change"]
     expected = {row["path"] for row in rows if row["kind"] == "expected experiment variable"}
-    return not extra and expected == EXPECTED_EXPERIMENT_PATHS
+    return not extra and expected == expected_paths
 
 
-def build_payload(baseline_path: Path, candidate_path: Path) -> dict[str, Any]:
-    rows = diff_configs(read_yaml(baseline_path), read_yaml(candidate_path))
+def build_payload(baseline_path: Path, candidate_path: Path, expected_paths: set[str]) -> dict[str, Any]:
+    rows = diff_configs(read_yaml(baseline_path), read_yaml(candidate_path), expected_paths)
     return {
         "baseline": relative(baseline_path),
         "candidate": relative(candidate_path),
-        "expected_experiment_paths": sorted(EXPECTED_EXPERIMENT_PATHS),
+        "expected_experiment_paths": sorted(expected_paths),
         "bookkeeping_paths": sorted(BOOKKEEPING_PATHS),
-        "clean_one_variable_ablation": clean_ablation(rows),
+        "clean_one_variable_ablation": clean_ablation(rows, expected_paths),
         "differences": rows,
     }
 
@@ -137,7 +143,8 @@ def build_markdown(payload: dict[str, Any]) -> str:
     lines.extend(markdown_table(rows))
     lines.extend(["", "## Interpretation", ""])
     if payload["clean_one_variable_ablation"]:
-        lines.append("- The experimental change is limited to `model.chunk_size` and `policy.chunk_size`.")
+        expected = ", ".join(f"`{path}`" for path in payload["expected_experiment_paths"])
+        lines.append(f"- The experimental change is limited to {expected}.")
         lines.append("- Project name and artifact paths are bookkeeping differences needed to keep outputs separate.")
     else:
         lines.append("- Extra experimental changes were found. Treat the ablation conclusion as weaker until these are explained.")
@@ -158,7 +165,8 @@ def build_markdown(payload: dict[str, Any]) -> str:
 
 def main() -> int:
     args = parse_args()
-    payload = build_payload(resolve(args.baseline), resolve(args.candidate))
+    expected_paths = set(args.expected_paths)
+    payload = build_payload(resolve(args.baseline), resolve(args.candidate), expected_paths)
     out_path = resolve(args.out)
     json_path = resolve(args.json_out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
