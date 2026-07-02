@@ -1,25 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="980" height="378" viewBox="0 0 980 378">
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="464" viewBox="0 0 980 464">
 <rect width="100%" height="100%" fill="#fbfcff"/>
 <text x="32" y="48" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#172033">LunaVLA policy ladder</text>
 <text x="32" y="78" font-family="Arial, sans-serif" font-size="15" fill="#4c5870">BC next action -> ACT action chunks -> rollout evidence</text>
 <rect x="32" y="88" width="916" height="66" rx="10" fill="#ffffff" stroke="#d8deea"/>
 <circle cx="66" cy="120" r="14" fill="#2f6fed"/>
 <text x="58" y="126" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#ffffff">1</text>
-<text x="92" y="114" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">BC MLP</text>
-<text x="92" y="138" font-family="Arial, sans-serif" font-size="13" fill="#4c5870">Next-action BC is easy to supervise, but rollout can drift after small errors.</text>
+<text x="92" y="114" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">ACT chunk-2</text>
+<text x="92" y="138" font-family="Arial, sans-serif" font-size="13" fill="#4c5870">A tiny ACT path introduces future-action chunks while staying CPU-friendly.</text>
 <rect x="566" y="104" width="260" height="16" rx="8" fill="#e9edf5"/>
-<rect x="566" y="104" width="52" height="16" rx="8" fill="#2f6fed"/>
-<text x="842" y="117" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 0.2</text>
-<text x="566" y="140" font-family="Arial, sans-serif" font-size="12" fill="#4c5870">loss 0.00089725 | final distance 0.213984</text>
+<rect x="566" y="104" width="173" height="16" rx="8" fill="#2f6fed"/>
+<text x="842" y="117" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 0.6667</text>
+<text x="566" y="140" font-family="Arial, sans-serif" font-size="12" fill="#4c5870">loss 0.00083959 | final distance 0.155782</text>
 <rect x="32" y="174" width="916" height="66" rx="10" fill="#ffffff" stroke="#d8deea"/>
 <circle cx="66" cy="206" r="14" fill="#1f9d55"/>
 <text x="58" y="212" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#ffffff">2</text>
-<text x="92" y="200" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">ACT chunk-2</text>
-<text x="92" y="224" font-family="Arial, sans-serif" font-size="13" fill="#4c5870">A tiny ACT path introduces future-action chunks while staying CPU-friendly.</text>
+<text x="92" y="200" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">BC MLP</text>
+<text x="92" y="224" font-family="Arial, sans-serif" font-size="13" fill="#4c5870">Next-action BC is easy to supervise, but rollout can drift after small errors.</text>
 <rect x="566" y="190" width="260" height="16" rx="8" fill="#e9edf5"/>
-<rect x="566" y="190" width="173" height="16" rx="8" fill="#1f9d55"/>
-<text x="842" y="203" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 0.6667</text>
-<text x="566" y="226" font-family="Arial, sans-serif" font-size="12" fill="#4c5870">loss 0.00083959 | final distance 0.155782</text>
+<rect x="566" y="190" width="52" height="16" rx="8" fill="#1f9d55"/>
+<text x="842" y="203" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 0.2</text>
+<text x="566" y="226" font-family="Arial, sans-serif" font-size="12" fill="#4c5870">loss 0.00089725 | final distance 0.213984</text>
 <rect x="32" y="260" width="916" height="66" rx="10" fill="#ffffff" stroke="#d8deea"/>
 <circle cx="66" cy="292" r="14" fill="#e67e22"/>
 <text x="58" y="298" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#ffffff">3</text>
@@ -29,4 +29,13 @@
 <rect x="566" y="276" width="260" height="16" rx="8" fill="#e67e22"/>
 <text x="842" y="289" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 1</text>
 <text x="566" y="312" font-family="Arial, sans-serif" font-size="12" fill="#4c5870">loss 6.612e-05 | final distance 0.092592</text>
+<rect x="32" y="346" width="916" height="66" rx="10" fill="#ffffff" stroke="#d8deea"/>
+<circle cx="66" cy="378" r="14" fill="#8e44ad"/>
+<text x="58" y="384" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#ffffff">4</text>
+<text x="92" y="372" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#172033">ACT chunk-4</text>
+<text x="92" y="396" font-family="Arial, sans-serif" font-size="13" fill="#4c5870">Longer action chunks let the policy predict a short plan, not just the next move.</text>
+<rect x="566" y="362" width="260" height="16" rx="8" fill="#e9edf5"/>
+<rect x="566" y="362" width="260" height="16" rx="8" fill="#8e44ad"/>
+<text x="842" y="375" font-family="Arial, sans-serif" font-size="13" fill="#172033">success 1</text>
+<text x="566" y="398" font-family="Arial, sans-serif" font-size="12" fill="#4c5870">loss 0.00010389 | final distance 0.090064</text>
 </svg>
