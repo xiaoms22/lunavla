@@ -1,0 +1,66 @@
+[project]
+name = "lunavla"
+version = "1.1.0"
+description = "CPU-first imitation-learning and vision-action teaching core"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "Apache-2.0"
+dependencies = [
+  "numpy>=1.24,<2.0",
+  "Pillow>=10.0",
+  "PyYAML>=6.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+  "integration: end-to-end tests that invoke a CLI or train a policy",
+]
+
+[tool.coverage.run]
+relative_files = true
+source = ["dataset", "model", "trainer", "eval_vla"]
+omit = [
+  "dataset/__init__.py",
+  "model/__init__.py",
+  "trainer/__init__.py",
+  "trainer/train_act.py",
+  "trainer/train_act_pusht.py",
+  "trainer/train_bc_pusht.py",
+  "trainer/train_smoke.py",
+]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+  "raise NotImplementedError",
+  "@abstractmethod",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["docs/archive", "outputs", "scripts"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"trainer/train_*.py" = ["E402"]
+"eval_vla.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.10"
+check_untyped_defs = true
+disallow_any_generics = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true

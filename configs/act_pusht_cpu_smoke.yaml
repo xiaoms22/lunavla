@@ -1,21 +1,22 @@
-﻿model:
-  name: mini_vla
-  policy_type: linear_smoke
+﻿schema_version: 1
+project_name: luna_vla_cpu_smoke
+framework: lunavla
+policy:
+  type: numpy_linear_chunk
   observation_dim: 4
   instruction_dim: 8
   action_dim: 2
   chunk_size: 2
-project_name: luna_vla_cpu_smoke
-framework: lunavla
-policy:
-  name: act
-  chunk_size: 2
-task: pusht
+task: pusht_style_point_reach
 dataset:
   source: mock_pusht
   num_episodes: 32
   steps_per_episode: 16
   seed: 7
+  split_seed: 7
+  train_fraction: 0.8
+  validation_fraction: 0.1
+  test_fraction: 0.1
   language_instruction: push the T block to the goal
 training:
   device: cpu
@@ -26,9 +27,15 @@ training:
   log_interval: 25
 eval:
   episodes: 3
+  seed: 1000
   rollout_steps: 32
   success_distance: 0.12
+  goal: [0.80, 0.20]
+  start_low: 0.05
+  start_high: 0.95
+  action_clip: 0.12
+  execution_mode: open_loop_chunk
 artifacts:
   output_dir: outputs/cpu_smoke
-  checkpoint_name: checkpoint.pt
+  checkpoint_name: checkpoint.json
   report_path: outputs/cpu_smoke/summary_report.md

@@ -1,5 +1,5 @@
-﻿blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: Read the Quick Start
-    url: https://github.com/xiaoms22/lunavla#quick-start
-    about: Run the smoke test before opening a reproducibility issue.
+  - name: Security vulnerability
+    url: https://github.com/xiaoms22/lunavla/security/advisories/new
+    about: Report vulnerabilities or exposed private material confidentially.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 import random
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,36 @@ def ensure_dir(path: str | Path) -> Path:
     target = Path(path)
     target.mkdir(parents=True, exist_ok=True)
     return target
+
+
+def prepare_run_dir(path: str | Path, *, overwrite: bool = False) -> Path:
+    """Create an experiment directory without silently mixing runs."""
+
+    target = Path(path)
+    if target.exists() and any(target.iterdir()):
+        if not overwrite:
+            raise FileExistsError(
+                f"experiment directory is not empty: {target}; pass --overwrite to rebuild it"
+            )
+        shutil.rmtree(target)
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def reset_rollout_dir(path: str | Path) -> Path:
+    """Remove stale rollout files before saving a new evaluation run."""
+
+    target = Path(path)
+    if target.exists():
+        shutil.rmtree(target)
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def remove_stale_rollouts(path: str | Path) -> None:
+    target = Path(path)
+    if target.exists():
+        shutil.rmtree(target)
 
 
 def setup_seed(seed: int) -> None:
@@ -48,7 +79,7 @@ def write_metric(path: str | Path, step: int, metrics: dict[str, Any]) -> None:
     append_jsonl(path, payload)
 
 
-def checkpoint_path(output_dir: str | Path, checkpoint_name: str = "checkpoint.pt") -> Path:
+def checkpoint_path(output_dir: str | Path, checkpoint_name: str = "checkpoint.json") -> Path:
     return Path(output_dir) / checkpoint_name
 
 

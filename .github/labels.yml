@@ -1,0 +1,21 @@
+- name: bug
+  color: d73a4a
+  description: Reproducible defect in the teaching pipeline
+- name: experiment
+  color: 5319e7
+  description: Controlled experiment report or evidence update
+- name: showcase
+  color: 0e8a16
+  description: Learner project built from LunaVLA
+- name: dependencies
+  color: 0366d6
+  description: Dependency update
+- name: python
+  color: 3572A5
+  description: Python implementation or tooling
+- name: github-actions
+  color: 2088ff
+  description: GitHub Actions automation
+- name: security
+  color: b60205
+  description: Security hardening without vulnerability details

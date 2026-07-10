@@ -1,163 +1,152 @@
 from __future__ import annotations
 
+import re
 import subprocess
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 
+FORBIDDEN_TRACKED_PATHS = (
+    "docs/star_playbook",
+    "docs/code_analysis",
+    "scripts/sync_upstreams.py",
+    "references",
+)
+SKIP_PREFIXES = (
+    "docs/archive/v1.0/",
+    "outputs/",
+    "data/raw/",
+    "data/interim/",
+    "data/processed/",
+    "references/",
+)
+TEXT_SUFFIXES = {
+    ".cfg",
+    ".csv",
+    ".ini",
+    ".json",
+    ".jsonl",
+    ".md",
+    ".py",
+    ".toml",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+MAX_SCAN_BYTES = 2 * 1024 * 1024
 
-def joined(*parts: str) -> str:
-    return "".join(parts)
-
-
-FORBIDDEN_PATHS = [
-    ROOT / "docs" / joined("star", "_", "playbook"),
-    ROOT / "docs" / joined("code", "_", "analysis"),
-    ROOT / "scripts" / joined("sync", "_", "upstreams.py"),
-    ROOT / "references",
-]
-
-TRACKED_TEXT_SUFFIXES = {".md", ".py", ".yml", ".yaml", ".txt", ".json"}
-SKIP_TRACKED_PREFIXES = ("outputs/", "data/", "references/")
-
-PUBLIC_TEXT_BLOCKLIST = [
-    joined("star", "_", "playbook"),
-    joined("code", "_", "analysis"),
-    joined("sync", "_", "upstreams"),
-    joined("future", " ", "adapter"),
-    joined("Not", "Implemented"),
-    joined("place", "holder"),
-    joined("Road", "map"),
-    joined("Le", "Robot", " ", "adapter"),
-    joined("Open", "VLA"),
-    joined("open", "pi"),
-    joined("p", "i0"),
-]
-
-PERSONAL_TEXT_BLOCKLIST = [
-    chr(0x5343) + chr(0x5BFB),
-    chr(0x8096) + chr(0x94ED) + chr(0x7855),
-    joined("Ming", "shuo"),
-    joined("U", "DAS"),
-    joined("Robo", "Arena"),
-    joined("Spi", "rit"),
-    joined("moz", "brain"),
-    joined("men", "tor"),
-    chr(0x5BFC) + chr(0x5E08),
-    chr(0x624B) + chr(0x673A) + chr(0x53F7),
-    chr(0x7535) + chr(0x8BDD),
-    chr(0x90AE) + chr(0x7BB1),
-    chr(0x7B80) + chr(0x5386) + chr(0x539F) + chr(0x6587),
-    chr(0x5B9E) + chr(0x4E60) + chr(0x7ECF) + chr(0x5386),
-]
-
-PUBLIC_COMMAND_BLOCKLIST = [
-    joined("&", "&"),
-]
-
-MOJIBAKE_PATTERNS = [
-    chr(0xFFFD),
-    chr(0x940E),
-    chr(0x6CD1),
-    chr(0x7F01),
-    chr(0x95C2),
-    chr(0x95BF),
-    chr(0x9207),
-    chr(0x745B),
-    chr(0x951F),
-]
+ABSOLUTE_PATH_PATTERNS = (
+    re.compile(r"/(?:Users|home)/[A-Za-z0-9._-]+/(?:[^\s`'\"<>]|\\ )+"),
+    re.compile(r"[A-Za-z]:\\Users\\[A-Za-z0-9._-]+\\[^\s`'\"<>]+"),
+)
+CREDENTIAL_PATTERNS = (
+    ("private key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----")),
+    ("GitHub classic token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,255}\b")),
+    ("GitHub fine-grained token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{40,255}\b")),
+    ("AWS access key", re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b")),
+    ("OpenAI API key", re.compile(r"\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{32,}\b")),
+    ("Slack token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b")),
+)
 
 
-def fail(message: str) -> None:
-    raise SystemExit(f"repo quality check failed: {message}")
+def fail(errors: list[str]) -> None:
+    if not errors:
+        return
+    for error in errors:
+        print(f"repo quality error: {error}", file=sys.stderr)
+    raise SystemExit(1)
 
 
-def git_ls_files() -> list[str]:
+def repository_files() -> list[str]:
     result = subprocess.run(
-        ["git", "ls-files"],
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
         cwd=ROOT,
         check=True,
         capture_output=True,
         text=True,
     )
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return sorted(set(line.strip() for line in result.stdout.splitlines() if line.strip()))
 
 
-def public_text_paths() -> list[Path]:
-    paths: list[Path] = []
-    for relative in git_ls_files():
-        if relative.startswith(SKIP_TRACKED_PREFIXES):
+def is_skipped(relative: str) -> bool:
+    return relative.startswith(SKIP_PREFIXES)
+
+
+def tracked(relative: str) -> bool:
+    result = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", relative],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
+
+def check_forbidden_paths(files: list[str]) -> list[str]:
+    errors: list[str] = []
+    for forbidden in FORBIDDEN_TRACKED_PATHS:
+        if any(path == forbidden or path.startswith(forbidden + "/") for path in files if tracked(path)):
+            errors.append(f"public repository must not track `{forbidden}`")
+    return errors
+
+
+def check_text(files: list[str]) -> list[str]:
+    errors: list[str] = []
+    for relative in files:
+        if is_skipped(relative):
             continue
         path = ROOT / relative
-        if path.suffix in TRACKED_TEXT_SUFFIXES:
-            paths.append(path)
-    return paths
-
-
-def check_forbidden_paths() -> None:
-    for path in FORBIDDEN_PATHS:
-        relative = path.relative_to(ROOT).as_posix()
-        tracked = subprocess.run(
-            ["git", "ls-files", "--", relative],
-            cwd=ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if tracked.stdout.strip():
-            fail(f"public repo should not track {relative}")
-
-
-def check_text_blocklist() -> None:
-    for path in public_text_paths():
-        if not path.exists():
+        if path.suffix.lower() not in TEXT_SUFFIXES or not path.is_file() or path.stat().st_size > MAX_SCAN_BYTES:
             continue
-        text = path.read_text(encoding="utf-8")
-        for pattern in PUBLIC_TEXT_BLOCKLIST + PERSONAL_TEXT_BLOCKLIST:
-            if pattern in text:
-                fail(f"{path.relative_to(ROOT).as_posix()} contains blocked public marker")
-        for pattern in MOJIBAKE_PATTERNS:
-            if pattern in text:
-                fail(f"{path.relative_to(ROOT).as_posix()} may contain mojibake `{pattern}`")
-        for pattern in PUBLIC_COMMAND_BLOCKLIST:
-            if pattern in text:
-                fail(f"{path.relative_to(ROOT).as_posix()} contains shell-specific command separator `{pattern}`")
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            errors.append(f"`{relative}` is not valid UTF-8")
+            continue
+        if "\ufffd" in text:
+            errors.append(f"`{relative}` contains the Unicode replacement character")
+        for pattern in ABSOLUTE_PATH_PATTERNS:
+            match = pattern.search(text)
+            if match:
+                errors.append(f"`{relative}` contains a workstation-specific absolute path: `{match.group(0)}`")
+                break
+        for label, pattern in CREDENTIAL_PATTERNS:
+            if pattern.search(text):
+                errors.append(f"`{relative}` contains a value shaped like a {label}")
+    return errors
 
 
-def iter_readme_paths() -> list[str]:
+def readme_targets() -> list[str]:
+    if not README.is_file():
+        return []
     text = README.read_text(encoding="utf-8")
-    import re
-
-    markdown_targets = re.findall(r"\[[^\]]*\]\(([^)]+)\)", text)
-    image_targets = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", text)
-    inline_code_paths = re.findall(
-        r"`((?:docs|images|scripts|configs|dataset|model|trainer|webui)/[^`]+|eval_vla\.py|requirements\.txt)`",
-        text,
-    )
-    return markdown_targets + image_targets + inline_code_paths
+    return re.findall(r"!?\[[^\]]*\]\(([^)]+)\)", text)
 
 
-def check_readme_local_paths() -> None:
-    if not README.exists():
-        fail("README.md is missing")
-    for raw_target in iter_readme_paths():
-        target = raw_target.split("#", 1)[0].strip()
+def check_readme_links() -> list[str]:
+    if not README.is_file():
+        return ["README.md is missing"]
+    errors: list[str] = []
+    for raw in readme_targets():
+        target = raw.strip().strip("<>").split("#", 1)[0]
         if not target or target.startswith(("http://", "https://", "mailto:")):
             continue
-        if " " in target and not Path(target).suffix:
-            continue
-        candidate = ROOT / target
-        if not candidate.exists():
-            fail(f"README references missing path `{target}`")
+        if not (ROOT / target).exists():
+            errors.append(f"README references missing local path `{target}`")
+    return errors
 
 
 def main() -> int:
-    check_forbidden_paths()
-    check_text_blocklist()
-    check_readme_local_paths()
-    print("repo quality check passed")
+    files = repository_files()
+    errors = check_forbidden_paths(files)
+    errors.extend(check_text(files))
+    errors.extend(check_readme_links())
+    fail(errors)
+    print(f"repo quality check passed ({len(files)} repository files inspected)")
     return 0
 
 

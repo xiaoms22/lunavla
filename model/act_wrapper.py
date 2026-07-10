@@ -1,9 +1,19 @@
 from __future__ import annotations
 
-from .minivla_policy import MiniVLAPolicy
+import warnings
+from typing import Any
+
+from .minivla_policy import NumpyLinearChunkPolicy
 
 
-class ACTPolicyWrapper(MiniVLAPolicy):
-    """Small ACT-style policy wrapper with action chunk prediction."""
+class ACTPolicyWrapper(NumpyLinearChunkPolicy):
+    """Deprecated v1.0 alias; this policy is not an ACT Transformer."""
 
-    policy_name = "act"
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        warnings.warn(
+            "ACTPolicyWrapper/'act' is deprecated; use NumpyLinearChunkPolicy/"
+            "'numpy_linear_chunk'. The implementation is a linear NumPy policy, not ACT.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)

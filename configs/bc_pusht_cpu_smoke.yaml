@@ -1,22 +1,23 @@
-model:
-  name: mini_vla
-  policy_type: bc_mlp
+schema_version: 1
+project_name: luna_vla_bc_pusht_cpu_smoke
+framework: lunavla
+policy:
+  type: numpy_bc_mlp
   observation_dim: 4
   instruction_dim: 8
   action_dim: 2
   chunk_size: 1
-project_name: luna_vla_bc_pusht_cpu_smoke
-framework: lunavla
-policy:
-  name: bc
-  chunk_size: 1
   hidden_dim: 32
-task: pusht
+task: pusht_style_point_reach
 dataset:
   source: mock_pusht
   num_episodes: 32
   steps_per_episode: 24
   seed: 123
+  split_seed: 123
+  train_fraction: 0.8
+  validation_fraction: 0.1
+  test_fraction: 0.1
   language_instruction: push the T block to the goal
 training:
   device: cpu
@@ -27,9 +28,15 @@ training:
   log_interval: 80
 eval:
   episodes: 5
+  seed: 1000
   rollout_steps: 40
   success_distance: 0.12
+  goal: [0.80, 0.20]
+  start_low: 0.05
+  start_high: 0.95
+  action_clip: 0.12
+  execution_mode: receding_horizon
 artifacts:
   output_dir: outputs/bc_pusht_cpu_smoke
-  checkpoint_name: checkpoint.pt
+  checkpoint_name: checkpoint.json
   report_path: outputs/bc_pusht_cpu_smoke/summary_report.md

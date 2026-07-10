@@ -67,4 +67,3 @@ LunaVLA uses a tiny PushT-style action space, but it still records action statis
 ## Boundary
 
 These statistics describe a teaching-scale mock PushT dataset. They help explain scale, clipping, and checkpoint metadata. They do not calibrate a real robot controller.
-

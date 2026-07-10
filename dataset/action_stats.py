@@ -5,9 +5,11 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 import numpy as np
+import numpy.typing as npt
 
 
 EPSILON = 1e-6
+FloatArray = npt.NDArray[np.floating[Any]]
 
 
 def _record_action(record: Any) -> Sequence[float]:
@@ -16,7 +18,7 @@ def _record_action(record: Any) -> Sequence[float]:
     return record.action
 
 
-def actions_to_array(records: Iterable[Any], action_dim: int | None = None) -> np.ndarray:
+def actions_to_array(records: Iterable[Any], action_dim: int | None = None) -> FloatArray:
     actions = [np.asarray(_record_action(record), dtype=np.float32) for record in records]
     if not actions:
         raise ValueError("cannot compute action statistics from an empty record set")
@@ -26,11 +28,11 @@ def actions_to_array(records: Iterable[Any], action_dim: int | None = None) -> n
     return values
 
 
-def _round_list(values: np.ndarray, digits: int = 6) -> list[float]:
+def _round_list(values: FloatArray, digits: int = 6) -> list[float]:
     return [round(float(value), digits) for value in values.tolist()]
 
 
-def summarize_actions(actions: np.ndarray, clip_limit: float | None = 0.12) -> dict[str, Any]:
+def summarize_actions(actions: FloatArray, clip_limit: float | None = 0.12) -> dict[str, Any]:
     stats = {
         "count": int(actions.shape[0]),
         "dim": int(actions.shape[1]),
@@ -79,13 +81,13 @@ def compute_action_statistics(
     }
 
 
-def normalize_actions(actions: np.ndarray, stats: dict[str, Any]) -> np.ndarray:
+def normalize_actions(actions: FloatArray, stats: dict[str, Any]) -> FloatArray:
     mean = np.asarray(stats["normalization"]["mean"], dtype=np.float32)
     std = np.asarray(stats["normalization"]["std"], dtype=np.float32)
     return (np.asarray(actions, dtype=np.float32) - mean) / np.maximum(std, EPSILON)
 
 
-def unnormalize_actions(normalized_actions: np.ndarray, stats: dict[str, Any]) -> np.ndarray:
+def unnormalize_actions(normalized_actions: FloatArray, stats: dict[str, Any]) -> FloatArray:
     mean = np.asarray(stats["normalization"]["mean"], dtype=np.float32)
     std = np.asarray(stats["normalization"]["std"], dtype=np.float32)
     return np.asarray(normalized_actions, dtype=np.float32) * np.maximum(std, EPSILON) + mean
@@ -113,4 +115,3 @@ def write_action_statistics(path: str | Path, stats: dict[str, Any]) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(stats, indent=2, ensure_ascii=False), encoding="utf-8")
     return target
-
