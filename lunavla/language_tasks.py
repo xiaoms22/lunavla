@@ -320,6 +320,11 @@ class InstructionConditionedPointReachEnv:
             },
         )
 
+    def close(self) -> None:
+        """Release task resources (the synthetic task has none)."""
+
+        return None
+
 
 class LanguageTaskSuiteEnv:
     """Cycle all goals and held-out paraphrases from configured evaluation seeds."""
@@ -359,6 +364,11 @@ class LanguageTaskSuiteEnv:
         if self._env is None:
             raise RuntimeError("reset() must be called before step()")
         return self._env.step(action)
+
+    def close(self) -> None:
+        """Release task resources (the synthetic suite has none)."""
+
+        return None
 
 
 class LanguageTemplateDatasetSource:

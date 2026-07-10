@@ -152,6 +152,11 @@ class PointReachTaskEnv:
             info={"success": success, "distance_to_goal": distance},
         )
 
+    def close(self) -> None:
+        """Release task resources (the in-memory task has none)."""
+
+        return None
+
 
 def make_point_reach_demonstrations(
     *,

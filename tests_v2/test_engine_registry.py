@@ -306,6 +306,7 @@ class _ChunkPolicy:
 class _CountingEnv:
     def __init__(self) -> None:
         self.observation: Observation | None = None
+        self.close_calls = 0
 
     def reset(self, *, seed: int | None = None) -> Observation:
         self.observation = Observation(np.asarray([float(seed or 0)], dtype=np.float32))
@@ -324,6 +325,9 @@ class _CountingEnv:
         )
         self.observation = next_observation
         return transition
+
+    def close(self) -> None:
+        self.close_calls += 1
 
 
 class _RecordingPolicy(_ChunkPolicy):
@@ -363,8 +367,11 @@ class _StateChangingIntervention:
         step_index: int,
     ) -> Observation:
         del episode_seed, step_index
-        observation.state[:] = -999.0
-        return observation
+        return Observation(
+            state=np.full_like(observation.state, -999.0),
+            instruction=observation.instruction,
+            image=observation.image,
+        )
 
 
 class _MetadataEnv(_CountingEnv):
@@ -441,6 +448,34 @@ def test_observation_intervention_cannot_change_state_or_environment() -> None:
 
     assert env.observation is not None
     np.testing.assert_array_equal(env.observation.state, [8.0])
+    assert env.close_calls == 1
+
+
+def test_engine_closes_environment_exactly_once_on_success_and_failure() -> None:
+    successful = _CountingEnv()
+    Engine(EngineConfig(eval_episodes=1, max_steps=1)).evaluate(
+        _ChunkPolicy(), successful
+    )
+    assert successful.close_calls == 1
+
+    class FailingEnv(_CountingEnv):
+        def step(self, action: np.ndarray[Any, Any]) -> Transition:
+            del action
+            raise RuntimeError("step failed")
+
+    failing = FailingEnv()
+    with pytest.raises(RuntimeError, match="step failed"):
+        Engine(EngineConfig(eval_episodes=1, max_steps=1)).evaluate(
+            _ChunkPolicy(), failing
+        )
+    assert failing.close_calls == 1
+
+    invalid_policy_environment = _CountingEnv()
+    with pytest.raises(TypeError, match="policy must implement VLAPolicy"):
+        Engine(EngineConfig(eval_episodes=1, max_steps=1)).evaluate(
+            object(), invalid_policy_environment  # type: ignore[arg-type]
+        )
+    assert invalid_policy_environment.close_calls == 1
 
 
 def test_episode_result_records_final_pairing_metadata() -> None:

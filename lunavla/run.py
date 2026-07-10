@@ -224,14 +224,29 @@ def _evaluate_with_cleanup(
     policy: VLAPolicy,
     environment: TaskEnv,
 ) -> EvaluationResult:
-    """Evaluate once and release optional external environment resources."""
+    """Evaluate once and preserve exactly-once cleanup across engine boundaries."""
 
+    class CloseOnceTaskEnv:
+        def __init__(self, wrapped: TaskEnv) -> None:
+            self._wrapped = wrapped
+            self._closed = False
+
+        def reset(self, *, seed: int | None = None) -> Observation:
+            return self._wrapped.reset(seed=seed)
+
+        def step(self, action: np.ndarray[Any, Any]) -> Transition:
+            return self._wrapped.step(action)
+
+        def close(self) -> None:
+            if not self._closed:
+                self._closed = True
+                self._wrapped.close()
+
+    guarded_environment = CloseOnceTaskEnv(environment)
     try:
-        return engine.evaluate(policy, environment)
+        return engine.evaluate(policy, guarded_environment)
     finally:
-        close = getattr(environment, "close", None)
-        if callable(close):
-            close()
+        guarded_environment.close()
 
 
 def _registry(config: ExperimentConfig) -> PolicyRegistry:

@@ -321,6 +321,11 @@ class RenderedPointReachEnv:
             },
         )
 
+    def close(self) -> None:
+        """Release task resources (the NumPy renderer has none)."""
+
+        return None
+
 
 class RenderedVisualTaskSuiteEnv:
     """Select direct or waypoint reach from each configured evaluation seed."""
@@ -357,6 +362,11 @@ class RenderedVisualTaskSuiteEnv:
         if self._env is None:
             raise RuntimeError("reset() must be called before step()")
         return self._env.step(action)
+
+    def close(self) -> None:
+        """Release task resources (the rendered suite has none)."""
+
+        return None
 
 
 def build_visual_examples(
