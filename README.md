@@ -123,6 +123,7 @@ The full evidence bundle, SBOM, and `SHA256SUMS` are release assets rather than 
 - [`CHANGELOG.md`](CHANGELOG.md): user-visible changes.
 - [`docs/evaluation.md`](docs/evaluation.md): rollout metrics and interpretation.
 - [`docs/controlled_experiments.md`](docs/controlled_experiments.md): predeclared experiment design.
+- [`docs/v2_release_dispatcher.md`](docs/v2_release_dispatcher.md): guarded default-branch entry point for v2 evidence runs.
 - [`docs/archive/v1.0/`](docs/archive/v1.0/README.md): correction-before historical material, retained for provenance only.
 
 ## Project layout
