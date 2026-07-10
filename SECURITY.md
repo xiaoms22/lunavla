@@ -2,8 +2,10 @@
 
 ## Supported versions
 
-Security fixes are provided for the latest release on the `main` branch. Older
-teaching snapshots may be retained for reproducibility but are not maintained.
+Security fixes are provided for the latest stable release on `main` and for the
+maintained NumPy teaching line on `v1.x`. Historical tags and archived evidence
+snapshots remain available for reproducibility but are not separate maintenance
+branches.
 
 ## Reporting a vulnerability
 

@@ -27,6 +27,7 @@ from lunavla.manifest import RunManifest
 
 SNAPSHOT_MANIFEST_SCHEMA_VERSION = 1
 INSTRUCTION_FOLLOWING_DENIED = "Instruction-following has not yet been established."
+VISUAL_CONTROL_CONTRIBUTION_DENIED = "Visual-control contribution has not yet been established."
 PUBLISHED_LANGUAGE_GIT_SHA = "a546695445f6fa6e717cd560d5acf718e037940a"
 PUBLISHED_LANGUAGE_EVIDENCE_SHA256 = (
     "106ea2421d37c6c374e31d01a788101e358317f76b6abc315318634e6c6fa3b8"
@@ -34,9 +35,15 @@ PUBLISHED_LANGUAGE_EVIDENCE_SHA256 = (
 PUBLISHED_LANGUAGE_SNAPSHOT_SHA256 = (
     "a266c2fe85cd7ca83728d4ab597b7e2c5621e562bfbae66aa4f586161eb7d4f7"
 )
-PUBLISHED_LANGUAGE_WORKFLOW_URL = (
-    "https://github.com/xiaoms22/lunavla/actions/runs/29106885353"
+PUBLISHED_LANGUAGE_WORKFLOW_URL = "https://github.com/xiaoms22/lunavla/actions/runs/29106885353"
+PUBLISHED_VISUAL_GIT_SHA = "bf0e550a7aa3fb0bb07354cd7cb525752c56268d"
+PUBLISHED_VISUAL_EVIDENCE_SHA256 = (
+    "d8ff8c798a6810a09a2905dbafd6f5259ac2356623ee6060d335d660db6e9056"
 )
+PUBLISHED_VISUAL_SNAPSHOT_SHA256 = (
+    "8ac8b2d77c46ed67ac8d78c11e11d8f8cd7312b9eabd9a2ea025c830c6391d62"
+)
+PUBLISHED_VISUAL_WORKFLOW_URL = "https://github.com/xiaoms22/lunavla/actions/runs/29110701437"
 
 _SNAPSHOT_FIELDS = {
     "schema_version",
@@ -83,6 +90,33 @@ class PublishedLanguageEvidence:
     failed_checks: tuple[str, ...]
     workflow_url: str
     statement: str
+
+
+@dataclass(frozen=True)
+class PublishedVisualEvidence:
+    """Validated visual-study values that may be rendered publicly."""
+
+    evidence_manifest_path: Path
+    snapshot_manifest_path: Path
+    evidence_manifest_sha256: str
+    git_sha: str
+    train_seed_count: int
+    control_trials: int
+    arm_wilson: tuple[EvidenceStatistic, ...]
+    paired_final_distance: tuple[EvidenceStatistic, ...]
+    failed_checks: tuple[str, ...]
+    workflow_url: str
+    statement: str
+
+
+@dataclass(frozen=True)
+class _VerifiedPublishedEvidence:
+    evidence_manifest_path: Path
+    snapshot_manifest_path: Path
+    evidence_manifest_sha256: str
+    git_sha: str
+    design: EvidenceDesign
+    evidence: EvidenceManifest
 
 
 def _mapping(value: object, name: str) -> dict[str, Any]:
@@ -222,11 +256,11 @@ def _verify_reproducibility(
 ) -> bool:
     _exact_fields(payload, _REPRODUCIBILITY_FIELDS, "reproducibility")
     if _boolean(payload.get("required"), "reproducibility.required") is not True:
-        raise ValueError("full language evidence requires a reproducibility sentinel")
+        raise ValueError("full evidence requires a reproducibility sentinel")
     if _boolean(payload.get("verified"), "reproducibility.verified") is not True:
         raise ValueError("reproducibility sentinel is not verified")
     if reproducibility_run_id is None:
-        raise ValueError("full language evidence has no reproducibility run")
+        raise ValueError("full evidence has no reproducibility run")
     repeat_run_id = f"{reproducibility_run_id}-repeat"
     if (
         payload.get("original_run_id") != reproducibility_run_id
@@ -260,16 +294,23 @@ def _verify_reproducibility(
         if (left, right) != expected or left != right:
             raise ValueError(f"reproducibility.{name} does not match")
     if (
-        original.artifact_sha256.get("metrics.json")
-        != expected_pairs["metrics_sha256"][0]
-        or repeat.artifact_sha256.get("metrics.json")
-        != expected_pairs["metrics_sha256"][1]
+        original.artifact_sha256.get("metrics.json") != expected_pairs["metrics_sha256"][0]
+        or repeat.artifact_sha256.get("metrics.json") != expected_pairs["metrics_sha256"][1]
     ):
         raise ValueError("reproducibility metrics are not bound by RunManifest")
     return True
 
 
-def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvidence:
+def _verify_snapshot(
+    snapshot_root: str | Path,
+    *,
+    suite: str,
+    published_git_sha: str,
+    published_evidence_sha256: str,
+    published_snapshot_sha256: str,
+    claim_id: str,
+    denied_statement: str,
+) -> _VerifiedPublishedEvidence:
     """Verify a publication snapshot without changing it or any source artifact."""
 
     raw_root = Path(snapshot_root)
@@ -280,7 +321,7 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
     if snapshot_path.is_symlink() or not snapshot_path.is_file():
         raise ValueError("snapshot_manifest.json must be a real file")
     snapshot_digest = _sha256_file(snapshot_path)
-    if snapshot_digest != PUBLISHED_LANGUAGE_SNAPSHOT_SHA256:
+    if snapshot_digest != published_snapshot_sha256:
         raise ValueError(
             "snapshot manifest does not match the registered official workflow artifact"
         )
@@ -290,14 +331,12 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
         _integer(snapshot["schema_version"], "snapshot schema_version")
         != SNAPSHOT_MANIFEST_SCHEMA_VERSION
     ):
-        raise ValueError(
-            f"unsupported snapshot schema_version: {snapshot['schema_version']}"
-        )
+        raise ValueError(f"unsupported snapshot schema_version: {snapshot['schema_version']}")
     files = _verify_file_inventory(root, snapshot["files"])
 
     evidence_path = root / "evidence_manifest.json"
     evidence_digest = _sha256_file(evidence_path)
-    if evidence_digest != PUBLISHED_LANGUAGE_EVIDENCE_SHA256:
+    if evidence_digest != published_evidence_sha256:
         raise ValueError(
             "EvidenceManifest does not match the registered official workflow artifact"
         )
@@ -316,9 +355,7 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
     _exact_fields(verification, _VERIFICATION_FIELDS, "snapshot verification")
     if _boolean(verification["verified"], "verification.verified") is not True:
         raise ValueError("snapshot verification must be true")
-    reduced_design = _boolean(
-        verification["reduced_design"], "verification.reduced_design"
-    )
+    reduced_design = _boolean(verification["reduced_design"], "verification.reduced_design")
     source_count = _integer(
         verification["source_count"], "verification.source_count", positive=True
     )
@@ -330,7 +367,7 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
     git_sha = verification["git_sha"]
     if not isinstance(git_sha, str) or not _GIT_SHA.fullmatch(git_sha):
         raise ValueError("verification.git_sha must be a full lowercase Git object ID")
-    if git_sha != PUBLISHED_LANGUAGE_GIT_SHA:
+    if git_sha != published_git_sha:
         raise ValueError("snapshot Git SHA does not match the publication registry")
     if (
         verification["design_id"] != evidence.design_id
@@ -340,13 +377,13 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
     ):
         raise ValueError("snapshot and evidence manifest design identity differ")
     if reduced_design or not evidence.matrix_complete:
-        raise ValueError("published language evidence must use the complete design")
+        raise ValueError("published evidence must use the complete design")
     if not all(passed for _, passed in evidence.integrity_checks):
-        raise ValueError("published language evidence contains a failed integrity check")
+        raise ValueError("published evidence contains a failed integrity check")
 
     design = EvidenceDesign.load(root / "design.yaml")
-    if design.suite != "language" or not is_full_design(design):
-        raise ValueError("snapshot does not contain the canonical full language design")
+    if design.suite != suite or not is_full_design(design):
+        raise ValueError(f"snapshot does not contain the canonical full {suite} design")
     if design.design_id != evidence.design_id or design.sha256() != evidence.design_sha256:
         raise ValueError("EvidenceDesign identity/hash differs from the evidence manifest")
     plan = derive_plan(design)
@@ -371,7 +408,7 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
     manifests_by_run: dict[str, RunManifest] = {}
     dependency_sets: set[bytes] = set()
     non_image_pairing_hashes: set[str] = set()
-    data_hashes: set[str] = set()
+    data_hashes_by_variant: dict[str, set[str]] = {}
     split_records: set[bytes] = set()
     fixtures_by_run: dict[str, dict[int, dict[str, Any]]] = {}
     rollout_samples: dict[str, list[dict[str, Any]]] = {}
@@ -426,13 +463,9 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
             "donor_bank.json": donor_path,
         }
         for artifact_name, artifact_path in artifact_paths.items():
-            if (
-                _sha256_file(artifact_path)
-                != manifest.artifact_sha256.get(artifact_name)
-            ):
+            if _sha256_file(artifact_path) != manifest.artifact_sha256.get(artifact_name):
                 raise ValueError(
-                    f"snapshot artifact is not bound by RunManifest: "
-                    f"{run_id}/{artifact_name}"
+                    f"snapshot artifact is not bound by RunManifest: {run_id}/{artifact_name}"
                 )
         if _read_json(resolved_path, f"resolved config {run_id}") != expected_config.to_dict():
             raise ValueError(f"resolved_config.json differs from EvidenceDesign: {run_id}")
@@ -443,19 +476,15 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
             raise ValueError(f"donor bank differs from paired-data contract: {run_id}")
         expected_fixture = _evaluation_fixture(expected_config, design)
         if (
-            manifest.eval_fixture.get("evidence_fixture_sha256")
-            != expected_fixture["sha256"]
-            or manifest.eval_fixture.get("evidence_episodes")
-            != expected_fixture["episodes"]
+            manifest.eval_fixture.get("evidence_fixture_sha256") != expected_fixture["sha256"]
+            or manifest.eval_fixture.get("evidence_episodes") != expected_fixture["episodes"]
         ):
             raise ValueError(f"evaluation fixture differs from EvidenceDesign: {run_id}")
         fixtures_by_run[run_id] = {
-            int(item["eval_seed"]): dict(item)
-            for item in expected_fixture["episodes"]
+            int(item["eval_seed"]): dict(item) for item in expected_fixture["episodes"]
         }
         expected_arms = [
-            next(arm for arm in design.arms if arm.id == arm_id).to_dict()
-            for arm_id in job.arm_ids
+            next(arm for arm in design.arms if arm.id == arm_id).to_dict() for arm_id in job.arm_ids
         ]
         if manifest.arms != expected_arms:
             raise ValueError(f"source arms differ from EvidenceDesign: {run_id}")
@@ -475,7 +504,7 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
             f"paired_data.non_image_pairing_sha256 {run_id}",
         )
         non_image_pairing_hashes.add(non_image_hash)
-        data_hashes.add(manifest.data_sha256)
+        data_hashes_by_variant.setdefault(job.variant, set()).add(manifest.data_sha256)
         split_records.add(_canonical_json(manifest.dataset_split))
         sample_payload = _read_json_value(run_root / "rollouts.sample.json")
         if not isinstance(sample_payload, list) or len(sample_payload) != 2:
@@ -496,13 +525,16 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
         raise ValueError("source manifests do not share one dependency set")
     if len(non_image_pairing_hashes) != 1:
         raise ValueError("source manifests do not share one paired dataset")
-    if len(data_hashes) != 1 or len(split_records) != 1:
-        raise ValueError("source manifests do not share one data/split contract")
+    if (
+        any(len(hashes) != 1 for hashes in data_hashes_by_variant.values())
+        or set(data_hashes_by_variant) != {job.variant for job in plan.jobs}
+        or len(split_records) != 1
+    ):
+        raise ValueError("source manifests do not share one data contract per variant/split")
 
     rows = _read_pair_rows(root / "per_pair.csv")
     if len(rows) != arm_episode_count:
         raise ValueError("per_pair.csv row count differs from snapshot verification")
-    jobs_by_seed = {job.train_seed: job for job in plan.jobs}
     arms = {arm.id: arm for arm in design.arms}
     cells: set[tuple[int, int, str]] = set()
     rows_by_cell: dict[str, dict[str, Any]] = {}
@@ -510,10 +542,11 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
         train_seed = int(row["train_seed"])
         eval_seed = int(row["eval_seed"])
         arm_id = str(row["arm_id"])
-        row_job = jobs_by_seed.get(train_seed)
+        row_job = jobs.get(str(row["run_id"]))
         cell = (train_seed, eval_seed, arm_id)
         if (
             row_job is None
+            or train_seed != row_job.train_seed
             or eval_seed not in design.seeds.evaluation
             or arm_id not in row_job.arm_ids
             or cell in cells
@@ -528,7 +561,10 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
         if row["arm_mode"] != arms[arm_id].mode:
             raise ValueError(f"per-pair arm mode mismatch: {cell}")
         fixture = fixtures_by_run[row_job.run_id].get(eval_seed)
-        if fixture is None or row["family"] != fixture["task_id"]:
+        fixture_family = None
+        if fixture is not None:
+            fixture_family = fixture.get("task_id", fixture.get("family"))
+        if fixture_family is None or row["family"] != fixture_family:
             raise ValueError(f"per-pair task family differs from eval fixture: {cell}")
         rows_by_cell[str(row["cell_id"])] = row
 
@@ -560,7 +596,11 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
                 "pair_id": paired_row["pair_id"],
                 "arm_id": paired_row["arm_id"],
                 "seed": paired_row["eval_seed"],
-                "task": paired_row["family"],
+                "task": (
+                    paired_row["family"]
+                    if suite == "language"
+                    else manifests_by_run[run_id].task_id
+                ),
                 "success": bool(paired_row["success"]),
                 "final_distance": paired_row["final_distance"],
                 "first_action_mse": paired_row["first_action_mse"],
@@ -571,9 +611,7 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
             if actual_values != expected_values:
                 raise ValueError(f"rollout sample differs from per-pair row: {cell_id}")
 
-    reproducibility = _read_json(
-        root / "reproducibility.json", "reproducibility record"
-    )
+    reproducibility = _read_json(root / "reproducibility.json", "reproducibility record")
     reproducibility_verified = _verify_reproducibility(
         reproducibility,
         root=root,
@@ -597,15 +635,37 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
     if _read_json(root / "aggregate.json", "aggregate projection") != expected_aggregate:
         raise ValueError("aggregate.json differs from EvidenceManifest")
 
-    if len(evidence.claims) != 1 or evidence.claims[0].claim_id != "instruction_following":
-        raise ValueError("language evidence must contain exactly one instruction claim gate")
+    if len(evidence.claims) != 1 or evidence.claims[0].claim_id != claim_id:
+        raise ValueError(f"{suite} evidence must contain exactly one {claim_id} claim gate")
     claim = evidence.claims[0]
-    if (
-        claim.allowed
-        or claim.statement != INSTRUCTION_FOLLOWING_DENIED
-        or not claim.failed_checks
-    ):
-        raise ValueError("instruction-following claim must remain closed for this snapshot")
+    if claim.allowed or claim.statement != denied_statement or not claim.failed_checks:
+        raise ValueError(f"{claim_id} claim must remain closed for this snapshot")
+
+    return _VerifiedPublishedEvidence(
+        evidence_manifest_path=evidence_path,
+        snapshot_manifest_path=snapshot_path,
+        evidence_manifest_sha256=evidence_digest,
+        git_sha=git_sha,
+        design=design,
+        evidence=evidence,
+    )
+
+
+def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvidence:
+    """Verify the registered language snapshot and expose only publication-safe values."""
+
+    verified = _verify_snapshot(
+        snapshot_root,
+        suite="language",
+        published_git_sha=PUBLISHED_LANGUAGE_GIT_SHA,
+        published_evidence_sha256=PUBLISHED_LANGUAGE_EVIDENCE_SHA256,
+        published_snapshot_sha256=PUBLISHED_LANGUAGE_SNAPSHOT_SHA256,
+        claim_id="instruction_following",
+        denied_statement=INSTRUCTION_FOLLOWING_DENIED,
+    )
+    evidence = verified.evidence
+    design = verified.design
+    claim = evidence.claims[0]
     statistics = {statistic.statistic_id: statistic for statistic in evidence.statistics}
     arm_wilson = tuple(statistics[f"{arm.id}-success"] for arm in design.arms)
     control_trials = statistics["control-success"].sample_n
@@ -619,22 +679,75 @@ def verify_language_snapshot(snapshot_root: str | Path) -> PublishedLanguageEvid
     if (
         counterfactual_distance.sample_n != control_trials
         or counterfactual_success.sample_n != control_trials
-        or counterfactual_distance.train_seed_n != source_count
-        or counterfactual_success.train_seed_n != source_count
+        or counterfactual_distance.train_seed_n != len(design.seeds.train)
+        or counterfactual_success.train_seed_n != len(design.seeds.train)
     ):
         raise ValueError("counterfactual paired statistics differ from the design matrix")
 
     return PublishedLanguageEvidence(
-        evidence_manifest_path=evidence_path,
-        snapshot_manifest_path=snapshot_path,
-        evidence_manifest_sha256=evidence_digest,
-        git_sha=git_sha,
-        train_seed_count=source_count,
+        evidence_manifest_path=verified.evidence_manifest_path,
+        snapshot_manifest_path=verified.snapshot_manifest_path,
+        evidence_manifest_sha256=verified.evidence_manifest_sha256,
+        git_sha=verified.git_sha,
+        train_seed_count=len(design.seeds.train),
         control_trials=control_trials,
         arm_wilson=arm_wilson,
         counterfactual_final_distance=counterfactual_distance,
         counterfactual_success=counterfactual_success,
         failed_checks=claim.failed_checks,
         workflow_url=PUBLISHED_LANGUAGE_WORKFLOW_URL,
+        statement=claim.statement,
+    )
+
+
+def verify_visual_snapshot(snapshot_root: str | Path) -> PublishedVisualEvidence:
+    """Verify the registered visual snapshot and expose only publication-safe values."""
+
+    verified = _verify_snapshot(
+        snapshot_root,
+        suite="visual",
+        published_git_sha=PUBLISHED_VISUAL_GIT_SHA,
+        published_evidence_sha256=PUBLISHED_VISUAL_EVIDENCE_SHA256,
+        published_snapshot_sha256=PUBLISHED_VISUAL_SNAPSHOT_SHA256,
+        claim_id="visual_control_contribution",
+        denied_statement=VISUAL_CONTROL_CONTRIBUTION_DENIED,
+    )
+    evidence = verified.evidence
+    design = verified.design
+    claim = evidence.claims[0]
+    statistics = {statistic.statistic_id: statistic for statistic in evidence.statistics}
+    arm_wilson = tuple(statistics[f"{arm.id}-success"] for arm in design.arms)
+    control_trials = statistics["control-success"].sample_n
+    if any(
+        statistic.method != "wilson" or statistic.sample_n != control_trials
+        for statistic in arm_wilson
+    ):
+        raise ValueError("visual arm Wilson statistics do not use one paired trial matrix")
+    paired_final_distance = tuple(
+        statistics[f"{arm_id}-{scope}-final_distance"]
+        for arm_id in ("occlusion", "state_only")
+        for scope in ("all", "direct_reach", "waypoint_reach")
+    )
+    train_seed_count = len(design.seeds.train)
+    if any(
+        statistic.method != "hierarchical_paired_bootstrap"
+        or statistic.train_seed_n != train_seed_count
+        or statistic.sample_n
+        != (control_trials if statistic.scope.endswith(":all") else control_trials // 2)
+        for statistic in paired_final_distance
+    ):
+        raise ValueError("visual paired statistics differ from the design matrix")
+
+    return PublishedVisualEvidence(
+        evidence_manifest_path=verified.evidence_manifest_path,
+        snapshot_manifest_path=verified.snapshot_manifest_path,
+        evidence_manifest_sha256=verified.evidence_manifest_sha256,
+        git_sha=verified.git_sha,
+        train_seed_count=train_seed_count,
+        control_trials=control_trials,
+        arm_wilson=arm_wilson,
+        paired_final_distance=paired_final_distance,
+        failed_checks=claim.failed_checks,
+        workflow_url=PUBLISHED_VISUAL_WORKFLOW_URL,
         statement=claim.statement,
     )

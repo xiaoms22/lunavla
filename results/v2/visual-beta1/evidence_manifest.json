@@ -1,0 +1,429 @@
+{
+  "claims": [
+    {
+      "allowed": false,
+      "allowed_statement": "Controlled evidence supports a visual-control contribution in both task families.",
+      "checks": {
+        "controlled_full_design": true,
+        "occlusion_all_distance_worse": false,
+        "occlusion_direct_reach_distance_worse": false,
+        "occlusion_waypoint_reach_distance_worse": false,
+        "state_only_all_distance_worse": false,
+        "state_only_direct_reach_distance_worse": false,
+        "state_only_waypoint_reach_distance_worse": false
+      },
+      "claim_id": "visual_control_contribution",
+      "denied_statement": "Visual-control contribution has not yet been established.",
+      "failed_checks": [
+        "occlusion_all_distance_worse",
+        "occlusion_direct_reach_distance_worse",
+        "occlusion_waypoint_reach_distance_worse",
+        "state_only_all_distance_worse",
+        "state_only_direct_reach_distance_worse",
+        "state_only_waypoint_reach_distance_worse"
+      ],
+      "statement": "Visual-control contribution has not yet been established."
+    }
+  ],
+  "design_id": "visual-beta1",
+  "design_sha256": "df1e8fb343449e407c8cd9c07e1c84beb7c6f5361db115864fd0ae7487a00ebd",
+  "integrity_checks": {
+    "design_hash": true,
+    "donor_bank_hashes": true,
+    "file_hashes": true,
+    "matrix_complete": true,
+    "reproducibility": true,
+    "single_dependencies": true,
+    "single_git_sha": true,
+    "source_clean": true,
+    "unique_cells": true
+  },
+  "matrix_complete": true,
+  "reduced_design": false,
+  "schema_version": 1,
+  "sources": [
+    {
+      "manifest_sha256": "e89f94e3342d880dd4b66d81b57e3a013243bb55bc24f6e5728818afe843a0db",
+      "run_id": "visual-beta1-image-seed-11"
+    },
+    {
+      "manifest_sha256": "fd7a0e292153eb5f91673a5511321fc3000b384da5b1d08cb5196670ba5ab0f8",
+      "run_id": "visual-beta1-image-seed-22"
+    },
+    {
+      "manifest_sha256": "4be3bdb7bb61e7c6b6ebe895842f0ec234760cf5372695e8192ec78a99acc58d",
+      "run_id": "visual-beta1-image-seed-33"
+    },
+    {
+      "manifest_sha256": "52400f6529f844fd410b353bd157b3d9fff44177f06b5b8b89448183e9c10803",
+      "run_id": "visual-beta1-image-seed-44"
+    },
+    {
+      "manifest_sha256": "8a3697713fc9f01efc926da6e6ec4ea07148327c663cfc6691d0be36275ea8f5",
+      "run_id": "visual-beta1-image-seed-55"
+    },
+    {
+      "manifest_sha256": "8273048fb6aa103b21746b6f254d5081406e5e4fe7523ca0c147380bbcb66222",
+      "run_id": "visual-beta1-state-only-seed-11"
+    },
+    {
+      "manifest_sha256": "0961dd3f0ec8b6fe7da67475ec6841c077cac99fe69137fe7a0dedce0e968c03",
+      "run_id": "visual-beta1-state-only-seed-22"
+    },
+    {
+      "manifest_sha256": "b52c2f792249908321f01b4cad3bdf3c17c34ac83ba3894fb741e87948bbc31b",
+      "run_id": "visual-beta1-state-only-seed-33"
+    },
+    {
+      "manifest_sha256": "c072d4cdb340eabd0b9379e955c21fbd209d6a5c23e05802809f2ac99b9af2ae",
+      "run_id": "visual-beta1-state-only-seed-44"
+    },
+    {
+      "manifest_sha256": "1f2fe8265b8c13c8426b0cfef4b2066aa1de246b23b0221baa4c112375c26e3f",
+      "run_id": "visual-beta1-state-only-seed-55"
+    }
+  ],
+  "statistics": [
+    {
+      "estimate": 0.016666666666666666,
+      "lower": 0.004582564565921141,
+      "method": "wilson",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "control",
+      "statistic_id": "control-success",
+      "train_seed_n": null,
+      "upper": 0.0587359629721589
+    },
+    {
+      "estimate": -0.010636770927036802,
+      "lower": -0.09073094178262787,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 120,
+      "scope": "occlusion:all",
+      "statistic_id": "occlusion-all-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.0666554014724291
+    },
+    {
+      "estimate": 0.002535119390753001,
+      "lower": 7.843425671201962e-05,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 120,
+      "scope": "occlusion:all",
+      "statistic_id": "occlusion-all-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.006492862883815176
+    },
+    {
+      "estimate": 0.041666666666666664,
+      "lower": 0.0,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "occlusion:all",
+      "statistic_id": "occlusion-all-success",
+      "train_seed_n": 5,
+      "upper": 0.10833333333333334
+    },
+    {
+      "estimate": -0.0453070977392296,
+      "lower": -0.12480901162372902,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 60,
+      "scope": "occlusion:direct_reach",
+      "statistic_id": "occlusion-direct_reach-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.033783764436763355
+    },
+    {
+      "estimate": 0.0024872808300642644,
+      "lower": 4.953685339387448e-05,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 60,
+      "scope": "occlusion:direct_reach",
+      "statistic_id": "occlusion-direct_reach-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.006673313350608318
+    },
+    {
+      "estimate": 0.08333333333333333,
+      "lower": 0.0,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 60,
+      "scope": "occlusion:direct_reach",
+      "statistic_id": "occlusion-direct_reach-success",
+      "train_seed_n": 5,
+      "upper": 0.21666666666666667
+    },
+    {
+      "estimate": 0.058333333333333334,
+      "lower": 0.028541010000220295,
+      "method": "wilson",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "occlusion",
+      "statistic_id": "occlusion-success",
+      "train_seed_n": null,
+      "upper": 0.11552592033630113
+    },
+    {
+      "estimate": 0.024033555885155995,
+      "lower": -0.08335773366813858,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 60,
+      "scope": "occlusion:waypoint_reach",
+      "statistic_id": "occlusion-waypoint_reach-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.13885042361915112
+    },
+    {
+      "estimate": 0.002582957951441737,
+      "lower": 5.8004238395975956e-05,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 60,
+      "scope": "occlusion:waypoint_reach",
+      "statistic_id": "occlusion-waypoint_reach-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.0065010079234677194
+    },
+    {
+      "estimate": 0.0,
+      "lower": 0.0,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 60,
+      "scope": "occlusion:waypoint_reach",
+      "statistic_id": "occlusion-waypoint_reach-success",
+      "train_seed_n": 5,
+      "upper": 0.0
+    },
+    {
+      "estimate": 0.0034573966016372046,
+      "lower": -0.009744956016074866,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 120,
+      "scope": "shuffle:all",
+      "statistic_id": "shuffle-all-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.019598764805123205
+    },
+    {
+      "estimate": 4.620099064898871e-05,
+      "lower": 4.794184050448773e-06,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 120,
+      "scope": "shuffle:all",
+      "statistic_id": "shuffle-all-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.00012844501720337567
+    },
+    {
+      "estimate": 0.008333333333333333,
+      "lower": 0.0,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "shuffle:all",
+      "statistic_id": "shuffle-all-success",
+      "train_seed_n": 5,
+      "upper": 0.03333333333333333
+    },
+    {
+      "estimate": -0.0005771450698375702,
+      "lower": -0.021047325146694978,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 60,
+      "scope": "shuffle:direct_reach",
+      "statistic_id": "shuffle-direct_reach-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.020099266980153786
+    },
+    {
+      "estimate": 0.0001050087455951143,
+      "lower": 1.9346983353898395e-05,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 60,
+      "scope": "shuffle:direct_reach",
+      "statistic_id": "shuffle-direct_reach-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.0002714356582267404
+    },
+    {
+      "estimate": 0.016666666666666666,
+      "lower": 0.0,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 60,
+      "scope": "shuffle:direct_reach",
+      "statistic_id": "shuffle-direct_reach-success",
+      "train_seed_n": 5,
+      "upper": 0.06666666666666667
+    },
+    {
+      "estimate": 0.025,
+      "lower": 0.008538174769902228,
+      "method": "wilson",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "shuffle",
+      "statistic_id": "shuffle-success",
+      "train_seed_n": null,
+      "upper": 0.0709300333278661
+    },
+    {
+      "estimate": 0.007491938273111979,
+      "lower": -0.008489976736406484,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 60,
+      "scope": "shuffle:waypoint_reach",
+      "statistic_id": "shuffle-waypoint_reach-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.026822709689537667
+    },
+    {
+      "estimate": -1.2606764297136882e-05,
+      "lower": -4.599329994865305e-05,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 60,
+      "scope": "shuffle:waypoint_reach",
+      "statistic_id": "shuffle-waypoint_reach-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 1.192296107395426e-05
+    },
+    {
+      "estimate": 0.0,
+      "lower": 0.0,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 60,
+      "scope": "shuffle:waypoint_reach",
+      "statistic_id": "shuffle-waypoint_reach-success",
+      "train_seed_n": 5,
+      "upper": 0.0
+    },
+    {
+      "estimate": 0.01211039072368294,
+      "lower": -0.019337553285683196,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 120,
+      "scope": "state_only:all",
+      "statistic_id": "state_only-all-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.04532749376104523
+    },
+    {
+      "estimate": 0.0001086524183013656,
+      "lower": -0.00022186893303152526,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 120,
+      "scope": "state_only:all",
+      "statistic_id": "state_only-all-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.0005670394957602789
+    },
+    {
+      "estimate": 0.0,
+      "lower": -0.03333333333333333,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "state_only:all",
+      "statistic_id": "state_only-all-success",
+      "train_seed_n": 5,
+      "upper": 0.03333333333333333
+    },
+    {
+      "estimate": 0.0034984849859029054,
+      "lower": -0.03835318436225255,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 60,
+      "scope": "state_only:direct_reach",
+      "statistic_id": "state_only-direct_reach-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.04097025692385311
+    },
+    {
+      "estimate": 5.197166889653696e-05,
+      "lower": -0.0002611700030956854,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 60,
+      "scope": "state_only:direct_reach",
+      "statistic_id": "state_only-direct_reach-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.0003603474010621234
+    },
+    {
+      "estimate": -0.016666666666666666,
+      "lower": -0.06666666666666667,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 60,
+      "scope": "state_only:direct_reach",
+      "statistic_id": "state_only-direct_reach-success",
+      "train_seed_n": 5,
+      "upper": 0.0
+    },
+    {
+      "estimate": 0.016666666666666666,
+      "lower": 0.004582564565921141,
+      "method": "wilson",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "state_only",
+      "statistic_id": "state_only-success",
+      "train_seed_n": null,
+      "upper": 0.0587359629721589
+    },
+    {
+      "estimate": 0.020722296461462973,
+      "lower": -0.015380247117330631,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 60,
+      "scope": "state_only:waypoint_reach",
+      "statistic_id": "state_only-waypoint_reach-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.058910871266076956
+    },
+    {
+      "estimate": 0.0001653331677061942,
+      "lower": -0.0003808440865642145,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 60,
+      "scope": "state_only:waypoint_reach",
+      "statistic_id": "state_only-waypoint_reach-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.0010154462359745747
+    },
+    {
+      "estimate": 0.016666666666666666,
+      "lower": 0.0,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 60,
+      "scope": "state_only:waypoint_reach",
+      "statistic_id": "state_only-waypoint_reach-success",
+      "train_seed_n": 5,
+      "upper": 0.06666666666666667
+    }
+  ]
+}

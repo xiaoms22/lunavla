@@ -1,0 +1,444 @@
+{
+  "occlusion": {
+    "entries": [
+      {
+        "eval_seed": 1000,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1001,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1002,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1003,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1004,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1005,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1006,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1007,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1008,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1009,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1010,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1011,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1012,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1013,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1014,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1015,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1016,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1017,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1018,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1019,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1020,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1021,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1022,
+        "family": "direct_reach",
+        "occlusion": "full_image_zero"
+      },
+      {
+        "eval_seed": 1023,
+        "family": "waypoint_reach",
+        "occlusion": "full_image_zero"
+      }
+    ],
+    "mode": "occlusion"
+  },
+  "shuffle": {
+    "entries": [
+      {
+        "donor_eval_seed": 1006,
+        "eval_seed": 1000,
+        "family": "direct_reach",
+        "goal": [
+          0.6616732478141785,
+          0.5504916310310364
+        ],
+        "waypoint": [
+          0.6616732478141785,
+          0.5504916310310364
+        ]
+      },
+      {
+        "donor_eval_seed": 1010,
+        "eval_seed": 1002,
+        "family": "direct_reach",
+        "goal": [
+          0.8349933624267578,
+          0.8369823098182678
+        ],
+        "waypoint": [
+          0.8349933624267578,
+          0.8369823098182678
+        ]
+      },
+      {
+        "donor_eval_seed": 1022,
+        "eval_seed": 1004,
+        "family": "direct_reach",
+        "goal": [
+          0.6604954600334167,
+          0.8057841658592224
+        ],
+        "waypoint": [
+          0.6604954600334167,
+          0.8057841658592224
+        ]
+      },
+      {
+        "donor_eval_seed": 1000,
+        "eval_seed": 1006,
+        "family": "direct_reach",
+        "goal": [
+          0.8495622277259827,
+          0.8382781147956848
+        ],
+        "waypoint": [
+          0.8495622277259827,
+          0.8382781147956848
+        ]
+      },
+      {
+        "donor_eval_seed": 1002,
+        "eval_seed": 1008,
+        "family": "direct_reach",
+        "goal": [
+          0.6818085312843323,
+          0.7918718457221985
+        ],
+        "waypoint": [
+          0.6818085312843323,
+          0.7918718457221985
+        ]
+      },
+      {
+        "donor_eval_seed": 1004,
+        "eval_seed": 1010,
+        "family": "direct_reach",
+        "goal": [
+          0.7717880010604858,
+          0.287015438079834
+        ],
+        "waypoint": [
+          0.7717880010604858,
+          0.287015438079834
+        ]
+      },
+      {
+        "donor_eval_seed": 1018,
+        "eval_seed": 1012,
+        "family": "direct_reach",
+        "goal": [
+          0.849662721157074,
+          0.16374897956848145
+        ],
+        "waypoint": [
+          0.849662721157074,
+          0.16374897956848145
+        ]
+      },
+      {
+        "donor_eval_seed": 1016,
+        "eval_seed": 1014,
+        "family": "direct_reach",
+        "goal": [
+          0.7276465892791748,
+          0.7972909212112427
+        ],
+        "waypoint": [
+          0.7276465892791748,
+          0.7972909212112427
+        ]
+      },
+      {
+        "donor_eval_seed": 1012,
+        "eval_seed": 1016,
+        "family": "direct_reach",
+        "goal": [
+          0.8293398022651672,
+          0.5988143086433411
+        ],
+        "waypoint": [
+          0.8293398022651672,
+          0.5988143086433411
+        ]
+      },
+      {
+        "donor_eval_seed": 1020,
+        "eval_seed": 1018,
+        "family": "direct_reach",
+        "goal": [
+          0.6664309501647949,
+          0.2886817455291748
+        ],
+        "waypoint": [
+          0.6664309501647949,
+          0.2886817455291748
+        ]
+      },
+      {
+        "donor_eval_seed": 1008,
+        "eval_seed": 1020,
+        "family": "direct_reach",
+        "goal": [
+          0.7801098823547363,
+          0.18046949803829193
+        ],
+        "waypoint": [
+          0.7801098823547363,
+          0.18046949803829193
+        ]
+      },
+      {
+        "donor_eval_seed": 1014,
+        "eval_seed": 1022,
+        "family": "direct_reach",
+        "goal": [
+          0.7277628779411316,
+          0.6692131161689758
+        ],
+        "waypoint": [
+          0.7277628779411316,
+          0.6692131161689758
+        ]
+      },
+      {
+        "donor_eval_seed": 1023,
+        "eval_seed": 1001,
+        "family": "waypoint_reach",
+        "goal": [
+          0.895045816898346,
+          0.8498805165290833
+        ],
+        "waypoint": [
+          0.5631147623062134,
+          0.6915439963340759
+        ]
+      },
+      {
+        "donor_eval_seed": 1021,
+        "eval_seed": 1003,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7478339076042175,
+          0.24158421158790588
+        ],
+        "waypoint": [
+          0.5163754224777222,
+          0.49331235885620117
+        ]
+      },
+      {
+        "donor_eval_seed": 1019,
+        "eval_seed": 1005,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7287698984146118,
+          0.4199065864086151
+        ],
+        "waypoint": [
+          0.45362263917922974,
+          0.719424843788147
+        ]
+      },
+      {
+        "donor_eval_seed": 1011,
+        "eval_seed": 1007,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7592129111289978,
+          0.6423392295837402
+        ],
+        "waypoint": [
+          0.5069183111190796,
+          0.5168411731719971
+        ]
+      },
+      {
+        "donor_eval_seed": 1013,
+        "eval_seed": 1009,
+        "family": "waypoint_reach",
+        "goal": [
+          0.8615785837173462,
+          0.6084561944007874
+        ],
+        "waypoint": [
+          0.45568597316741943,
+          0.39213114976882935
+        ]
+      },
+      {
+        "donor_eval_seed": 1015,
+        "eval_seed": 1011,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7229613661766052,
+          0.5418606400489807
+        ],
+        "waypoint": [
+          0.3852439522743225,
+          0.5950309634208679
+        ]
+      },
+      {
+        "donor_eval_seed": 1017,
+        "eval_seed": 1013,
+        "family": "waypoint_reach",
+        "goal": [
+          0.798987090587616,
+          0.19706296920776367
+        ],
+        "waypoint": [
+          0.41909128427505493,
+          0.6315780282020569
+        ]
+      },
+      {
+        "donor_eval_seed": 1007,
+        "eval_seed": 1015,
+        "family": "waypoint_reach",
+        "goal": [
+          0.6930992603302002,
+          0.2833571135997772
+        ],
+        "waypoint": [
+          0.39138588309288025,
+          0.3950859606266022
+        ]
+      },
+      {
+        "donor_eval_seed": 1005,
+        "eval_seed": 1017,
+        "family": "waypoint_reach",
+        "goal": [
+          0.712410569190979,
+          0.5015961527824402
+        ],
+        "waypoint": [
+          0.3737541437149048,
+          0.5112996101379395
+        ]
+      },
+      {
+        "donor_eval_seed": 1009,
+        "eval_seed": 1019,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7320593595504761,
+          0.4001365900039673
+        ],
+        "waypoint": [
+          0.5654159784317017,
+          0.8199999928474426
+        ]
+      },
+      {
+        "donor_eval_seed": 1003,
+        "eval_seed": 1021,
+        "family": "waypoint_reach",
+        "goal": [
+          0.749183177947998,
+          0.698354184627533
+        ],
+        "waypoint": [
+          0.3714543879032135,
+          0.8202170729637146
+        ]
+      },
+      {
+        "donor_eval_seed": 1001,
+        "eval_seed": 1023,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7618091702461243,
+          0.2542518675327301
+        ],
+        "waypoint": [
+          0.4482593536376953,
+          0.7584246397018433
+        ]
+      }
+    ],
+    "mode": "shuffle"
+  }
+}

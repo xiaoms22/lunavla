@@ -13,13 +13,18 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from lunavla.published_evidence import verify_language_snapshot  # noqa: E402
+from lunavla.published_evidence import (  # noqa: E402
+    verify_language_snapshot,
+    verify_visual_snapshot,
+)
 
 
 START = "<!-- VERIFIED_RESULTS_START -->"
 END = "<!-- VERIFIED_RESULTS_END -->"
 V2_START = "<!-- V2_EVIDENCE_START -->"
 V2_END = "<!-- V2_EVIDENCE_END -->"
+V2_VISUAL_START = "<!-- V2_VISUAL_EVIDENCE_START -->"
+V2_VISUAL_END = "<!-- V2_VISUAL_EVIDENCE_END -->"
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -79,8 +84,7 @@ def render_aggregate(index_path: Path, readme_path: Path, analysis: dict[str, An
             interval = aggregate.get("success_wilson_95", [])
             if trials > 0 and isinstance(interval, list) and len(interval) == 2:
                 success_text = (
-                    f"{successes / trials:.1%} "
-                    f"({float(interval[0]):.1%}–{float(interval[1]):.1%})"
+                    f"{successes / trials:.1%} ({float(interval[0]):.1%}–{float(interval[1]):.1%})"
                 )
             elif trials > 0:
                 low, high = wilson(successes, trials)
@@ -98,9 +102,7 @@ def render_aggregate(index_path: Path, readme_path: Path, analysis: dict[str, An
             interval = contrast.get("paired_bootstrap_95", [])
             interval_text = "n/a"
             if isinstance(interval, list) and len(interval) == 2:
-                interval_text = (
-                    f"[{format_number(interval[0])}, {format_number(interval[1])}]"
-                )
+                interval_text = f"[{format_number(interval[0])}, {format_number(interval[1])}]"
             contrast_rows.append(
                 f"| `{family}` | `{contrast.get('treatment')}` − `{contrast.get('reference')}` | "
                 f"`{contrast.get('metric')}` | {int(contrast.get('paired_n', 0))} | "
@@ -140,9 +142,7 @@ def render_runs(index_path: Path, readme_path: Path, runs: list[dict[str, Any]])
         successes = int(metric(metrics, "success_count", "successes", default=0))
         trials = int(metric(metrics, "episodes", "trials", default=0))
         low, high = wilson(successes, trials)
-        success_text = (
-            f"{successes / trials:.1%} ({low:.1%}–{high:.1%})" if trials else "n/a"
-        )
+        success_text = f"{successes / trials:.1%} ({low:.1%}–{high:.1%})" if trials else "n/a"
         config_path = manifest_path.parent / "resolved_config.json"
         config = read_json(config_path) if config_path.is_file() else {}
         policy_config = config.get("policy", {}) if isinstance(config.get("policy"), dict) else {}
@@ -185,9 +185,7 @@ def render_v2_language(snapshot_root: Path, readme_path: Path) -> str:
     published = verify_language_snapshot(snapshot_root)
     evidence_link = relative_link(published.evidence_manifest_path, readme_path)
     snapshot_link = relative_link(published.snapshot_manifest_path, readme_path)
-    commit_url = (
-        "https://github.com/xiaoms22/lunavla/commit/" + published.git_sha
-    )
+    commit_url = "https://github.com/xiaoms22/lunavla/commit/" + published.git_sha
     failed_checks = ", ".join(f"`{name}`" for name in published.failed_checks)
     lines = [
         f"**Claim gate: {published.statement}**",
@@ -227,6 +225,55 @@ def render_v2_language(snapshot_root: Path, readme_path: Path) -> str:
     return "\n".join(lines)
 
 
+def render_v2_visual(snapshot_root: Path, readme_path: Path) -> str:
+    published = verify_visual_snapshot(snapshot_root)
+    evidence_link = relative_link(published.evidence_manifest_path, readme_path)
+    snapshot_link = relative_link(published.snapshot_manifest_path, readme_path)
+    commit_url = "https://github.com/xiaoms22/lunavla/commit/" + published.git_sha
+    failed_checks = ", ".join(f"`{name}`" for name in published.failed_checks)
+    lines = [
+        f"**Claim gate: {published.statement}**",
+        "",
+        "Verification establishes a complete paired visual study and faithful aggregation. It does not establish that images improve control.",
+        "",
+        "| Rollout arm | Train seeds | Trials | Observed success rate (95% Wilson CI) |",
+        "| --- | ---: | ---: | --- |",
+    ]
+    for statistic in published.arm_wilson:
+        lines.append(
+            f"| `{statistic.scope}` | {published.train_seed_count} | {statistic.sample_n} | "
+            f"{format_percent(statistic.estimate)} "
+            f"({format_percent(statistic.lower)}–{format_percent(statistic.upper)}) |"
+        )
+    lines.extend(
+        [
+            "",
+            f"The full matrix contains {published.train_seed_count} image-policy and {published.train_seed_count} state-only training runs, with {published.control_trials} fixed seed/episode pairs per arm.",
+            "",
+            "Intervention-minus-control final-distance diagnostics (positive means worse):",
+            "",
+            "| Contrast and task family | Paired n | Estimate | Training-seed clustered bootstrap 95% CI |",
+            "| --- | ---: | ---: | --- |",
+        ]
+    )
+    for statistic in published.paired_final_distance:
+        lines.append(
+            f"| `{statistic.scope}` | {statistic.sample_n} | {statistic.estimate:+.4f} | "
+            f"[{statistic.lower:+.4f}, {statistic.upper:+.4f}] |"
+        )
+    lines.extend(
+        [
+            "",
+            f"The predeclared claim remains closed because all claim-critical checks failed: {failed_checks}. These rows must not be described as evidence that images improve control.",
+            "",
+            f"Provenance: source commit [`{published.git_sha[:7]}`]({commit_url}); authoritative [workflow run 29110701437]({published.workflow_url}); EvidenceManifest SHA-256 `{published.evidence_manifest_sha256}`.",
+            "",
+            f"Tracked sources: [EvidenceManifest]({evidence_link}) and [snapshot hash manifest]({snapshot_link}).",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def replace_marked_section(
     readme: str,
     body: str,
@@ -254,6 +301,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--index", default="results/v1.1/index.json")
     parser.add_argument("--v2-snapshot", default="results/v2/language-alpha2")
+    parser.add_argument("--v2-visual-snapshot", default="results/v2/visual-beta1")
     parser.add_argument("--readme", default="README.md")
     parser.add_argument("--check", action="store_true")
     return parser.parse_args()
@@ -268,6 +316,7 @@ def main() -> int:
     args = parse_args()
     index_path = resolve(args.index)
     v2_snapshot_path = resolve(args.v2_snapshot)
+    v2_visual_snapshot_path = resolve(args.v2_visual_snapshot)
     readme_path = resolve(args.readme)
     try:
         current = readme_path.read_text(encoding="utf-8")
@@ -277,6 +326,12 @@ def main() -> int:
             render_v2_language(v2_snapshot_path, readme_path),
             start=V2_START,
             end=V2_END,
+        )
+        expected = replace_marked_section(
+            expected,
+            render_v2_visual(v2_visual_snapshot_path, readme_path),
+            start=V2_VISUAL_START,
+            end=V2_VISUAL_END,
         )
     except (KeyError, OSError, TypeError, ValueError) as exc:
         print(f"README evidence verification failed: {exc}", file=sys.stderr)
