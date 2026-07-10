@@ -9,11 +9,18 @@ import pytest
 from scripts.build_v11_evidence_snapshot import main as snapshot_main
 from scripts.build_v11_evidence_snapshot import snapshot_analysis
 from scripts.render_readme_results import render
+from scripts.run_controlled_experiments import write_csv
 
 
 def write_json(path: Path, payload: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def test_controlled_csv_uses_repository_line_endings(tmp_path: Path) -> None:
+    path = tmp_path / "metrics.csv"
+    write_csv(path, [{"seed": 11, "success": 1}])
+    assert path.read_bytes() == b"seed,success\n11,1\n"
 
 
 def test_snapshot_rejects_duplicate_declared_run_ids(
