@@ -13,6 +13,15 @@ from numpy.typing import NDArray
 from .contracts import Observation, Transition
 
 
+LEROBOT_PUSHT_REPO_ID = "lerobot/pusht"
+LEROBOT_PUSHT_REVISION = "b1c3ecbae7f244acc039a3dbc255a00dad1372b9"
+LEROBOT_PUSHT_EPISODES = (0,)
+LEROBOT_PUSHT_VIDEO_BACKEND = "pyav"
+LEROBOT_PUSHT_IMAGE_SHAPE = (96, 96, 3)
+LEROBOT_PUSHT_STATE_SHAPE = (2,)
+LEROBOT_PUSHT_ACTION_SHAPE = (2,)
+
+
 class LeRobotUnavailableError(ImportError):
     """Raised only when the optional LeRobot-backed path is requested."""
 
@@ -32,6 +41,7 @@ class LeRobotFieldMap:
     reward_key: str = "next.reward"
     terminated_key: str = "next.done"
     episode_index_key: str = "episode_index"
+    success_keys: tuple[str, ...] = ("next.success", "success", "is_success")
 
 
 @dataclass(frozen=True)
@@ -191,6 +201,44 @@ def _optional_episode_index(value: Any) -> int | str | None:
     return scalar
 
 
+def _episode_ids(values: Sequence[int]) -> tuple[int, ...]:
+    episodes: list[int] = []
+    for index, value in enumerate(values):
+        if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
+            raise TypeError(f"episodes[{index}] must be an integer")
+        episode = int(value)
+        if episode < 0:
+            raise ValueError(f"episodes[{index}] must be non-negative")
+        episodes.append(episode)
+    if not episodes:
+        raise ValueError("episodes cannot be empty")
+    if len(set(episodes)) != len(episodes):
+        raise ValueError("episodes cannot contain duplicate episode IDs")
+    return tuple(episodes)
+
+
+def _boolean_scalar(value: Any, *, name: str) -> bool:
+    if isinstance(value, (bool, np.bool_)):
+        return bool(value)
+    array = _to_numpy(value, name=name)
+    if array.size != 1 or array.dtype.kind != "b":
+        raise TypeError(f"{name} must be a boolean scalar")
+    return bool(array.reshape(-1)[0])
+
+
+def _float_scalar(value: Any, *, name: str) -> float:
+    array = _to_numpy(value, name=name)
+    if array.size != 1:
+        raise ValueError(f"{name} must be a scalar")
+    try:
+        result = float(array.reshape(-1)[0])
+    except (TypeError, ValueError) as exc:
+        raise TypeError(f"{name} must be numeric") from exc
+    if not np.isfinite(result):
+        raise ValueError(f"{name} must be finite")
+    return result
+
+
 def map_lerobot_observation(
     sample: Mapping[str, Any] | NDArray[np.generic],
     *,
@@ -271,18 +319,35 @@ class LeRobotDatasetSource:
         self,
         repo_id: str,
         *,
-        episodes: Sequence[int] | None = None,
+        revision: str = LEROBOT_PUSHT_REVISION,
+        episodes: Sequence[int] = LEROBOT_PUSHT_EPISODES,
+        video_backend: str = LEROBOT_PUSHT_VIDEO_BACKEND,
+        return_uint8: bool = True,
         max_samples: int | None = None,
         require_image: bool = True,
         field_map: LeRobotFieldMap = LeRobotFieldMap(),
         dataset_factory: Callable[..., Any] | None = None,
     ) -> None:
-        if not repo_id or "/" not in repo_id:
+        if not isinstance(repo_id, str) or repo_id.count("/") != 1:
             raise ValueError("repo_id must be an explicit Hugging Face path such as 'lerobot/pusht'")
+        repo_id = repo_id.strip()
+        if any(not part for part in repo_id.split("/", maxsplit=1)):
+            raise ValueError("repo_id must be an explicit Hugging Face path such as 'lerobot/pusht'")
+        if not isinstance(revision, str) or not revision.strip():
+            raise ValueError("revision must be a non-empty string")
+        if video_backend != LEROBOT_PUSHT_VIDEO_BACKEND:
+            raise ValueError("video_backend must be pyav for reproducible CPU decoding")
+        if not isinstance(return_uint8, bool):
+            raise TypeError("return_uint8 must be boolean")
+        if not return_uint8:
+            raise ValueError("return_uint8 must be true for the LunaVLA image contract")
         if max_samples is not None and max_samples <= 0:
             raise ValueError("max_samples must be positive")
         self.repo_id = repo_id
-        self.episodes = None if episodes is None else tuple(int(value) for value in episodes)
+        self.revision = revision.strip()
+        self.episodes = _episode_ids(episodes)
+        self.video_backend = video_backend
+        self.return_uint8 = return_uint8
         self.max_samples = max_samples
         self.require_image = bool(require_image)
         self.field_map = field_map
@@ -298,9 +363,12 @@ class LeRobotDatasetSource:
 
     def load_raw_dataset(self) -> Any:
         factory = self._dataset_factory or load_lerobot_dataset_factory()
-        kwargs: dict[str, object] = {}
-        if self.episodes is not None:
-            kwargs["episodes"] = list(self.episodes)
+        kwargs: dict[str, object] = {
+            "episodes": list(self.episodes),
+            "revision": self.revision,
+            "video_backend": self.video_backend,
+            "return_uint8": self.return_uint8,
+        }
         return factory(self.repo_id, **kwargs)
 
     def _raw_samples(self) -> list[Mapping[str, Any]]:
@@ -327,6 +395,8 @@ class LeRobotDatasetSource:
             )
             for index, sample in enumerate(samples)
         ]
+        if self.repo_id == LEROBOT_PUSHT_REPO_ID:
+            self._validate_pusht_contract(mapped)
         transitions: list[Transition] = []
         for index, (sample, current) in enumerate(zip(samples, mapped)):
             episode_index = current.metadata["episode_index"]
@@ -335,13 +405,37 @@ class LeRobotDatasetSource:
             if next_index < len(samples):
                 next_episode = mapped[next_index].metadata["episode_index"]
                 same_episode = episode_index is None or next_episode == episode_index
-            explicit_terminated = bool(_lookup(sample, self.field_map.terminated_key, default=False))
+            raw_terminated = _lookup(sample, self.field_map.terminated_key)
+            explicit_terminated = (
+                False
+                if raw_terminated is None
+                else _boolean_scalar(raw_terminated, name=self.field_map.terminated_key)
+            )
             terminated = explicit_terminated or not same_episode
-            next_observation = mapped[next_index].observation if same_episode else current.observation
+            has_next_observation = same_episode and not explicit_terminated
+            next_observation = (
+                mapped[next_index].observation
+                if has_next_observation
+                else current.observation
+            )
             reward_value = _lookup(sample, self.field_map.reward_key, default=0.0)
-            reward = float(np.asarray(reward_value).reshape(-1)[0])
-            if not np.isfinite(reward):
-                raise ValueError(f"reward is not finite at sample {index}")
+            reward = _float_scalar(reward_value, name=self.field_map.reward_key)
+            info: dict[str, object] = {
+                **dict(current.metadata),
+                "source": "LeRobotDataset",
+                "revision": self.revision,
+                "video_backend": self.video_backend,
+                "return_uint8": self.return_uint8,
+                "next_observation_source": (
+                    "next_frame" if has_next_observation else "terminal_self"
+                ),
+            }
+            for success_key in self.field_map.success_keys:
+                raw_success = _lookup(sample, success_key)
+                if raw_success is not None:
+                    info["success"] = _boolean_scalar(raw_success, name=success_key)
+                    info["success_key"] = success_key
+                    break
             transitions.append(
                 Transition(
                     observation=current.observation,
@@ -349,15 +443,38 @@ class LeRobotDatasetSource:
                     reward=reward,
                     next_observation=next_observation,
                     terminated=terminated,
-                    info={
-                        **dict(current.metadata),
-                        "source": "LeRobotDataset",
-                        "success": False,
-                        "next_observation_source": "next_frame" if same_episode else "terminal_self",
-                    },
+                    info=info,
                 )
             )
         return tuple(transitions)
+
+    @staticmethod
+    def _validate_pusht_contract(samples: Sequence[MappedLeRobotSample]) -> None:
+        for index, sample in enumerate(samples):
+            if sample.observation.state.shape != LEROBOT_PUSHT_STATE_SHAPE:
+                raise ValueError(
+                    "lerobot/pusht observation.state must have shape "
+                    f"{LEROBOT_PUSHT_STATE_SHAPE}; sample {index} has "
+                    f"{sample.observation.state.shape}"
+                )
+            if sample.action.shape != LEROBOT_PUSHT_ACTION_SHAPE:
+                raise ValueError(
+                    "lerobot/pusht action must have shape "
+                    f"{LEROBOT_PUSHT_ACTION_SHAPE}; sample {index} has "
+                    f"{sample.action.shape}"
+                )
+            image = sample.observation.image
+            if image is None:
+                raise ValueError(f"lerobot/pusht sample {index} is missing its RGB image")
+            if image.shape != LEROBOT_PUSHT_IMAGE_SHAPE:
+                raise ValueError(
+                    "lerobot/pusht image must have shape "
+                    f"{LEROBOT_PUSHT_IMAGE_SHAPE}; sample {index} has {image.shape}"
+                )
+            if image.dtype != np.uint8:
+                raise TypeError(
+                    f"lerobot/pusht image must be uint8; sample {index} has {image.dtype}"
+                )
 
 
 class LeRobotEnvAdapter:
@@ -408,12 +525,11 @@ class LeRobotEnvAdapter:
             require_image=self.require_image,
         )
         info = dict(raw_info or {})
-        info.setdefault("success", False)
         info["truncated"] = bool(truncated)
         transition = Transition(
             observation=self._observation,
             action=action_array,
-            reward=float(reward),
+            reward=_float_scalar(reward, name="reward"),
             next_observation=next_observation,
             terminated=bool(done),
             info=info,

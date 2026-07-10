@@ -6,14 +6,20 @@ import copy
 import hashlib
 import json
 import math
+import warnings
 from dataclasses import dataclass
 from numbers import Integral
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import yaml
 
 from lunavla.contracts import normalize_device
+from lunavla.lerobot_adapter import (
+    LEROBOT_PUSHT_IMAGE_SHAPE,
+    LEROBOT_PUSHT_REPO_ID,
+    LEROBOT_PUSHT_REVISION,
+)
 
 
 CONFIG_SCHEMA_VERSION = 2
@@ -46,7 +52,19 @@ _POLICY_FIELDS = {
     "device",
 }
 _TASK_FIELDS = {"id", "family", "max_steps", "goal", "render_size", "parameters"}
-_DATASET_FIELDS = {"type", "split", "seed", "path", "episode_count", "parameters"}
+_DATASET_FIELDS = {
+    "type",
+    "split",
+    "seed",
+    "path",
+    "episode_count",
+    "parameters",
+    "repo_id",
+    "revision",
+    "episodes",
+    "video_backend",
+    "return_uint8",
+}
 _TRAINING_FIELDS = {
     "device",
     "seed",
@@ -71,10 +89,18 @@ _TASK_IDS = {
     "pusht_style_point_reach",
     "language_conditioned_point_reach",
     "rendered_visual_point_reach",
+    "lerobot_pusht",
 }
 _DATASET_TYPES = {"memory", "mock_pusht", "generated", "jsonl", "lerobot"}
 _VISUAL_FAMILIES = {"all", "direct_reach", "waypoint_reach"}
 _VISUAL_OBSERVATION_MODES = {"privileged", "vision_required"}
+_LEROBOT_DATASET_FIELDS = {
+    "repo_id",
+    "revision",
+    "episodes",
+    "video_backend",
+    "return_uint8",
+}
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
@@ -105,6 +131,20 @@ def _integer(value: Any, name: str, *, nonnegative: bool = False) -> int:
     if nonnegative and result < 0:
         raise ValueError(f"{name} must be non-negative")
     return result
+
+
+def _episode_ids(value: Any, name: str) -> list[int]:
+    if isinstance(value, (str, bytes, Mapping)) or not isinstance(value, Sequence):
+        raise TypeError(f"{name} must be a sequence of integers")
+    episodes = [
+        _integer(item, f"{name}[{index}]", nonnegative=True)
+        for index, item in enumerate(value)
+    ]
+    if not episodes:
+        raise ValueError(f"{name} cannot be empty")
+    if len(set(episodes)) != len(episodes):
+        raise ValueError(f"{name} cannot contain duplicate episode IDs")
+    return episodes
 
 
 def _finite_float(value: Any, name: str, *, positive: bool = False) -> float:
@@ -201,6 +241,35 @@ def _validate_cross_section_contracts(
 
     if policy["action_dim"] != 2:
         raise ValueError(f"task.id={task_id} requires policy.action_dim=2")
+
+    if dataset["type"] == "lerobot" and task_id != "lerobot_pusht":
+        raise ValueError("dataset.type=lerobot requires task.id=lerobot_pusht")
+    if task_id == "lerobot_pusht":
+        if dataset["type"] != "lerobot":
+            raise ValueError("task.id=lerobot_pusht requires dataset.type=lerobot")
+        if family != "pusht":
+            raise ValueError("task.id=lerobot_pusht requires task.family=pusht")
+        if policy["state_dim"] != 2:
+            raise ValueError("task.id=lerobot_pusht requires policy.state_dim=2")
+        if image_shape != list(LEROBOT_PUSHT_IMAGE_SHAPE):
+            raise ValueError(
+                "task.id=lerobot_pusht requires policy.image_shape=[96, 96, 3]"
+            )
+        if dataset["repo_id"] != LEROBOT_PUSHT_REPO_ID:
+            raise ValueError(
+                f"task.id=lerobot_pusht requires dataset.repo_id={LEROBOT_PUSHT_REPO_ID}"
+            )
+        if dataset["revision"] != LEROBOT_PUSHT_REVISION:
+            raise ValueError(
+                "task.id=lerobot_pusht requires the pinned official dataset revision"
+            )
+        if task["parameters"]:
+            raise ValueError("task.id=lerobot_pusht does not accept task.parameters")
+        if "goal" in task or "render_size" in task:
+            raise ValueError("task.id=lerobot_pusht does not accept goal or render_size")
+        if language_ablation != "none" or image_ablation != "none":
+            raise ValueError("task.id=lerobot_pusht does not support modality ablations")
+        return
 
     if task_id == "pusht_style_point_reach":
         if family != "point_reach":
@@ -416,11 +485,12 @@ class ExperimentConfig:
 
         dataset = _mapping(payload.get("dataset", {}), "dataset")
         _reject_unknown("dataset", dataset, _DATASET_FIELDS)
+        provided_dataset_fields = set(dataset)
         dataset["type"] = str(dataset.get("type", "memory"))
         if dataset["type"] not in _DATASET_TYPES:
             raise ValueError(f"unsupported dataset.type: {dataset['type']!r}")
-        if dataset["type"] in {"jsonl", "lerobot"} and not dataset.get("path"):
-            raise ValueError(f"dataset.type={dataset['type']} requires dataset.path")
+        if dataset["type"] == "jsonl" and not dataset.get("path"):
+            raise ValueError("dataset.type=jsonl requires dataset.path")
         dataset["split"] = str(dataset.get("split", "train"))
         if dataset["split"] not in {"train", "validation", "test"}:
             raise ValueError("dataset.split must be train, validation, or test")
@@ -432,6 +502,73 @@ class ExperimentConfig:
                 dataset["episode_count"], "dataset.episode_count"
             )
         dataset["parameters"] = _mapping(dataset.get("parameters", {}), "dataset.parameters")
+        lerobot_fields = provided_dataset_fields & _LEROBOT_DATASET_FIELDS
+        if dataset["type"] != "lerobot":
+            if lerobot_fields:
+                invalid_dataset_fields = ", ".join(sorted(lerobot_fields))
+                raise ValueError(
+                    "LeRobot dataset field(s) require dataset.type=lerobot: "
+                    f"{invalid_dataset_fields}"
+                )
+        else:
+            if dataset["parameters"]:
+                unknown = ", ".join(sorted(dataset["parameters"]))
+                raise ValueError(
+                    "unknown field(s) in LeRobot dataset parameters: " f"{unknown}"
+                )
+            if "episode_count" in provided_dataset_fields:
+                raise ValueError(
+                    "dataset.episode_count is not valid for LeRobot; use dataset.episodes"
+                )
+            legacy_path = dataset.get("path")
+            repo_id = dataset.get("repo_id")
+            if legacy_path is not None:
+                if repo_id is not None and str(repo_id).strip() != str(legacy_path).strip():
+                    raise ValueError("dataset.path and dataset.repo_id disagree")
+                warnings.warn(
+                    "dataset.path as a LeRobot repo_id is deprecated; use dataset.repo_id",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                if repo_id is None:
+                    repo_id = legacy_path
+                dataset.pop("path", None)
+            if not isinstance(repo_id, str) or not repo_id.strip():
+                raise ValueError("dataset.type=lerobot requires dataset.repo_id")
+            repo_id = repo_id.strip()
+            if repo_id.count("/") != 1 or any(
+                not part.strip() for part in repo_id.split("/", maxsplit=1)
+            ):
+                raise ValueError(
+                    "dataset.repo_id must be an explicit Hugging Face owner/name path"
+                )
+            dataset["repo_id"] = repo_id
+
+            revision = dataset.get("revision")
+            if not isinstance(revision, str) or not revision.strip():
+                raise ValueError("dataset.type=lerobot requires dataset.revision")
+            dataset["revision"] = revision.strip()
+            if "episodes" not in dataset:
+                raise ValueError("dataset.type=lerobot requires dataset.episodes")
+            dataset["episodes"] = _episode_ids(dataset["episodes"], "dataset.episodes")
+
+            if "video_backend" not in dataset:
+                raise ValueError("dataset.type=lerobot requires dataset.video_backend")
+            video_backend = dataset["video_backend"]
+            if not isinstance(video_backend, str):
+                raise TypeError("dataset.video_backend must be a string")
+            if video_backend != "pyav":
+                raise ValueError("dataset.video_backend must be pyav")
+            dataset["video_backend"] = video_backend
+
+            if "return_uint8" not in dataset:
+                raise ValueError("dataset.type=lerobot requires dataset.return_uint8")
+            return_uint8 = dataset["return_uint8"]
+            if not isinstance(return_uint8, bool):
+                raise TypeError("dataset.return_uint8 must be boolean")
+            if not return_uint8:
+                raise ValueError("dataset.return_uint8 must be true")
+            dataset["return_uint8"] = return_uint8
 
         training = _mapping(payload.get("training", {}), "training")
         _reject_unknown("training", training, _TRAINING_FIELDS)

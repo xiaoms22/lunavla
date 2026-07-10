@@ -167,15 +167,12 @@ def _dataset_source(config: ExperimentConfig, root: Path) -> DatasetSource:
     if source_type == "lerobot":
         from lunavla.lerobot_adapter import LeRobotDatasetSource
 
-        repo_id = config.dataset.get("path")
-        if not repo_id:
-            raise ValueError("dataset.type=lerobot requires dataset.path as a repo_id")
-        parameters = config.dataset["parameters"]
         return LeRobotDatasetSource.from_repo_id(
-            str(repo_id),
-            episodes=parameters.get("episodes"),
-            max_samples=parameters.get("max_samples"),
-            require_image=bool(parameters.get("require_image", True)),
+            str(config.dataset["repo_id"]),
+            revision=str(config.dataset["revision"]),
+            episodes=config.dataset["episodes"],
+            video_backend=str(config.dataset["video_backend"]),
+            return_uint8=bool(config.dataset["return_uint8"]),
         )
     raise ValueError(f"unsupported v2 dataset.type: {source_type!r}")
 
@@ -183,6 +180,10 @@ def _dataset_source(config: ExperimentConfig, root: Path) -> DatasetSource:
 def _task_env(config: ExperimentConfig) -> TaskEnv:
     task_id = str(config.task["id"])
     parameters = config.task["parameters"]
+    if task_id == "lerobot_pusht":
+        from lunavla.pusht_env_adapter import PushTEnvAdapter
+
+        return PushTEnvAdapter()
     if task_id == "language_conditioned_point_reach":
         from lunavla.language_tasks import LanguageTaskSuiteEnv
 
