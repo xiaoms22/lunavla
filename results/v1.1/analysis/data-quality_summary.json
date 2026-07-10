@@ -1,0 +1,56 @@
+{
+  "aggregates": [
+    {
+      "mean_action_smoothness": 0.017825197673791787,
+      "mean_final_distance": 0.1849957589060068,
+      "success_rate": 0.51,
+      "success_wilson_95": [
+        0.4134801193402717,
+        0.6057800106955887
+      ],
+      "successes": 51,
+      "treatment": "clean",
+      "trials": 100
+    },
+    {
+      "mean_action_smoothness": 0.01667345840217467,
+      "mean_final_distance": 0.19289944685995578,
+      "success_rate": 0.49,
+      "success_wilson_95": [
+        0.3942199893044114,
+        0.5865198806597284
+      ],
+      "successes": 49,
+      "treatment": "noisy",
+      "trials": 100
+    }
+  ],
+  "contrasts": [
+    {
+      "analysis_seed": 202611,
+      "mean_difference": 0.007903687953948975,
+      "metric": "final_distance",
+      "paired_bootstrap_95": [
+        -0.01810915466398001,
+        0.03367251571267843
+      ],
+      "paired_n": 100,
+      "reference": "clean",
+      "treatment": "noisy"
+    },
+    {
+      "analysis_seed": 202611,
+      "mean_difference": -0.0011517392716171122,
+      "metric": "action_smoothness",
+      "paired_bootstrap_95": [
+        -0.002226051220877471,
+        -0.00021502247398971493
+      ],
+      "paired_n": 100,
+      "reference": "clean",
+      "treatment": "noisy"
+    }
+  ],
+  "controlled": true,
+  "family": "data-quality"
+}

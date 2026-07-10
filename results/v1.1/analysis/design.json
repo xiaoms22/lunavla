@@ -1,0 +1,58 @@
+{
+  "analysis_seed": 202611,
+  "controlled": true,
+  "eval_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019
+  ],
+  "families": {
+    "bc-capacity": {
+      "invariant_sha256": "c28716689293dd4bb1fa9dac173c15b00a108671368a1a87455de5a2365ffde1",
+      "treatments": [
+        "hidden-32",
+        "hidden-64"
+      ]
+    },
+    "chunk": {
+      "invariant_sha256": "298f9b2367049174499d952103839c098fff306a020e34bd39fc8473b8d0332c",
+      "treatments": [
+        "chunk-1",
+        "chunk-2",
+        "chunk-4",
+        "chunk-8"
+      ]
+    },
+    "data-quality": {
+      "invariant_sha256": "520e593fb209ed76ad2ddd3450347481c39ff487f3fe6a5e33f473495d04461e",
+      "treatments": [
+        "clean",
+        "noisy"
+      ]
+    }
+  },
+  "train_seeds": [
+    11,
+    22,
+    33,
+    44,
+    55
+  ]
+}

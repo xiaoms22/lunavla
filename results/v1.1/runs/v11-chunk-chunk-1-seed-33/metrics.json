@@ -1,0 +1,59 @@
+{
+  "checkpoint": "outputs/controlled_v11/chunk/chunk-1/seed-33/checkpoint.json",
+  "policy_name": "numpy_linear_chunk",
+  "policy_interface": {
+    "contract": "predict_chunk(sample)->ActionChunk; predict_action(sample)->first_action",
+    "policy_class": "NumpyLinearChunkPolicy",
+    "policy_name": "numpy_linear_chunk"
+  },
+  "execution_mode": "open_loop_chunk",
+  "eval_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019
+  ],
+  "action_stats_source": "train_records",
+  "action_stats_path": "outputs/controlled_v11/chunk/chunk-1/seed-33/action_statistics.json",
+  "action_mean": [
+    0.057095,
+    -0.051493
+  ],
+  "action_std": [
+    0.047175,
+    0.04832
+  ],
+  "episodes": 20,
+  "success_count": 20,
+  "success_rate": 1.0,
+  "mean_final_distance": 0.078577,
+  "mean_rollout_length": 5.95,
+  "mean_action_smoothness": 0.016161,
+  "failure_count": 0,
+  "failure_category_counts": {},
+  "subtask_frame_counts": {
+    "align_push": 38,
+    "push_to_goal": 41,
+    "settle": 20,
+    "approach_block": 20
+  },
+  "failure_subtask_counts": {},
+  "rollout_steps": 40,
+  "success_distance": 0.1
+}

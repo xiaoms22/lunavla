@@ -1,0 +1,128 @@
+{
+  "aggregates": [
+    {
+      "mean_action_smoothness": 0.016175546046767738,
+      "mean_final_distance": 0.08028355896472932,
+      "success_rate": 1.0,
+      "success_wilson_95": [
+        0.9630065017930143,
+        1.0
+      ],
+      "successes": 100,
+      "treatment": "chunk-1",
+      "trials": 100
+    },
+    {
+      "mean_action_smoothness": 0.014586046676290258,
+      "mean_final_distance": 0.08666391331702471,
+      "success_rate": 0.9,
+      "success_wilson_95": [
+        0.8256343384950866,
+        0.9447708629393249
+      ],
+      "successes": 90,
+      "treatment": "chunk-2",
+      "trials": 100
+    },
+    {
+      "mean_action_smoothness": 0.014516990862157252,
+      "mean_final_distance": 0.12868605598807334,
+      "success_rate": 0.75,
+      "success_wilson_95": [
+        0.656955364519384,
+        0.8245478863771232
+      ],
+      "successes": 75,
+      "treatment": "chunk-4",
+      "trials": 100
+    },
+    {
+      "mean_action_smoothness": 0.019273618593338874,
+      "mean_final_distance": 0.12752413049340247,
+      "success_rate": 0.75,
+      "success_wilson_95": [
+        0.656955364519384,
+        0.8245478863771232
+      ],
+      "successes": 75,
+      "treatment": "chunk-8",
+      "trials": 100
+    }
+  ],
+  "contrasts": [
+    {
+      "analysis_seed": 202611,
+      "mean_difference": 0.006380354352295399,
+      "metric": "final_distance",
+      "paired_bootstrap_95": [
+        0.0034103747829794884,
+        0.009635567963123322
+      ],
+      "paired_n": 100,
+      "reference": "chunk-1",
+      "treatment": "chunk-2"
+    },
+    {
+      "analysis_seed": 202611,
+      "mean_difference": -0.0015894993704774815,
+      "metric": "action_smoothness",
+      "paired_bootstrap_95": [
+        -0.0018848662752764312,
+        -0.0013176629965218302
+      ],
+      "paired_n": 100,
+      "reference": "chunk-1",
+      "treatment": "chunk-2"
+    },
+    {
+      "analysis_seed": 202611,
+      "mean_difference": 0.04840249702334404,
+      "metric": "final_distance",
+      "paired_bootstrap_95": [
+        0.032859266102313996,
+        0.06433271676301956
+      ],
+      "paired_n": 100,
+      "reference": "chunk-1",
+      "treatment": "chunk-4"
+    },
+    {
+      "analysis_seed": 202611,
+      "mean_difference": -0.001658555184610486,
+      "metric": "action_smoothness",
+      "paired_bootstrap_95": [
+        -0.0021607173240273227,
+        -0.0011600821177830585
+      ],
+      "paired_n": 100,
+      "reference": "chunk-1",
+      "treatment": "chunk-4"
+    },
+    {
+      "analysis_seed": 202611,
+      "mean_difference": 0.04724057152867317,
+      "metric": "final_distance",
+      "paired_bootstrap_95": [
+        0.03176964838057757,
+        0.06307584371417761
+      ],
+      "paired_n": 100,
+      "reference": "chunk-1",
+      "treatment": "chunk-8"
+    },
+    {
+      "analysis_seed": 202611,
+      "mean_difference": 0.0030980725465711316,
+      "metric": "action_smoothness",
+      "paired_bootstrap_95": [
+        0.0020783169829675435,
+        0.004094292026143947
+      ],
+      "paired_n": 100,
+      "reference": "chunk-1",
+      "treatment": "chunk-8"
+    }
+  ],
+  "controlled": true,
+  "family": "chunk"
+}

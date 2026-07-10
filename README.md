@@ -35,7 +35,35 @@ The legacy names `act` and `pusht_mock` remain temporary compatibility aliases f
 ## Verified v1.1 results
 
 <!-- VERIFIED_RESULTS_START -->
-No controlled v1.1 result snapshot has been published yet. Historical v1.0 numbers were produced by non-controlled runs and are not evidence that action chunking caused an improvement.
+| Experiment | Treatment | Train seeds | Eval trials | Success (95% Wilson CI) | Mean final distance | Mean smoothness | Evidence |
+| --- | --- | ---: | ---: | --- | ---: | ---: | --- |
+| `bc-capacity` | `hidden-32` | 5 | 100 | 42.0% (32.8%–51.8%) | 0.207 | 0.0005176 | [controlled](results/v1.1/analysis/bc-capacity_summary.json) |
+| `bc-capacity` | `hidden-64` | 5 | 100 | 50.0% (40.4%–59.6%) | 0.1921 | 0.0009142 | [controlled](results/v1.1/analysis/bc-capacity_summary.json) |
+| `chunk` | `chunk-1` | 5 | 100 | 100.0% (96.3%–100.0%) | 0.08028 | 0.01618 | [controlled](results/v1.1/analysis/chunk_summary.json) |
+| `chunk` | `chunk-2` | 5 | 100 | 90.0% (82.6%–94.5%) | 0.08666 | 0.01459 | [controlled](results/v1.1/analysis/chunk_summary.json) |
+| `chunk` | `chunk-4` | 5 | 100 | 75.0% (65.7%–82.5%) | 0.1287 | 0.01452 | [controlled](results/v1.1/analysis/chunk_summary.json) |
+| `chunk` | `chunk-8` | 5 | 100 | 75.0% (65.7%–82.5%) | 0.1275 | 0.01927 | [controlled](results/v1.1/analysis/chunk_summary.json) |
+| `data-quality` | `clean` | 5 | 100 | 51.0% (41.3%–60.6%) | 0.185 | 0.01783 | [controlled](results/v1.1/analysis/data-quality_summary.json) |
+| `data-quality` | `noisy` | 5 | 100 | 49.0% (39.4%–58.7%) | 0.1929 | 0.01667 | [controlled](results/v1.1/analysis/data-quality_summary.json) |
+
+Each aggregate combines 5 training seeds × 20 fixed evaluation episodes. Rows are rendered from validated manifests and predeclared summaries.
+
+Continuous paired contrasts (treatment minus reference):
+
+| Experiment | Contrast | Metric | Paired n | Mean difference | Paired bootstrap 95% CI |
+| --- | --- | --- | ---: | ---: | --- |
+| `bc-capacity` | `hidden-64` − `hidden-32` | `final_distance` | 100 | -0.01494 | [-0.0244, -0.006912] |
+| `bc-capacity` | `hidden-64` − `hidden-32` | `action_smoothness` | 100 | 0.0003966 | [0.0003093, 0.0004875] |
+| `chunk` | `chunk-2` − `chunk-1` | `final_distance` | 100 | 0.00638 | [0.00341, 0.009636] |
+| `chunk` | `chunk-2` − `chunk-1` | `action_smoothness` | 100 | -0.001589 | [-0.001885, -0.001318] |
+| `chunk` | `chunk-4` − `chunk-1` | `final_distance` | 100 | 0.0484 | [0.03286, 0.06433] |
+| `chunk` | `chunk-4` − `chunk-1` | `action_smoothness` | 100 | -0.001659 | [-0.002161, -0.00116] |
+| `chunk` | `chunk-8` − `chunk-1` | `final_distance` | 100 | 0.04724 | [0.03177, 0.06308] |
+| `chunk` | `chunk-8` − `chunk-1` | `action_smoothness` | 100 | 0.003098 | [0.002078, 0.004094] |
+| `data-quality` | `noisy` − `clean` | `final_distance` | 100 | 0.007904 | [-0.01811, 0.03367] |
+| `data-quality` | `noisy` − `clean` | `action_smoothness` | 100 | -0.001152 | [-0.002226, -0.000215] |
+
+A controlled label describes the design. A directional claim is allowed only when the relevant paired interval excludes zero in the declared direction.
 <!-- VERIFIED_RESULTS_END -->
 
 This section is generated from `results/v1.1/index.json` and the referenced manifests:

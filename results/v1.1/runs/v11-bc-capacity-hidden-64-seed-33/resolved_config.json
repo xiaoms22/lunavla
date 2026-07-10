@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "project_name": "v11-bc-capacity-hidden-64-seed-33",
+  "framework": "lunavla",
+  "task": "pusht_style_point_reach",
+  "policy": {
+    "type": "numpy_bc_mlp",
+    "chunk_size": 1,
+    "observation_dim": 4,
+    "instruction_dim": 8,
+    "action_dim": 2,
+    "hidden_dim": 64
+  },
+  "dataset": {
+    "source": "mock_pusht",
+    "num_episodes": 32,
+    "steps_per_episode": 24,
+    "seed": 123,
+    "split_seed": 123,
+    "train_fraction": 0.8,
+    "validation_fraction": 0.1,
+    "test_fraction": 0.1,
+    "language_instruction": "push the T block to the goal",
+    "split": "train"
+  },
+  "training": {
+    "device": "cpu",
+    "batch_size": 64,
+    "num_steps": 800,
+    "learning_rate": 0.05,
+    "seed": 33,
+    "log_interval": 80
+  },
+  "eval": {
+    "episodes": 20,
+    "rollout_steps": 40,
+    "success_distance": 0.12,
+    "seed": 1000,
+    "goal": [
+      0.8,
+      0.2
+    ],
+    "start_low": 0.05,
+    "start_high": 0.95,
+    "action_clip": 0.12,
+    "execution_mode": "open_loop_chunk"
+  },
+  "artifacts": {
+    "output_dir": "outputs/controlled_v11/bc-capacity/hidden-64/seed-33",
+    "checkpoint_name": "checkpoint.json",
+    "report_path": "outputs/controlled_v11/bc-capacity/hidden-64/seed-33/summary_report.md"
+  }
+}
