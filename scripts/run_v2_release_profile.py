@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.metadata
 import json
 import re
 import shutil
@@ -166,10 +167,33 @@ def build_distributions() -> list[Path]:
     return distributions
 
 
+def installed_requirements() -> str:
+    """Return a deterministic freeze without assuming pip exists in the uv venv."""
+
+    versions: dict[str, tuple[str, str]] = {}
+    for distribution in importlib.metadata.distributions():
+        name = distribution.metadata.get("Name")
+        if not name:
+            continue
+        canonical = re.sub(r"[-_.]+", "-", name).lower()
+        value = (name, distribution.version)
+        previous = versions.get(canonical)
+        if previous is not None and previous[1] != value[1]:
+            raise RuntimeError(
+                f"conflicting installed versions for {canonical}: "
+                f"{previous[1]} and {value[1]}"
+            )
+        versions[canonical] = value
+    if not versions:
+        raise RuntimeError("the release environment contains no distributions")
+    return "".join(
+        f"{versions[key][0]}=={versions[key][1]}\n" for key in sorted(versions)
+    )
+
+
 def write_environment_and_sbom() -> None:
-    freeze = run((sys.executable, "-m", "pip", "freeze", "--all"), capture=True)
     requirements = RELEASE_ROOT / "environment-requirements.txt"
-    requirements.write_text(freeze + "\n", encoding="utf-8")
+    requirements.write_text(installed_requirements(), encoding="utf-8")
     run(
         (
             "cyclonedx-py",
