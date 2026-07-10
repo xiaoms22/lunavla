@@ -8,6 +8,7 @@ from typing import Any, Mapping
 import numpy as np
 import pytest
 
+from lunavla import lerobot_integration as integration
 from lunavla.lerobot_integration import (
     CLAIM_SCOPE,
     ENV_ID,
@@ -34,6 +35,7 @@ from lunavla.lerobot_integration import (
     load_official_dataset,
     preflight_official_download,
     run_headless_pusht_smoke,
+    run_official_integration,
     run_transformer_optimizer_step,
     validate_official_episode,
     verify_downloaded_source_files,
@@ -426,3 +428,137 @@ def test_manifest_rejects_unknown_nested_fields(tmp_path: Path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="unknown source fields"):
         IntegrationManifest.load(path)
+
+
+def _stub_official_integration(
+    monkeypatch: pytest.MonkeyPatch,
+    git_states: list[tuple[str, bool]],
+) -> None:
+    samples = _fake_samples()
+    states = iter(git_states)
+    monkeypatch.setattr(integration, "_git_state", lambda _root: next(states))
+    monkeypatch.setattr(
+        integration,
+        "preflight_official_download",
+        lambda **_kwargs: integration.DownloadPreflight(
+            repo_id=OFFICIAL_REPO_ID,
+            requested_revision=OFFICIAL_REVISION,
+            resolved_revision=OFFICIAL_REVISION,
+            planned_download_bytes=EXPECTED_PLANNED_DOWNLOAD_BYTES,
+            max_download_bytes=MAX_DOWNLOAD_BYTES,
+            source_files=OFFICIAL_SOURCE_FILES,
+        ),
+    )
+    monkeypatch.setattr(integration, "load_official_dataset", lambda *_args, **_kwargs: samples)
+    monkeypatch.setattr(integration, "materialize_episode", lambda _dataset: samples)
+    monkeypatch.setattr(
+        integration,
+        "verify_downloaded_source_files",
+        lambda _root: {item.path: item.sha256 for item in OFFICIAL_SOURCE_FILES},
+    )
+    monkeypatch.setattr(
+        integration,
+        "run_transformer_optimizer_step",
+        lambda _samples: integration.OptimizerStepValidation(
+            policy_id="transformer_chunk_cvae",
+            device="cpu",
+            batch_size=2,
+            steps=1,
+            loss=0.5,
+            parameters_changed=True,
+            policy_config=dict(EXPECTED_POLICY_CONFIG),
+        ),
+    )
+    monkeypatch.setattr(
+        integration,
+        "run_headless_pusht_smoke",
+        lambda **_kwargs: integration.EnvironmentValidation(
+            env_id=ENV_ID,
+            obs_type=ENV_OBS_TYPE,
+            seed=202611,
+            steps=3,
+            pixel_shape=EXPECTED_IMAGE_SHAPE,
+            pixel_dtype="uint8",
+            agent_position_shape=(2,),
+            action_shape=(2,),
+            action_dtype="float32",
+            close_completed=True,
+        ),
+    )
+    monkeypatch.setattr(
+        integration,
+        "dependency_versions",
+        lambda: {
+            "lunavla": EXPECTED_LUNAVLA_VERSION,
+            **EXPECTED_DEPENDENCY_VERSIONS,
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    ("state", "message"),
+    [
+        (("b" * 40, False), "does not match expected"),
+        (("a" * 40, True), "requires a clean Git checkout"),
+    ],
+)
+def test_official_integration_rejects_initial_source_mismatch_or_dirty(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    state: tuple[str, bool],
+    message: str,
+) -> None:
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    monkeypatch.setattr(integration, "_git_state", lambda _root: state)
+    with pytest.raises(ValueError, match=message):
+        run_official_integration(
+            root=checkout,
+            expected_git_sha="a" * 40,
+            cache_dir=tmp_path / "cache",
+            output_path=tmp_path / "integration_manifest.json",
+        )
+
+
+def test_official_integration_rechecks_source_after_execution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    _stub_official_integration(
+        monkeypatch,
+        [("a" * 40, False), ("a" * 40, True)],
+    )
+    output = tmp_path / "integration_manifest.json"
+    with pytest.raises(ValueError, match="changed while.*running"):
+        run_official_integration(
+            root=checkout,
+            expected_git_sha="a" * 40,
+            cache_dir=tmp_path / "cache",
+            output_path=output,
+        )
+    assert not output.exists()
+
+
+def test_official_integration_writes_only_a_strict_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    _stub_official_integration(
+        monkeypatch,
+        [("a" * 40, False), ("a" * 40, False)],
+    )
+    output = tmp_path / "integration_manifest.json"
+    manifest = run_official_integration(
+        root=checkout,
+        expected_git_sha="a" * 40,
+        cache_dir=tmp_path / "cache",
+        output_path=output,
+    )
+    assert IntegrationManifest.load(output) == manifest
+    assert tuple(path.name for path in output.parent.iterdir() if path.is_file()) == (
+        "integration_manifest.json",
+    )
