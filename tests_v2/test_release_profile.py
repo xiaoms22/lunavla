@@ -60,7 +60,7 @@ def test_installed_requirements_is_sorted_and_contains_project() -> None:
 
 
 def test_release_version_contract_matches_all_sources() -> None:
-    assert validated_project_version() == "2.0.0a2"
+    assert validated_project_version() == "2.0.0b1"
 
 
 def test_release_version_contract_fails_closed_on_mismatch(
@@ -146,7 +146,7 @@ def test_evidence_candidate_preserves_fail_closed_claim_text(
     release_root = tmp_path / "release-assets"
     release_root.mkdir()
     monkeypatch.setattr(release, "RELEASE_ROOT", release_root)
-    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0a2")
+    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0b1")
     claim_payload = {
         "claim_id": "instruction_following",
         "allowed": False,
@@ -191,12 +191,12 @@ def test_evidence_candidate_preserves_fail_closed_claim_text(
         distributions=(distribution,),
     )
     payload = json.loads(candidate.read_text(encoding="utf-8"))
-    assert payload["package_version"] == "2.0.0a2"
+    assert payload["package_version"] == "2.0.0b1"
     assert payload["modality_effect_claims"] is False
     assert payload["claims"] == [claim_payload]
 
 
-def test_distribution_names_must_match_alpha2_version(
+def test_distribution_names_must_match_beta1_version(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -204,21 +204,21 @@ def test_distribution_names_must_match_alpha2_version(
 
     release_root = tmp_path / "release-assets"
     monkeypatch.setattr(release, "RELEASE_ROOT", release_root)
-    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0a2")
+    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0b1")
 
     def fake_run(command: tuple[str, ...], *, capture: bool = False) -> str:
         del capture
         if "build" in command:
             destination = release_root / "dist"
             destination.mkdir(parents=True)
-            (destination / "lunavla-2.0.0a2-py3-none-any.whl").write_bytes(b"wheel")
-            (destination / "lunavla-2.0.0a2.tar.gz").write_bytes(b"sdist")
+            (destination / "lunavla-2.0.0b1-py3-none-any.whl").write_bytes(b"wheel")
+            (destination / "lunavla-2.0.0b1.tar.gz").write_bytes(b"sdist")
         return ""
 
     monkeypatch.setattr(release, "run", fake_run)
     assert {path.name for path in release.build_distributions()} == {
-        "lunavla-2.0.0a2-py3-none-any.whl",
-        "lunavla-2.0.0a2.tar.gz",
+        "lunavla-2.0.0b1-py3-none-any.whl",
+        "lunavla-2.0.0b1.tar.gz",
     }
 
 

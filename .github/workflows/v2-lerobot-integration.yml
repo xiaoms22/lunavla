@@ -1,0 +1,136 @@
+name: V2 LeRobot Integration
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: "Exact 40-character LunaVLA source commit to validate"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: v2-lerobot-integration-${{ inputs.source_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  real-integration:
+    name: v2-real-lerobot-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha || github.sha }}
+      SDL_VIDEODRIVER: dummy
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Validate the immutable source selector
+        shell: bash
+        run: |
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "source_sha must be an exact lowercase 40-character commit SHA" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify checkout identity and cleanliness
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the hash-locked Linux CPU integration profile
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v2-integration-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+
+      - name: Verify authoritative dependency versions
+        shell: bash
+        run: |
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata as metadata
+
+          import numpy
+          import torch
+          import torchvision
+
+          expected = {
+              "av": "15.1.0",
+              "gym-pusht": "0.1.6",
+              "gymnasium": "1.3.0",
+              "lerobot": "0.6.0",
+              "numpy": "2.2.6",
+              "torch": "2.11.0+cpu",
+              "torchvision": "0.26.0+cpu",
+          }
+          actual = {name: metadata.version(name) for name in expected}
+          assert actual == expected, (actual, expected)
+          assert numpy.__version__ == "2.2.6"
+          assert torch.version.cuda is None
+          assert not torch.cuda.is_available()
+          assert torchvision.__version__ == "0.26.0+cpu"
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in metadata.distributions()
+              if dist.metadata["Name"]
+          }
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          forbidden = forbidden_cpu_packages(installed)
+          assert not forbidden, f"CUDA-only packages installed in CPU job: {sorted(forbidden)}"
+          PY
+
+      - name: Run offline integration contract tests
+        run: uv run --no-sync pytest tests_v2/test_lerobot_integration.py
+
+      - name: Run pinned real dataset and headless environment smoke
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/lunavla-integration"
+          uv run --no-sync python scripts/run_v2_lerobot_integration.py run \
+            --expected-git-sha "$SOURCE_SHA" \
+            --cache-dir "$RUNNER_TEMP/lerobot-cache" \
+            --output "$RUNNER_TEMP/lunavla-integration/integration_manifest.json"
+          uv run --no-sync python scripts/run_v2_lerobot_integration.py verify \
+            --expected-git-sha "$SOURCE_SHA" \
+            "$RUNNER_TEMP/lunavla-integration/integration_manifest.json"
+
+      - name: Prove the artifact boundary is manifest-only
+        shell: bash
+        run: |
+          test "$(find "$RUNNER_TEMP/lunavla-integration" -type f | wc -l)" -eq 1
+          test -f "$RUNNER_TEMP/lunavla-integration/integration_manifest.json"
+          test ! -e "$RUNNER_TEMP/lunavla-integration/videos"
+          test ! -e "$RUNNER_TEMP/lunavla-integration/cache"
+
+      - name: Attest the exact integration manifest
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ runner.temp }}/lunavla-integration/integration_manifest.json
+
+      - name: Upload integration manifest only
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-lerobot-integration-${{ env.SOURCE_SHA }}
+          path: ${{ runner.temp }}/lunavla-integration/integration_manifest.json
+          if-no-files-found: error
+          retention-days: 30

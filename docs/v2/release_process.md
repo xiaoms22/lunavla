@@ -41,9 +41,9 @@ profile can still complete, while the claim remains disabled and is reported as 
 established.” Missing cells, non-canonical budgets, dirty or mixed source SHAs, hash mismatches,
 non-CPU runs, or failed reproducibility remain hard release failures.
 
-The language evidence package uses project version `2.0.0a2`. A later Beta release must perform a
-separate version bump before publishing the visual package; running the `vision` profile alone does
-not assign a Beta version.
+The already-verified language evidence package uses project version `2.0.0a2`. The Beta source is
+explicitly versioned `2.0.0b1`; running a controlled profile never assigns or changes a package
+version on its own.
 
 ## Publishing boundary
 
@@ -51,3 +51,13 @@ Evidence completion does not itself create a tag or release. A maintainer verifi
 and provenance URLs, confirms the package version/tag mapping, creates a GitHub-verified signed
 tag, uploads the exact checked assets to a draft prerelease, and only then publishes it. LunaVLA
 does not upload v2 artifacts to PyPI in this release train.
+
+## Beta integration gate
+
+`v2.0.0-beta.1` additionally requires the nightly/manual LeRobot integration to pass on the exact
+candidate SHA. Its schema-1 manifest pins the official dataset revision, records the three source
+hashes, checks all 161 frames, completes one bounded Transformer optimizer step, and closes a
+headless `gym_pusht/PushT-v0` smoke. Only that JSON manifest is uploaded; dataset/video caches are
+never release assets. The manifest must also pass its GitHub provenance-attestation verification.
+Network failure does not block pull requests, but a successful rerun on the same candidate SHA is
+mandatory before the beta prerelease. The smoke carries no PushT performance claim.

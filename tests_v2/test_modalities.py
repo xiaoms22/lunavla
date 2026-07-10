@@ -20,6 +20,7 @@ from lunavla.language_tasks import (
     make_instruction_ablation_pairs,
 )
 from lunavla.lerobot_adapter import (
+    LEROBOT_PUSHT_REVISION,
     LeRobotDatasetSource,
     LeRobotEnvAdapter,
     LeRobotFieldMap,
@@ -28,6 +29,11 @@ from lunavla.lerobot_adapter import (
     load_lerobot_dataset_factory,
     map_lerobot_sample,
     require_lerobot_06,
+)
+from lunavla.pusht_env_adapter import (
+    PUSHT_ENV_ID,
+    PUSHT_OBS_TYPE,
+    PushTEnvAdapter,
 )
 from lunavla.visual_tasks import (
     RenderedPointReachEnv,
@@ -357,7 +363,7 @@ def _fake_lerobot_samples() -> list[dict[str, Any]]:
         {
             "observation.state": _FakeTensor([0.1 + 0.1 * index, 0.2]),
             "observation.images.top": _FakeTensor(
-                np.full((3, 8, 10), fill_value=index / 10.0, dtype=np.float32)
+                np.full((3, 96, 96), fill_value=index, dtype=np.uint8)
             ),
             "action": _FakeTensor([0.02, -0.01]),
             "task": "push the block",
@@ -419,13 +425,23 @@ def test_fake_lerobot_dataset_maps_real_field_shapes_without_heavy_imports() -> 
     )
     assert isinstance(source, DatasetSource)
     transitions = source.load()
-    assert calls == [("lerobot/pusht", {"episodes": [0, 1]})]
+    assert calls == [
+        (
+            "lerobot/pusht",
+            {
+                "episodes": [0, 1],
+                "revision": LEROBOT_PUSHT_REVISION,
+                "video_backend": "pyav",
+                "return_uint8": True,
+            },
+        )
+    ]
     assert len(transitions) == 3
     assert transitions[0].observation.state.shape == (2,)
     assert transitions[0].observation.state.dtype == np.float32
     assert transitions[0].observation.image is not None
-    assert transitions[0].observation.image.shape == (8, 10, 3)
-    assert transitions[0].observation.image.dtype == np.float32
+    assert transitions[0].observation.image.shape == (96, 96, 3)
+    assert transitions[0].observation.image.dtype == np.uint8
     assert transitions[0].action.shape == (2,)
     assert transitions[0].terminated is False
     assert transitions[1].terminated is True
@@ -434,9 +450,93 @@ def test_fake_lerobot_dataset_maps_real_field_shapes_without_heavy_imports() -> 
         transitions[0].next_observation.state,
         transitions[1].observation.state,
     )
+    assert np.array_equal(
+        transitions[1].next_observation.state,
+        transitions[1].observation.state,
+    )
     assert transitions[0].info["repo_id"] == "lerobot/pusht"
     assert transitions[0].info["image_key"] == "observation.images.top"
-    assert transitions[0].info["success"] is False
+    assert transitions[0].info["revision"] == LEROBOT_PUSHT_REVISION
+    assert "success" not in transitions[0].info
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "error", "message"),
+    [
+        (
+            "observation.state",
+            _FakeTensor([0.1, 0.2, 0.3]),
+            ValueError,
+            "observation.state must have shape",
+        ),
+        (
+            "observation.images.top",
+            _FakeTensor(np.zeros((3, 64, 64), dtype=np.uint8)),
+            ValueError,
+            "image must have shape",
+        ),
+        (
+            "observation.images.top",
+            _FakeTensor(np.zeros((3, 96, 96), dtype=np.float32)),
+            TypeError,
+            "image must be uint8",
+        ),
+        ("action", _FakeTensor([0.0, 0.1, 0.2]), ValueError, "action must have shape"),
+    ],
+)
+def test_offline_lerobot_pusht_gate_rejects_shape_or_dtype_drift(
+    field: str,
+    value: object,
+    error: type[Exception],
+    message: str,
+) -> None:
+    samples = _fake_lerobot_samples()
+    samples[0][field] = value
+    source = LeRobotDatasetSource(
+        "lerobot/pusht",
+        episodes=[0, 1],
+        dataset_factory=lambda *_args, **_kwargs: _FakeLeRobotDataset(samples),
+    )
+    with pytest.raises(error, match=message):
+        source.load()
+
+
+def test_lerobot_dataset_success_is_only_copied_when_present() -> None:
+    samples = _fake_lerobot_samples()
+    samples[0]["next.success"] = _FakeTensor(np.asarray(True))
+    source = LeRobotDatasetSource(
+        "lerobot/pusht",
+        episodes=[0, 1],
+        dataset_factory=lambda *_args, **_kwargs: _FakeLeRobotDataset(samples),
+    )
+    transitions = source.load()
+    assert transitions[0].info["success"] is True
+    assert transitions[0].info["success_key"] == "next.success"
+    assert "success" not in transitions[1].info
+
+
+def test_lerobot_dataset_rejects_unrequested_or_missing_episode_ids() -> None:
+    samples = _fake_lerobot_samples()
+    samples[0]["episode_index"] = _FakeTensor(np.asarray(99, dtype=np.int64))
+    source = LeRobotDatasetSource(
+        "lerobot/pusht",
+        episodes=[0, 1],
+        dataset_factory=lambda *_args, **_kwargs: _FakeLeRobotDataset(samples),
+    )
+    with pytest.raises(ValueError, match="returned unrequested episode 99"):
+        source.load()
+
+    only_episode_zero = [
+        sample for sample in _fake_lerobot_samples()
+        if int(np.asarray(sample["episode_index"]).reshape(-1)[0]) == 0
+    ]
+    source = LeRobotDatasetSource(
+        "lerobot/pusht",
+        episodes=[0, 1],
+        dataset_factory=lambda *_args, **_kwargs: _FakeLeRobotDataset(only_episode_zero),
+    )
+    with pytest.raises(ValueError, match=r"missing \[1\]"):
+        source.load()
 
 
 def test_sample_mapping_supports_nested_keys_and_uint8_hwc() -> None:
@@ -489,3 +589,78 @@ def test_optional_lerobot_env_adapter_implements_task_protocol() -> None:
     assert transition.terminated is True
     assert transition.info["success"] is True
     assert np.allclose(transition.next_observation.state, [0.2, -0.1])
+
+
+class _FakePushTEnv:
+    def __init__(self) -> None:
+        self.closed = False
+        self.actions: list[np.ndarray[Any, Any]] = []
+
+    @staticmethod
+    def _observation(position: tuple[float, float]) -> dict[str, np.ndarray[Any, Any]]:
+        return {
+            "agent_pos": np.asarray(position, dtype=np.float64),
+            "pixels": np.zeros((96, 96, 3), dtype=np.uint8),
+        }
+
+    def reset(
+        self, *, seed: int | None = None
+    ) -> tuple[dict[str, np.ndarray[Any, Any]], dict[str, Any]]:
+        return self._observation((float(seed or 0), 0.0)), {}
+
+    def step(
+        self, action: np.ndarray[Any, Any]
+    ) -> tuple[dict[str, np.ndarray[Any, Any]], float, bool, bool, dict[str, Any]]:
+        self.actions.append(action)
+        return self._observation((0.25, -0.5)), 0.5, False, True, {"is_success": True}
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def test_pusht_env_adapter_is_lazy_headless_and_preserves_real_success() -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+    fake_env = _FakePushTEnv()
+
+    def factory(env_id: str, **kwargs: object) -> _FakePushTEnv:
+        calls.append((env_id, kwargs))
+        return fake_env
+
+    env = PushTEnvAdapter(env_factory=factory)
+    assert isinstance(env, TaskEnv)
+    assert calls == []
+
+    observation = env.reset(seed=7)
+    assert calls == [(PUSHT_ENV_ID, {"obs_type": PUSHT_OBS_TYPE})]
+    assert observation.state.dtype == np.float32
+    assert observation.image is not None
+    assert observation.image.shape == (96, 96, 3)
+    assert observation.image.dtype == np.uint8
+
+    transition = env.step(np.asarray([0.1, -0.2], dtype=np.float64))
+    assert transition.action.dtype == np.float32
+    assert fake_env.actions[0].dtype == np.float32
+    assert transition.terminated is True
+    assert transition.info["success"] is True
+    assert transition.info["is_success"] is True
+    assert transition.info["truncated"] is True
+    assert transition.next_observation.state.dtype == np.float32
+
+    env.close()
+    assert fake_env.closed is True
+
+
+def test_pusht_env_adapter_does_not_invent_success() -> None:
+    fake_env = _FakePushTEnv()
+
+    def step_without_success(
+        action: np.ndarray[Any, Any]
+    ) -> tuple[dict[str, np.ndarray[Any, Any]], float, bool, bool, dict[str, Any]]:
+        del action
+        return fake_env._observation((0.0, 0.0)), 0.0, True, False, {}
+
+    fake_env.step = step_without_success  # type: ignore[method-assign]
+    env = PushTEnvAdapter(env_factory=lambda *_args, **_kwargs: fake_env)
+    env.reset(seed=0)
+    transition = env.step(np.asarray([0.0, 0.0], dtype=np.float32))
+    assert "success" not in transition.info
