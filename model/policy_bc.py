@@ -37,6 +37,10 @@ class NumpyBCMLPPolicy(MiniVLAPolicyBase):
         self.chunk_size = int(chunk_size)
         self.hidden_dim = int(hidden_dim)
         self.output_dim = self.action_dim * self.chunk_size
+        self.w1: Float32Array
+        self.b1: Float32Array
+        self.w2: Float32Array
+        self.b2: Float32Array
         rng = np.random.default_rng(seed)
         if weights is None:
             init_scale = 0.02
