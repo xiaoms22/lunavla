@@ -53,6 +53,7 @@ def test_lerobot_dispatcher_validates_before_source_checkout() -> None:
     assert "--require-hashes" in shell
     assert "--torch-backend cpu" in shell
     assert "forbidden_cpu_packages" in shell
+    assert "EXPECTED_DEPENDENCY_VERSIONS" in shell
     assert "scripts/run_v2_lerobot_integration.py run" in shell
     assert "scripts/run_v2_lerobot_integration.py verify" in shell
     assert "$RUNNER_TEMP/lunavla-lerobot-integration" in shell
