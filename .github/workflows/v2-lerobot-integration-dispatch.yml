@@ -30,9 +30,6 @@ jobs:
     env:
       SOURCE_REF: ${{ inputs.source_ref }}
       EXPECTED_SHA: ${{ inputs.expected_sha }}
-      INTEGRATION_DIR: ${{ runner.temp }}/lunavla-lerobot-integration
-      CACHE_DIR: ${{ runner.temp }}/lunavla-lerobot-cache
-      MANIFEST_PATH: ${{ runner.temp }}/lunavla-lerobot-integration/integration_manifest.json
       SDL_VIDEODRIVER: dummy
       SDL_AUDIODRIVER: dummy
       PYGAME_HIDE_SUPPORT_PROMPT: "1"
@@ -131,27 +128,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test ! -e "$INTEGRATION_DIR"
-          test ! -e "$CACHE_DIR"
-          install -d -m 0700 "$INTEGRATION_DIR" "$CACHE_DIR"
+          integration_dir="$RUNNER_TEMP/lunavla-lerobot-integration"
+          cache_dir="$RUNNER_TEMP/lunavla-lerobot-cache"
+          manifest_path="$integration_dir/integration_manifest.json"
+          test ! -e "$integration_dir"
+          test ! -e "$cache_dir"
+          install -d -m 0700 "$integration_dir" "$cache_dir"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
           uv run --no-sync python scripts/run_v2_lerobot_integration.py run \
             --expected-git-sha "$EXPECTED_SHA" \
-            --cache-dir "$CACHE_DIR" \
-            --output "$MANIFEST_PATH"
+            --cache-dir "$cache_dir" \
+            --output "$manifest_path"
           uv run --no-sync python scripts/run_v2_lerobot_integration.py verify \
             --expected-git-sha "$EXPECTED_SHA" \
-            "$MANIFEST_PATH"
+            "$manifest_path"
 
       - name: Enforce the manifest-only artifact boundary
         shell: bash
         run: |
           set -euo pipefail
+          integration_dir="$RUNNER_TEMP/lunavla-lerobot-integration"
+          manifest_path="$integration_dir/integration_manifest.json"
           shopt -s dotglob nullglob
-          artifacts=("$INTEGRATION_DIR"/*)
+          artifacts=("$integration_dir"/*)
           test "${#artifacts[@]}" -eq 1
-          test "${artifacts[0]}" = "$MANIFEST_PATH"
-          test -f "$MANIFEST_PATH"
+          test "${artifacts[0]}" = "$manifest_path"
+          test -f "$manifest_path"
 
       - name: Attest the exact integration manifest
         uses: actions/attest-build-provenance@v2

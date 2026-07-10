@@ -55,6 +55,9 @@ def test_lerobot_dispatcher_validates_before_source_checkout() -> None:
     assert "forbidden_cpu_packages" in shell
     assert "scripts/run_v2_lerobot_integration.py run" in shell
     assert "scripts/run_v2_lerobot_integration.py verify" in shell
+    assert "$RUNNER_TEMP/lunavla-lerobot-integration" in shell
+    job_env = payload["jobs"]["integration"]["env"]
+    assert all("runner.temp" not in str(value) for value in job_env.values())
 
     checkout_index = next(
         index
