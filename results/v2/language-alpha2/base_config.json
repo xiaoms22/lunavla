@@ -1,0 +1,59 @@
+{
+  "artifacts": {
+    "checkpoint_name": "checkpoint.pt",
+    "output_dir": "outputs/v2/transformer-cpu"
+  },
+  "dataset": {
+    "episode_count": 32,
+    "parameters": {},
+    "seed": 42,
+    "split": "train",
+    "type": "memory"
+  },
+  "engine": "lunavla_v2",
+  "evaluation": {
+    "episodes": 20,
+    "execution_mode": "receding_horizon",
+    "image_ablation": "none",
+    "language_ablation": "shuffle",
+    "parameters": {},
+    "seed": 1000
+  },
+  "policy": {
+    "action_dim": 2,
+    "chunk_size": 4,
+    "d_model": 64,
+    "device": "cpu",
+    "dropout": 0.0,
+    "image_shape": null,
+    "instruction_dim": 16,
+    "latent_dim": 16,
+    "nhead": 4,
+    "num_layers": 2,
+    "state_dim": 2,
+    "temporal_ensemble_decay": 0.25,
+    "type": "transformer_chunk_cvae"
+  },
+  "project_name": "lunavla-v2-transformer-cpu",
+  "schema_version": 2,
+  "task": {
+    "family": "point_reach",
+    "goal": [
+      0.8,
+      0.2
+    ],
+    "id": "language_conditioned_point_reach",
+    "max_steps": 40,
+    "parameters": {
+      "language_split": "heldout"
+    }
+  },
+  "training": {
+    "batch_size": 16,
+    "device": "cpu",
+    "kl_weight": 0.01,
+    "learning_rate": 0.001,
+    "seed": 42,
+    "steps": 50
+  }
+}

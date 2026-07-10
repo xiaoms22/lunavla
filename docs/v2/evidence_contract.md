@@ -24,6 +24,29 @@ lunavla-v2 evidence-snapshot <output-root> --out results/v2/<design-id>
 
 `--allow-reduced-design` permits smaller CI studies only. Such output is always observational and every claim stays closed. `evidence-snapshot` first performs full verification, then copies review-sized configs, manifests, metrics, aggregate rows, repeat metadata, and a few rollout samples. It never copies checkpoints.
 
+## Published snapshot verification
+
+Tracked result text is generated through a separate read-only gate:
+
+```bash
+python scripts/render_readme_results.py --check \
+  --v2-snapshot results/v2/language-alpha2
+```
+
+The publication gate starts from a reviewed registry that pins the official workflow's source Git
+SHA, raw `EvidenceManifest` SHA-256, and `snapshot_manifest.json` SHA-256. It then checks the exact
+file inventory and every listed digest. Resolved configs, metrics, donor banks, repeat files,
+evaluation fixtures, and rollout samples must match their source RunManifest and paired rows. The
+canonical `EvidenceDesign`, plan, clean single-SHA provenance, dependency consistency, and complete
+paired matrix are also revalidated. Statistics and the claim decision are recomputed from the
+paired rows with the predeclared bootstrap settings and must exactly match `EvidenceManifest`;
+`aggregate.json` must be an exact projection of the same statistics and claims.
+
+README values are read from the validated `EvidenceManifest`, never from handwritten numbers. A
+changed listed file, coordinated registry/provenance/statistics edit, stale generated block, or an
+allowed claim that does not match recomputation returns a non-zero error. Passing this gate
+establishes snapshot integrity only.
+
 ## Claim gates
 
 Language requires a counterfactual final-distance degradation and a control-success advantage whose clustered paired 95% intervals both exclude zero. Visual evidence requires occlusion and state-only distance degradation, with direct-reach and waypoint-reach strata passing independently. Mask, shuffle, first-action MSE, and all non-passing intervals remain visible as auxiliary or negative evidence.
