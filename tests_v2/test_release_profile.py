@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.run_v2_release_profile import SHA256_PATTERN, sha256_file
+from scripts.run_v2_release_profile import SHA256_PATTERN, canonical_origin, sha256_file
 
 
 def test_release_sha_contract_is_exact() -> None:
@@ -19,6 +19,24 @@ def test_release_sha256_file(tmp_path: Path) -> None:
     source = tmp_path / "artifact.bin"
     source.write_bytes(b"lunavla-v2\n")
     assert sha256_file(source) == hashlib.sha256(b"lunavla-v2\n").hexdigest()
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (
+            "https://github.com/xiaoms22/lunavla.git",
+            "https://github.com/xiaoms22/lunavla",
+        ),
+        (
+            "https://github.com/xiaoms22/lunavla/",
+            "https://github.com/xiaoms22/lunavla",
+        ),
+        ("git@github.com:xiaoms22/lunavla.git", "git@github.com:xiaoms22/lunavla"),
+    ],
+)
+def test_release_origin_normalization(raw: str, expected: str) -> None:
+    assert canonical_origin(raw) == expected
 
 
 def test_non_alpha_profiles_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
