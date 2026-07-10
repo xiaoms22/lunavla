@@ -26,6 +26,27 @@ The policy registry performs explicit construction and checkpoint dispatch. Unkn
 
 The engine owns the shared train/evaluation loop, execution mode, batching, seeds, and artifact boundary. Policies own optimization and checkpoint serialization. Environments own transition dynamics. Dataset sources own ingestion. This division lets NumPy and PyTorch policies exercise the same contracts without pretending their internal algorithms are identical.
 
+## Versioned configuration contracts
+
+`ExperimentConfig` schema 2 rejects unknown fields at every section and inside
+`task.parameters`, `dataset.parameters`, and `evaluation.parameters`. Parameter
+allowlists are task- and dataset-specific: options that would otherwise be ignored
+cannot cross into training. Types and ranges are normalized during parsing, before an
+output directory or model is created.
+
+A resolved config is deeply immutable. Its mappings are read-only and its sequences
+are tuples, including nested parameter mappings and seed/image-shape sequences.
+`to_dict()` returns a detached tree of ordinary dictionaries and lists for YAML/JSON,
+and config hashing is defined over that representation. The v1.1 migration accepts
+only an integer schema version; booleans, floats, and strings are not aliases for a
+version number.
+
+The machine-readable compatibility surface for both `ExperimentConfig` and
+`EvidenceDesign` is tracked in
+[`contracts/config-design-schema.json`](contracts/config-design-schema.json).
+Tests compare that descriptor with the parser registries, so changing a public field,
+version, required parameter, or enum requires an explicit descriptor update.
+
 ## Stability
 
 These interfaces are an RC candidate, not the v2.0 stable guarantee. The machine-readable [`public_api_contract.json`](public_api_contract.json) records the candidate public fields and `inspect.signature` values for `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `PolicyBatch`, and `Transition`; CI rejects accidental drift. v2.0 stable will adopt or deliberately revise this descriptor only after the remaining evidence, migration, and release gates pass.

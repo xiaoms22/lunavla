@@ -149,9 +149,7 @@ def is_full_design(design: EvidenceDesign) -> bool:
         and design.seeds.evaluation == _FULL_EVAL_SEEDS
         and design.seeds.bootstrap == _FULL_COMMON["analysis_seed"]
         and tuple((arm.id, arm.role, arm.mode) for arm in design.arms) == suite["arms"]
-        and tuple(
-            (metric.name, metric.kind, metric.direction) for metric in design.metrics
-        )
+        and tuple((metric.name, metric.kind, metric.direction) for metric in design.metrics)
         == _FULL_METRICS
         and budget.dataset_episodes == suite["dataset_episodes"]
         and budget.batch_size == _FULL_COMMON["batch_size"]
@@ -179,9 +177,7 @@ def _is_valid_reduced_design(design: EvidenceDesign) -> bool:
         and design.seeds.split == _FULL_COMMON["split_seed"]
         and design.seeds.bootstrap == _FULL_COMMON["analysis_seed"]
         and tuple((arm.id, arm.role, arm.mode) for arm in design.arms) == suite["arms"]
-        and tuple(
-            (metric.name, metric.kind, metric.direction) for metric in design.metrics
-        )
+        and tuple((metric.name, metric.kind, metric.direction) for metric in design.metrics)
         == _FULL_METRICS
         and budget.dataset_episodes <= cast(int, suite["dataset_episodes"])
         and budget.batch_size <= _FULL_COMMON["batch_size"]
@@ -281,9 +277,7 @@ def derive_plan(
                         arm_ids=baseline_arms,
                     )
                 )
-    expected_episodes = sum(len(job.arm_ids) for job in jobs) * len(
-        design.seeds.evaluation
-    )
+    expected_episodes = sum(len(job.arm_ids) for job in jobs) * len(design.seeds.evaluation)
     return EvidenceRunPlan(
         design_id=design.design_id,
         design_sha256=design.sha256(),
@@ -296,8 +290,7 @@ def derive_plan(
             else next(
                 job.run_id
                 for job in jobs
-                if job.train_seed == 11
-                and (design.suite == "language" or job.variant == "image")
+                if job.train_seed == 11 and (design.suite == "language" or job.variant == "image")
             )
         ),
         jobs=tuple(jobs),
@@ -368,9 +361,7 @@ def _validate_canonical_full_config(
     expected_state_dim = 2 if suite == "language" else 3
     expected_instruction_dim = 16 if suite == "language" else 32
     expected_task = (
-        "language_conditioned_point_reach"
-        if suite == "language"
-        else "rendered_visual_point_reach"
+        "language_conditioned_point_reach" if suite == "language" else "rendered_visual_point_reach"
     )
     expected_family = "point_reach" if suite == "language" else "all"
     expected_max_steps = 40 if suite == "language" else 24
@@ -407,9 +398,7 @@ def _validate_canonical_full_config(
         "policy.latent_dim": policy.get("latent_dim") == 16,
         "policy.chunk_size": policy["chunk_size"] == 4,
         "policy.dropout": float(policy.get("dropout", -1.0)) == 0.0,
-        "policy.temporal_ensemble_decay": float(
-            policy.get("temporal_ensemble_decay", -1.0)
-        )
+        "policy.temporal_ensemble_decay": float(policy.get("temporal_ensemble_decay", -1.0))
         == 0.25,
         "policy.device": policy["device"] == "cpu",
         "training.device": training["device"] == "cpu",
@@ -435,7 +424,7 @@ def _validate_canonical_full_config(
         ),
         "task.parameters": config.task["parameters"]
         == ({"language_split": "heldout"} if suite == "language" else {}),
-        "task.goal": config.task.get("goal") == [0.8, 0.2]
+        "task.goal": tuple(config.task.get("goal", ())) == (0.8, 0.2)
         if suite == "language"
         else "goal" not in config.task,
         "dataset.type": config.dataset["type"] == "memory",
@@ -458,8 +447,7 @@ def _validate_canonical_full_config(
         == {"device", "seed", "batch_size", "steps", "learning_rate", "kl_weight"},
         "training.steps": training["steps"] == (1_000 if suite == "language" else 1_500),
         "training.learning_rate": float(training["learning_rate"]) == 3e-4,
-        "evaluation.execution_mode": config.evaluation["execution_mode"]
-        == "receding_horizon",
+        "evaluation.execution_mode": config.evaluation["execution_mode"] == "receding_horizon",
         "evaluation.fields": set(config.evaluation)
         == {
             "execution_mode",
@@ -473,8 +461,7 @@ def _validate_canonical_full_config(
         "evaluation.ablation": config.evaluation["language_ablation"] == "none"
         and config.evaluation["image_ablation"]
         == ("state_only" if variant == "state_only" else "none"),
-        "evaluation.parameters": config.evaluation["parameters"]
-        == {"bootstrap_samples": 10_000},
+        "evaluation.parameters": config.evaluation["parameters"] == {"bootstrap_samples": 10_000},
         "evaluation.seeds": config.evaluation["seed"] == 1000
         and config.evaluation["episodes"] == 24
         and tuple(config.evaluation["seeds"]) == _FULL_EVAL_SEEDS,
@@ -894,9 +881,7 @@ def _execute_job(
                     "first_action_mse": first_action_mse,
                 }
             )
-        arm_metrics[arm_id]["mean_first_action_mse"] = float(
-            np.mean(first_action_errors)
-        )
+        arm_metrics[arm_id]["mean_first_action_mse"] = float(np.mean(first_action_errors))
 
     checkpoint_path = engine.save_checkpoint(
         training.policy,
@@ -1001,11 +986,7 @@ def _paired_values(
         if key in index:
             raise ValueError(f"duplicate evidence cell: {key}")
         index[key] = float(row[metric])
-    pair_keys = sorted(
-        (seed, episode)
-        for seed, episode, arm_id in index
-        if arm_id == control_arm
-    )
+    pair_keys = sorted((seed, episode) for seed, episode, arm_id in index if arm_id == control_arm)
     control: list[float] = []
     treatment: list[float] = []
     train_seeds: list[int] = []
@@ -1102,8 +1083,7 @@ def _aggregate(
         for arm_id in job.arm_ids
     }
     actual_cells = {
-        (int(row["train_seed"]), int(row["eval_seed"]), str(row["arm_id"]))
-        for row in rows
+        (int(row["train_seed"]), int(row["eval_seed"]), str(row["arm_id"])) for row in rows
     }
     source_ids = {source.run_id for source in sources}
     manifest_ids = {manifest.run_id for manifest in manifests}
@@ -1111,8 +1091,7 @@ def _aggregate(
     dependencies = {_canonical_json(manifest.dependencies) for manifest in manifests}
     cell_ids = [str(row["cell_id"]) for row in rows]
     design_hash = all(
-        manifest.design_id == design.design_id
-        and manifest.design_sha256 == design.sha256()
+        manifest.design_id == design.design_id and manifest.design_sha256 == design.sha256()
         for manifest in manifests
     )
     donor_hashes = all(
@@ -1138,9 +1117,7 @@ def _aggregate(
     }
     full_gate = not plan.reduced_design and all(integrity.values())
     if design.suite == "language":
-        counterfactual = next(
-            (arm for arm in design.arms if arm.mode == "counterfactual"), None
-        )
+        counterfactual = next((arm for arm in design.arms if arm.mode == "counterfactual"), None)
         checks = {
             "controlled_full_design": full_gate,
             "counterfactual_distance_worse": bool(
@@ -1163,12 +1140,12 @@ def _aggregate(
             for scope in ("all", "direct_reach", "waypoint_reach"):
                 checks[f"{label}_{scope}_distance_worse"] = bool(
                     candidate_arm
-                    and interval_support.get(
-                        (candidate_arm.id, scope, "final_distance"), False
-                    )
+                    and interval_support.get((candidate_arm.id, scope, "final_distance"), False)
                 )
         claim_id = "visual_control_contribution"
-        allowed = "Controlled evidence supports a visual-control contribution in both task families."
+        allowed = (
+            "Controlled evidence supports a visual-control contribution in both task families."
+        )
         denied = "Visual-control contribution has not yet been established."
     if plan.reduced_design:
         checks = {name: False for name in checks}
@@ -1191,7 +1168,9 @@ def _aggregate(
     )
 
 
-def _manifest_sources(output_root: Path, manifests: Sequence[RunManifest]) -> tuple[EvidenceSource, ...]:
+def _manifest_sources(
+    output_root: Path, manifests: Sequence[RunManifest]
+) -> tuple[EvidenceSource, ...]:
     return tuple(
         EvidenceSource(
             run_id=manifest.run_id,
@@ -1300,15 +1279,9 @@ def run_evidence_design(
             )
             all_rows.extend(_read_pair_rows(run_dir / "per_pair.csv"))
         if plan.reproducibility_run_id is not None:
-            repeat_job = next(
-                job for job in plan.jobs if job.run_id == plan.reproducibility_run_id
-            )
+            repeat_job = next(job for job in plan.jobs if job.run_id == plan.reproducibility_run_id)
             repeat_config = _resolved_job_config(design, base, repeat_job)
-            repeat_dir = (
-                staging
-                / "reproducibility"
-                / f"{plan.reproducibility_run_id}-repeat"
-            )
+            repeat_dir = staging / "reproducibility" / f"{plan.reproducibility_run_id}-repeat"
             _execute_job(
                 root=root,
                 run_dir=repeat_dir,
@@ -1448,10 +1421,8 @@ def verify_evidence(output_root: str | Path) -> EvidenceVerification:
             )
         expected_fixture = _evaluation_fixture(expected_config, design)
         if (
-            run_manifest.eval_fixture.get("evidence_fixture_sha256")
-            != expected_fixture["sha256"]
-            or run_manifest.eval_fixture.get("evidence_episodes")
-            != expected_fixture["episodes"]
+            run_manifest.eval_fixture.get("evidence_fixture_sha256") != expected_fixture["sha256"]
+            or run_manifest.eval_fixture.get("evidence_episodes") != expected_fixture["episodes"]
         ):
             raise ValueError(f"source evaluation fixture mismatch: {run_id}")
         donor_path = run_dir / "donor_bank.json"
@@ -1472,8 +1443,7 @@ def verify_evidence(output_root: str | Path) -> EvidenceVerification:
             _canonical_json(run_manifest.dataset_split)
         )
         expected_arms = [
-            next(arm for arm in design.arms if arm.id == arm_id).to_dict()
-            for arm_id in job.arm_ids
+            next(arm for arm in design.arms if arm.id == arm_id).to_dict() for arm_id in job.arm_ids
         ]
         if run_manifest.arms != expected_arms:
             raise ValueError(f"source manifest arms differ from the design: {run_id}")
@@ -1490,9 +1460,7 @@ def verify_evidence(output_root: str | Path) -> EvidenceVerification:
         ]
         if _canonical_json(run_manifest.pairs) != _canonical_json(expected_pairs):
             raise ValueError(f"source structured pair records mismatch: {run_id}")
-        fixture_by_seed = {
-            int(item["eval_seed"]): item for item in expected_fixture["episodes"]
-        }
+        fixture_by_seed = {int(item["eval_seed"]): item for item in expected_fixture["episodes"]}
         rollout_payload = json.loads((run_dir / "rollouts.json").read_text(encoding="utf-8"))
         if not isinstance(rollout_payload, list):
             raise TypeError(f"source rollouts must contain a list: {run_id}")
@@ -1533,9 +1501,7 @@ def verify_evidence(output_root: str | Path) -> EvidenceVerification:
             if row["arm_mode"] != arm.mode:
                 raise ValueError(f"per-pair arm mode mismatch: {cell_id}")
             fixture = fixture_by_seed[int(row["eval_seed"])]
-            expected_family = (
-                fixture["family"] if design.suite == "visual" else fixture["task_id"]
-            )
+            expected_family = fixture["family"] if design.suite == "visual" else fixture["task_id"]
             if row["family"] != expected_family:
                 raise ValueError(f"per-pair task family mismatch: {cell_id}")
             if row["run_id"] != run_id:
@@ -1613,9 +1579,10 @@ def verify_evidence(output_root: str | Path) -> EvidenceVerification:
         (root / "reproducibility.json").read_text(encoding="utf-8")
     )
     recomputed_reproducibility = _reproducibility_record(root, plan)
-    if _canonical_json(recorded_reproducibility) != _canonical_json(
-        recomputed_reproducibility
-    ) or recomputed_reproducibility["verified"] is not True:
+    if (
+        _canonical_json(recorded_reproducibility) != _canonical_json(recomputed_reproducibility)
+        or recomputed_reproducibility["verified"] is not True
+    ):
         raise ValueError("reproducibility sentinel is missing, tampered, or failed")
     recomputed = _aggregate(
         design,
@@ -1652,8 +1619,7 @@ def snapshot_evidence(output_root: str | Path, out: str | Path) -> Path:
     destination = Path(out).resolve()
     parts = destination.parts
     if not any(
-        parts[index : index + 2] == ("results", "v2")
-        for index in range(max(0, len(parts) - 1))
+        parts[index : index + 2] == ("results", "v2") for index in range(max(0, len(parts) - 1))
     ):
         raise ValueError("evidence snapshots must be written under results/v2/")
     if destination.exists():
@@ -1686,7 +1652,12 @@ def snapshot_evidence(output_root: str | Path, out: str | Path) -> Path:
         evidence = EvidenceManifest.load(source / "evidence_manifest.json")
         for item in evidence.sources:
             prefix = Path("runs") / item.run_id
-            for name in ("manifest.json", "resolved_config.json", "metrics.json", "donor_bank.json"):
+            for name in (
+                "manifest.json",
+                "resolved_config.json",
+                "metrics.json",
+                "donor_bank.json",
+            ):
                 copy(prefix / name)
             rollouts = json.loads((source / prefix / "rollouts.json").read_text(encoding="utf-8"))
             if not isinstance(rollouts, list):
@@ -1695,16 +1666,16 @@ def snapshot_evidence(output_root: str | Path, out: str | Path) -> Path:
             sample_path.parent.mkdir(parents=True, exist_ok=True)
             _write_json(sample_path, rollouts[:2])
             copied.append((prefix / "rollouts.sample.json").as_posix())
-        reproducibility = json.loads(
-            (source / "reproducibility.json").read_text(encoding="utf-8")
-        )
+        reproducibility = json.loads((source / "reproducibility.json").read_text(encoding="utf-8"))
         if reproducibility.get("required") is True:
             repeat_id = str(reproducibility["repeat_run_id"])
             repeat_prefix = Path("reproducibility") / repeat_id
             for name in ("manifest.json", "metrics.json"):
                 copy(repeat_prefix / name)
         forbidden = {".pt", ".pth", ".ckpt", ".safetensors"}
-        if any(path.suffix in forbidden or "checkpoint" in path.name for path in staging.rglob("*")):
+        if any(
+            path.suffix in forbidden or "checkpoint" in path.name for path in staging.rglob("*")
+        ):
             raise AssertionError("snapshot unexpectedly contains a checkpoint")
         file_hashes = {
             path.relative_to(staging).as_posix(): sha256_file(path)
@@ -1717,9 +1688,7 @@ def snapshot_evidence(output_root: str | Path, out: str | Path) -> Path:
                 "schema_version": 1,
                 "verification": verification.to_dict(),
                 "files": file_hashes,
-                "source_evidence_manifest_sha256": sha256_file(
-                    source / "evidence_manifest.json"
-                ),
+                "source_evidence_manifest_sha256": sha256_file(source / "evidence_manifest.json"),
             },
         )
         staging.rename(destination)

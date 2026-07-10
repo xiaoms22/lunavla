@@ -72,7 +72,7 @@ def test_lerobot_dataset_contract_is_explicit_and_wired_without_network() -> Non
     config = ExperimentConfig.from_mapping(_lerobot_mapping())
     assert config.dataset["repo_id"] == LEROBOT_PUSHT_REPO_ID
     assert config.dataset["revision"] == LEROBOT_PUSHT_REVISION
-    assert config.dataset["episodes"] == [0]
+    assert config.dataset["episodes"] == (0,)
     assert config.dataset["video_backend"] == "pyav"
     assert config.dataset["return_uint8"] is True
 

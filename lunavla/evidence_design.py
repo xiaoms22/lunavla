@@ -123,7 +123,9 @@ def _repository_path(value: Any, name: str, *, prefix: tuple[str, ...]) -> str:
         or normalized != raw
     ):
         prefix_text = "/".join(prefix) + "/"
-        raise ValueError(f"{name} must be a normalized repository-relative path under {prefix_text}")
+        raise ValueError(
+            f"{name} must be a normalized repository-relative path under {prefix_text}"
+        )
     return normalized
 
 
@@ -145,9 +147,7 @@ class EvidenceSeeds:
         )
         evaluation = tuple(
             _integer(value, f"seeds.evaluation[{index}]")
-            for index, value in enumerate(
-                _sequence(payload["evaluation"], "seeds.evaluation")
-            )
+            for index, value in enumerate(_sequence(payload["evaluation"], "seeds.evaluation"))
         )
         if len(train) < 2:
             raise ValueError("seeds.train must contain at least two training seeds")
@@ -264,9 +264,7 @@ class EvidenceBudget:
             training_steps=_integer(
                 payload["training_steps"], "budget.training_steps", positive=True
             ),
-            learning_rate=_positive_float(
-                payload["learning_rate"], "budget.learning_rate"
-            ),
+            learning_rate=_positive_float(payload["learning_rate"], "budget.learning_rate"),
             evaluation_episodes=_integer(
                 payload["evaluation_episodes"],
                 "budget.evaluation_episodes",
@@ -298,9 +296,7 @@ class EvidenceOutput:
         payload = _mapping(source, "output")
         _strict_fields("output", payload, _OUTPUT_FIELDS)
         return cls(
-            run_root=_repository_path(
-                payload["run_root"], "output.run_root", prefix=("outputs",)
-            ),
+            run_root=_repository_path(payload["run_root"], "output.run_root", prefix=("outputs",)),
             snapshot_root=_repository_path(
                 payload["snapshot_root"],
                 "output.snapshot_root",
@@ -332,9 +328,7 @@ class EvidenceDesign:
         _strict_fields("root", payload, _ROOT_FIELDS)
         schema_version = _integer(payload["schema_version"], "schema_version")
         if schema_version != EVIDENCE_DESIGN_SCHEMA_VERSION:
-            raise ValueError(
-                f"unsupported evidence design schema_version: {schema_version}"
-            )
+            raise ValueError(f"unsupported evidence design schema_version: {schema_version}")
         design_id = _slug(payload["design_id"], "design_id")
         raw_suite = str(payload["suite"])
         if raw_suite not in _SUITE_MODES:
@@ -348,9 +342,7 @@ class EvidenceDesign:
         seeds = EvidenceSeeds.from_mapping(_mapping(payload["seeds"], "seeds"))
         arms_source = _sequence(payload["arms"], "arms")
         arms = tuple(
-            EvidenceArm.from_mapping(
-                _mapping(value, f"arms[{index}]"), suite=suite, index=index
-            )
+            EvidenceArm.from_mapping(_mapping(value, f"arms[{index}]"), suite=suite, index=index)
             for index, value in enumerate(arms_source)
         )
         if len(arms) < 2:
@@ -361,9 +353,7 @@ class EvidenceDesign:
             raise ValueError("arms must contain exactly one control")
         metrics_source = _sequence(payload["metrics"], "metrics")
         metrics = tuple(
-            EvidenceMetric.from_mapping(
-                _mapping(value, f"metrics[{index}]"), index=index
-            )
+            EvidenceMetric.from_mapping(_mapping(value, f"metrics[{index}]"), index=index)
             for index, value in enumerate(metrics_source)
         )
         if not metrics:
@@ -372,9 +362,7 @@ class EvidenceDesign:
             raise ValueError("metrics.name values must be unique")
         budget = EvidenceBudget.from_mapping(_mapping(payload["budget"], "budget"))
         if budget.evaluation_episodes != len(seeds.evaluation):
-            raise ValueError(
-                "budget.evaluation_episodes must equal the number of evaluation seeds"
-            )
+            raise ValueError("budget.evaluation_episodes must equal the number of evaluation seeds")
         output = EvidenceOutput.from_mapping(_mapping(payload["output"], "output"))
         return cls(
             schema_version=schema_version,
@@ -422,3 +410,35 @@ class EvidenceDesign:
             allow_nan=False,
         ).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
+
+
+def evidence_design_schema_descriptor() -> dict[str, Any]:
+    """Describe the versioned public EvidenceDesign surface."""
+
+    return {
+        "contract": "EvidenceDesign",
+        "schema_version": EVIDENCE_DESIGN_SCHEMA_VERSION,
+        "root_fields": sorted(_ROOT_FIELDS),
+        "required_root_fields": sorted(_ROOT_FIELDS),
+        "section_fields": {
+            "seeds": sorted(_SEED_FIELDS),
+            "arm": sorted(_ARM_FIELDS),
+            "metric": sorted(_METRIC_FIELDS),
+            "budget": sorted(_BUDGET_FIELDS),
+            "output": sorted(_OUTPUT_FIELDS),
+        },
+        "required_section_fields": {
+            "seeds": sorted(_SEED_FIELDS),
+            "arm": sorted(_ARM_FIELDS),
+            "metric": sorted(_METRIC_FIELDS),
+            "budget": sorted(_BUDGET_FIELDS),
+            "output": sorted(_OUTPUT_FIELDS),
+        },
+        "registries": {
+            "suites": sorted(_SUITE_MODES),
+            "suite_modes": {suite: sorted(modes) for suite, modes in sorted(_SUITE_MODES.items())},
+            "arm_roles": ["baseline", "control", "intervention"],
+            "metric_kinds": ["binary", "continuous"],
+            "metric_directions": ["negative", "positive"],
+        },
+    }
