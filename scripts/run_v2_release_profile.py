@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import importlib.metadata
 import json
 import re
@@ -9,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tomllib
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -191,6 +193,25 @@ def installed_requirements() -> str:
     )
 
 
+def validated_project_version() -> str:
+    """Require source, package metadata, and public API versions to agree."""
+
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    project_version = project.get("project", {}).get("version")
+    installed_version = importlib.metadata.version("lunavla")
+    public_version = getattr(importlib.import_module("lunavla"), "__version__", None)
+    versions = {
+        "pyproject.toml": project_version,
+        "installed metadata": installed_version,
+        "lunavla.__version__": public_version,
+    }
+    if not all(isinstance(value, str) and value for value in versions.values()):
+        raise RuntimeError(f"invalid LunaVLA version contract: {versions}")
+    if len(set(versions.values())) != 1:
+        raise RuntimeError(f"inconsistent LunaVLA version contract: {versions}")
+    return installed_version
+
+
 def sbom_command(requirements: Path, output: Path) -> tuple[str, ...]:
     return (
         "cyclonedx-py",
@@ -215,14 +236,12 @@ def write_candidate(
     runs: Iterable[dict[str, object]],
     distributions: Sequence[Path],
 ) -> Path:
-    from importlib.metadata import version
-
     path = RELEASE_ROOT / "release-candidate.json"
     payload = {
         "schema_version": 1,
         "profile": profile,
         "expected_sha": expected_sha,
-        "package_version": version("lunavla"),
+        "package_version": validated_project_version(),
         "authoritative_device": "cpu",
         "modality_effect_claims": False,
         "runs": list(runs),
