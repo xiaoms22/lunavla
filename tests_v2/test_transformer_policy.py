@@ -58,6 +58,16 @@ def tensor_batch() -> tuple[object, object, object]:
     return states, actions, valid_mask
 
 
+def position_pair() -> tuple[np.ndarray, np.ndarray]:
+    """Return images with identical color histograms and a translated red target."""
+
+    left = np.zeros((16, 16, 3), dtype=np.uint8)
+    right = np.zeros_like(left)
+    left[6:10, 2:6] = np.asarray([255, 0, 0], dtype=np.uint8)
+    right[6:10, 10:14] = np.asarray([255, 0, 0], dtype=np.uint8)
+    return left, right
+
+
 def test_act_alias_requires_all_four_capabilities() -> None:
     required = {
         "action_query_transformer",
@@ -241,6 +251,76 @@ def test_image_condition_changes_prediction_for_same_state() -> None:
     assert not np.allclose(dark_chunk.values, bright_chunk.values)
 
 
+def test_coordconv_preserves_target_position_in_embedding_and_action() -> None:
+    policy = TransformerChunkCVAEPolicy(tiny_config(image_shape=(16, 16, 3)))
+    state = np.asarray([0.1, 0.2, 0.3], dtype=np.float32)
+    left_image, right_image = position_pair()
+    left = Observation(state, image=left_image)
+    right = Observation(state, image=right_image)
+
+    # The images differ only in position, not in their set of RGB values.
+    np.testing.assert_array_equal(
+        np.sort(left_image.reshape(-1, 3), axis=0),
+        np.sort(right_image.reshape(-1, 3), axis=0),
+    )
+    _, _, images = policy._observation_tensors((left, right))
+    assert images is not None
+    with torch.no_grad():
+        embeddings = policy._encode_images(images)
+    left_chunk = policy.predict_chunk(left)
+    right_chunk = policy.predict_chunk(right)
+
+    assert embeddings.shape == (2, policy.config.d_model)
+    assert not torch.allclose(embeddings[0], embeddings[1])
+    assert not np.allclose(left_chunk.values, right_chunk.values)
+    np.testing.assert_array_equal(
+        policy._image_coordinate_grid[0, :, 0, 0].cpu().numpy(),
+        np.asarray([-1.0, -1.0], dtype=np.float32),
+    )
+    np.testing.assert_array_equal(
+        policy._image_coordinate_grid[0, :, -1, -1].cpu().numpy(),
+        np.asarray([1.0, 1.0], dtype=np.float32),
+    )
+
+
+def test_coordconv_tiny_overfits_position_dependent_actions() -> None:
+    policy = TransformerChunkCVAEPolicy(
+        tiny_config(image_shape=(16, 16, 3), kl_weight=0.0)
+    )
+    state = np.asarray([0.1, 0.2, 0.3], dtype=np.float32)
+    left_image, right_image = position_pair()
+    observations = (
+        Observation(state, image=left_image),
+        Observation(state, image=right_image),
+    )
+    states, _, images = policy._observation_tensors(observations)
+    assert images is not None
+    targets = torch.tensor(
+        [[[-0.75, 0.0]] * policy.chunk_size, [[0.75, 0.0]] * policy.chunk_size],
+        dtype=torch.float32,
+    )
+    optimizer = torch.optim.Adam(policy.parameters(), lr=5e-3)
+
+    with torch.no_grad():
+        initial = torch.nn.functional.mse_loss(
+            policy.decode_actions(states, images=images), targets
+        ).item()
+    for _ in range(150):
+        optimizer.zero_grad(set_to_none=True)
+        predictions = policy.decode_actions(states, images=images)
+        loss = torch.nn.functional.mse_loss(predictions, targets)
+        loss.backward()
+        optimizer.step()
+    with torch.no_grad():
+        final = torch.nn.functional.mse_loss(
+            policy.decode_actions(states, images=images), targets
+        ).item()
+
+    assert final < initial * 0.01
+    assert policy.predict_chunk(observations[0]).values[0, 0] < -0.5
+    assert policy.predict_chunk(observations[1]).values[0, 0] > 0.5
+
+
 def test_enabled_and_disabled_modalities_fail_explicitly() -> None:
     state = np.asarray([0.1, 0.2, 0.3], dtype=np.float32)
     instruction_policy = TransformerChunkCVAEPolicy(tiny_config(instruction_dim=16))
@@ -299,7 +379,7 @@ def test_multimodal_batch_training_and_checkpoint_round_trip(tmp_path: Path) -> 
     assert math.isfinite(loss)
     assert restored.config.instruction_dim == 16
     assert restored.config.image_shape == (8, 8, 3)
-    np.testing.assert_allclose(actual.values, expected.values, atol=1e-7)
+    np.testing.assert_array_equal(actual.values, expected.values)
 
 
 def test_predict_chunk_and_schema_checkpoint_round_trip(tmp_path: Path) -> None:
@@ -315,8 +395,9 @@ def test_predict_chunk_and_schema_checkpoint_round_trip(tmp_path: Path) -> None:
     restored = TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
     actual = restored.predict_chunk(observation)
 
-    assert raw["schema_version"] == 2
+    assert raw["schema_version"] == 3
     assert raw["format"] == "lunavla.transformer_chunk_cvae"
+    assert raw["image_spatial_encoding"] == "coordconv_xy_v1"
     assert raw["policy_id"] == "transformer_chunk_cvae"
     assert restored.checkpoint_metadata == {"test": "round-trip"}
     assert isinstance(actual, ActionChunk)
@@ -373,14 +454,20 @@ def test_mps_device_is_canonical_and_public_batch_trains() -> None:
     assert math.isfinite(policy.train_batch(batch, learning_rate=1e-3))
 
 
-def test_checkpoint_rejects_unknown_schema(tmp_path: Path) -> None:
+@pytest.mark.parametrize("schema_version", [2, 999])
+def test_checkpoint_rejects_incompatible_schema(
+    tmp_path: Path, schema_version: int
+) -> None:
     policy = TransformerChunkCVAEPolicy(tiny_config())
     checkpoint = policy.save_checkpoint(tmp_path / "policy.pt")
     raw = torch.load(checkpoint, map_location="cpu", weights_only=True)
-    raw["schema_version"] = 999
+    raw["schema_version"] = schema_version
     torch.save(raw, checkpoint)
 
-    with pytest.raises(ValueError, match="schema_version"):
+    with pytest.raises(
+        ValueError,
+        match=f"unsupported checkpoint schema_version: {schema_version}",
+    ):
         TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
 
 
