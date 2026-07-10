@@ -66,12 +66,15 @@ jobs:
             --output-reproducible --outfile release-assets/sbom.json
           tar -czf release-assets/lunavla-v1.1-evidence.tar.gz \
             release-assets/README.md release-assets/results outputs/controlled_v11
-          sha256sum \
-            release-assets/lunavla-v1.1-evidence.tar.gz \
-            release-assets/README.md \
-            release-assets/environment-requirements.txt \
-            release-assets/sbom.json \
-            > release-assets/SHA256SUMS
+          (
+            cd release-assets
+            sha256sum \
+              lunavla-v1.1-evidence.tar.gz \
+              README.md \
+              environment-requirements.txt \
+              sbom.json \
+              > SHA256SUMS
+          )
       - name: Upload complete evidence
         uses: actions/upload-artifact@v4
         with:
