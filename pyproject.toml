@@ -25,6 +25,12 @@ v2 = [
   "torchvision==0.26.*",
   "lerobot[dataset]==0.6.*",
 ]
+v2-integration = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+  "lerobot[dataset]==0.6.*",
+  "gym-pusht==0.1.6",
+]
 dev = [
   "coverage[toml]>=7.6,<8",
   "mypy>=1.11,<2",

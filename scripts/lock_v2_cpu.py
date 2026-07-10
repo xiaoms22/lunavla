@@ -30,6 +30,10 @@ class LockSpec:
 LOCKS = (
     LockSpec(ROOT / "requirements-v2-core-cpu.lock", ("dev", "v2-core")),
     LockSpec(ROOT / "requirements-v2-cpu.lock", ("dev", "v2")),
+    LockSpec(
+        ROOT / "requirements-v2-integration-cpu.lock",
+        ("dev", "v2-integration"),
+    ),
     LockSpec(ROOT / "requirements-v2-release-cpu.lock", ("dev", "v2", "release")),
 )
 
