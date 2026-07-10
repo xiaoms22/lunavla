@@ -28,6 +28,6 @@
   ],
   "experiment_family": "bc-capacity",
   "manifest": "manifest.json",
-  "manifest_sha256": "724ca35f0591269d9bb475006f536fc50b7d1c0a1d69a20a841229dc3a16645d",
+  "manifest_sha256": "aee9554cfa5a263081cbf745af99eb8f34455dbc370f98207141d589c9a8e06e",
   "schema_version": 1
 }

@@ -28,6 +28,6 @@
   ],
   "experiment_family": "chunk",
   "manifest": "manifest.json",
-  "manifest_sha256": "438ce7328bf43355421681bd731355e7f3412a319a6018712c08e35ed092497b",
+  "manifest_sha256": "054bea406f212d27fa91a63af8a8aa31641cf20a6cf66673839e7a3b6a4aaaa5",
   "schema_version": 1
 }

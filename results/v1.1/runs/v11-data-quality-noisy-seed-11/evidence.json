@@ -28,6 +28,6 @@
   ],
   "experiment_family": "data-quality",
   "manifest": "manifest.json",
-  "manifest_sha256": "94407966a36ec4d17030465841179ca66c22a13ced96bbf74148c6e678931638",
+  "manifest_sha256": "9d02550843ad5957e133f67408400c3bf7419f40520c61bc6cba3118a8cea4dc",
   "schema_version": 1
 }
