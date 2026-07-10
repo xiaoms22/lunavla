@@ -1,0 +1,59 @@
+{
+  "counterfactual": {
+    "mode": "counterfactual",
+    "pair_ids": [
+      "instruction:counterfactual:202611:heldout:reach_red_left:0",
+      "instruction:counterfactual:202611:heldout:reach_red_left:1",
+      "instruction:counterfactual:202611:heldout:reach_blue_right:0",
+      "instruction:counterfactual:202611:heldout:reach_blue_right:1",
+      "instruction:counterfactual:202611:heldout:reach_green_top:0",
+      "instruction:counterfactual:202611:heldout:reach_green_top:1"
+    ],
+    "replacements": {
+      "finish at the blue dot": "finish at the red dot",
+      "finish at the green dot": "finish at the blue dot",
+      "finish at the red dot": "finish at the green dot",
+      "head toward the azure target": "head toward the crimson target",
+      "head toward the crimson target": "head toward the emerald target",
+      "head toward the emerald target": "head toward the azure target"
+    }
+  },
+  "mask": {
+    "mode": "mask",
+    "pair_ids": [
+      "instruction:mask:202611:heldout:reach_red_left:0",
+      "instruction:mask:202611:heldout:reach_red_left:1",
+      "instruction:mask:202611:heldout:reach_blue_right:0",
+      "instruction:mask:202611:heldout:reach_blue_right:1",
+      "instruction:mask:202611:heldout:reach_green_top:0",
+      "instruction:mask:202611:heldout:reach_green_top:1"
+    ],
+    "replacements": {
+      "finish at the blue dot": "[MASK]",
+      "finish at the green dot": "[MASK]",
+      "finish at the red dot": "[MASK]",
+      "head toward the azure target": "[MASK]",
+      "head toward the crimson target": "[MASK]",
+      "head toward the emerald target": "[MASK]"
+    }
+  },
+  "shuffle": {
+    "mode": "shuffle",
+    "pair_ids": [
+      "instruction:shuffle:202611:heldout:reach_red_left:0",
+      "instruction:shuffle:202611:heldout:reach_red_left:1",
+      "instruction:shuffle:202611:heldout:reach_blue_right:0",
+      "instruction:shuffle:202611:heldout:reach_blue_right:1",
+      "instruction:shuffle:202611:heldout:reach_green_top:0",
+      "instruction:shuffle:202611:heldout:reach_green_top:1"
+    ],
+    "replacements": {
+      "finish at the blue dot": "head toward the crimson target",
+      "finish at the green dot": "head toward the azure target",
+      "finish at the red dot": "finish at the green dot",
+      "head toward the azure target": "head toward the emerald target",
+      "head toward the crimson target": "finish at the blue dot",
+      "head toward the emerald target": "finish at the red dot"
+    }
+  }
+}
