@@ -59,6 +59,38 @@ Full studies are intentionally multi-seed CPU workloads. `--allow-reduced-design
 
 The legacy names `act` and `pusht_mock` remain temporary compatibility aliases for v1.1. They do not mean that this repository implements the ACT Transformer or the real PushT environment.
 
+## v2 language evidence (claim closed)
+
+<!-- V2_EVIDENCE_START -->
+**Claim gate: Instruction-following has not yet been established.**
+
+Verification establishes file integrity, provenance consistency, and faithful aggregation only; it does not establish that the policy follows instructions.
+
+| Rollout arm | Train seeds | Trials | Observed success rate (95% Wilson CI) |
+| --- | ---: | ---: | --- |
+| `control` | 5 | 120 | 3.3% (1.3%–8.3%) |
+| `mask` | 5 | 120 | 0.0% (0.0%–3.1%) |
+| `shuffle` | 5 | 120 | 13.3% (8.4%–20.6%) |
+| `counterfactual` | 5 | 120 | 0.0% (0.0%–3.1%) |
+
+The full matrix contains 5 training seeds and 120 paired control trials; every rollout arm uses the same 120 seed/episode pairs.
+
+Counterfactual-minus-control paired diagnostics:
+
+| Metric | Paired n | Estimate | Training-seed clustered bootstrap 95% CI |
+| --- | ---: | ---: | --- |
+| Final distance | 120 | +0.0544 | [+0.0144, +0.0910] |
+| Success-rate difference | 120 | -3.3 pp | [-7.5, +0.0] pp |
+
+The predeclared claim remains closed because the verified failed check is `control_success_advantage`. These rows must not be described as successful instruction-following.
+
+Provenance: source commit [`a546695`](https://github.com/xiaoms22/lunavla/commit/a546695445f6fa6e717cd560d5acf718e037940a); authoritative [workflow run 29106885353](https://github.com/xiaoms22/lunavla/actions/runs/29106885353); EvidenceManifest SHA-256 `106ea2421d37c6c374e31d01a788101e358317f76b6abc315318634e6c6fa3b8`.
+
+Tracked sources: [EvidenceManifest](results/v2/language-alpha2/evidence_manifest.json) and [snapshot hash manifest](results/v2/language-alpha2/snapshot_manifest.json).
+<!-- V2_EVIDENCE_END -->
+
+This block is generated only after read-only snapshot verification. Keep it current with `python scripts/render_readme_results.py --check`; manual edits inside the v2 evidence markers are rejected by CI.
+
 ## Verified v1.1 results
 
 <!-- VERIFIED_RESULTS_START -->
