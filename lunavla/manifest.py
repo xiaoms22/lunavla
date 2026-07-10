@@ -9,19 +9,91 @@ import math
 import os
 import platform
 import subprocess
-from dataclasses import asdict, dataclass, field, fields
+import copy
+from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Iterable, Mapping, NoReturn, Sequence
 
 import numpy as np
 
 from lunavla.config import ExperimentConfig
 from lunavla.contracts import Transition
+from lunavla.artifact_contracts import (
+    RUN_MANIFEST_READ_ONLY_SCHEMAS,
+    RUN_MANIFEST_SCHEMA2_FIELDS,
+    RUN_MANIFEST_SCHEMA3_FIELDS,
+    RUN_MANIFEST_SCHEMA_VERSION,
+)
 
 
-MANIFEST_SCHEMA_VERSION = 3
-_READ_ONLY_MANIFEST_SCHEMA_VERSIONS = {2}
+MANIFEST_SCHEMA_VERSION = RUN_MANIFEST_SCHEMA_VERSION
+_READ_ONLY_MANIFEST_SCHEMA_VERSIONS = RUN_MANIFEST_READ_ONLY_SCHEMAS
 _SHA256_HEX = frozenset("0123456789abcdef")
+
+
+class _FrozenDict(dict[str, Any]):
+    """A JSON-compatible dictionary that rejects every mutation path."""
+
+    @staticmethod
+    def _immutable(*args: Any, **kwargs: Any) -> NoReturn:
+        del args, kwargs
+        raise TypeError("manifest values are read-only")
+
+    __setitem__ = _immutable
+    __delitem__ = _immutable
+    clear = _immutable
+    pop = _immutable
+    popitem = _immutable
+    setdefault = _immutable
+    update = _immutable
+    __ior__ = _immutable
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> dict[str, Any]:
+        return {
+            copy.deepcopy(key, memo): copy.deepcopy(value, memo)
+            for key, value in self.items()
+        }
+
+
+class _FrozenList(list[Any]):
+    """A JSON-compatible list that rejects every mutation path."""
+
+    @staticmethod
+    def _immutable(*args: Any, **kwargs: Any) -> NoReturn:
+        del args, kwargs
+        raise TypeError("manifest values are read-only")
+
+    __setitem__ = _immutable
+    __delitem__ = _immutable
+    __iadd__ = _immutable
+    __imul__ = _immutable
+    append = _immutable
+    clear = _immutable
+    extend = _immutable
+    insert = _immutable
+    pop = _immutable
+    remove = _immutable
+    reverse = _immutable
+    sort = _immutable
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> list[Any]:
+        return [copy.deepcopy(value, memo) for value in self]
+
+
+def _deep_freeze(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return _FrozenDict({str(key): _deep_freeze(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return _FrozenList(_deep_freeze(item) for item in value)
+    return value
+
+
+def _deep_thaw(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _deep_thaw(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_deep_thaw(item) for item in value]
+    return value
 
 
 def _validate_sha256(value: str, name: str) -> str:
@@ -32,6 +104,83 @@ def _validate_sha256(value: str, name: str) -> str:
     ):
         raise ValueError(f"{name} must be a lowercase SHA-256 hex digest")
     return value
+
+
+def _require_non_empty_string(value: Any, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be a non-empty string")
+    return value
+
+
+def _validate_git_sha(value: Any) -> str:
+    return _require_non_empty_string(value, "git_sha")
+
+
+def _validate_embedded_sha256(value: Any, name: str) -> None:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise TypeError(f"{name} mapping keys must be strings")
+            item_name = f"{name}.{key}"
+            if key.endswith("sha256") and item is not None:
+                _validate_sha256(item, item_name)
+            _validate_embedded_sha256(item, item_name)
+    elif isinstance(value, (list, tuple)):
+        for index, item in enumerate(value):
+            _validate_embedded_sha256(item, f"{name}[{index}]")
+
+
+def _validate_seed_sequence(value: Any, name: str) -> None:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence) or not value:
+        raise ValueError(f"{name} must be a non-empty sequence of non-negative integers")
+    for index, seed in enumerate(value):
+        if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
+            raise ValueError(f"{name}[{index}] must be a non-negative integer")
+    if len(set(value)) != len(value):
+        raise ValueError(f"{name} must not contain duplicate seeds")
+
+
+def _validate_dataset_split(value: Any, *, schema_version: int) -> None:
+    if not isinstance(value, Mapping):
+        raise TypeError("dataset_split must be a mapping")
+    if schema_version == MANIFEST_SCHEMA_VERSION:
+        expected = {"train", "validation", "test"}
+        if set(value) != expected:
+            raise ValueError("dataset_split must contain exactly train, validation, and test")
+    all_ids: set[int | str] = set()
+    for name, identifiers in value.items():
+        _require_non_empty_string(name, "dataset_split key")
+        if isinstance(identifiers, (str, bytes)) or not isinstance(identifiers, Sequence):
+            raise TypeError(f"dataset_split.{name} must be a sequence")
+        local_ids: set[int | str] = set()
+        for index, identifier in enumerate(identifiers):
+            if isinstance(identifier, bool) or not isinstance(identifier, (int, str)):
+                raise TypeError(
+                    f"dataset_split.{name}[{index}] must be an integer or string"
+                )
+            if isinstance(identifier, str) and not identifier:
+                raise ValueError(f"dataset_split.{name}[{index}] must not be empty")
+            if identifier in local_ids:
+                raise ValueError(f"dataset_split.{name} contains duplicate ID {identifier!r}")
+            if identifier in all_ids:
+                raise ValueError(f"dataset split ID {identifier!r} appears in multiple splits")
+            local_ids.add(identifier)
+            all_ids.add(identifier)
+
+
+def _validate_dependencies(value: Any) -> None:
+    if not isinstance(value, Mapping) or not value:
+        raise ValueError("dependencies must be a non-empty string mapping")
+    for name, version in value.items():
+        _require_non_empty_string(name, "dependency name")
+        _require_non_empty_string(version, f"dependencies.{name}")
+
+
+def _validate_command(value: Any) -> None:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence) or not value:
+        raise ValueError("command must be a non-empty sequence of strings")
+    for index, argument in enumerate(value):
+        _require_non_empty_string(argument, f"command[{index}]")
 
 
 def sha256_file(path: str | Path) -> str:
@@ -154,7 +303,8 @@ def git_source_state(root: Path) -> tuple[bool, str | None]:
         capture_output=True,
     )
     if status.returncode != 0:
-        return True, "unknown"
+        unavailable = hashlib.sha256(b"git-source-state-unavailable").hexdigest()
+        return True, unavailable
     if not status.stdout:
         return False, None
     digest = hashlib.sha256()
@@ -302,16 +452,116 @@ class RunManifest:
     runtime_determinism: dict[str, Any] = field(default_factory=lambda: {"status": "unverified"})
 
     def __post_init__(self) -> None:
-        if isinstance(self.schema_version, bool) or self.schema_version not in {
-            MANIFEST_SCHEMA_VERSION,
-            *_READ_ONLY_MANIFEST_SCHEMA_VERSIONS,
-        }:
+        if (
+            isinstance(self.schema_version, bool)
+            or not isinstance(self.schema_version, int)
+            or self.schema_version
+            not in {MANIFEST_SCHEMA_VERSION, *_READ_ONLY_MANIFEST_SCHEMA_VERSIONS}
+        ):
             raise ValueError(f"unsupported manifest schema_version: {self.schema_version}")
+        for name in ("run_id", "python_version", "policy_id", "task_id"):
+            _require_non_empty_string(getattr(self, name), name)
+        _validate_git_sha(self.git_sha)
+        if not isinstance(self.git_dirty, bool):
+            raise TypeError("git_dirty must be boolean")
+        if self.git_dirty:
+            if self.source_diff_sha256 is None:
+                raise ValueError("dirty manifests require source_diff_sha256")
+            _validate_sha256(self.source_diff_sha256, "source_diff_sha256")
+        elif self.source_diff_sha256 is not None:
+            raise ValueError("clean manifests must set source_diff_sha256 to null")
+
+        for name in (
+            "config_sha256",
+            "data_sha256",
+            "checkpoint_sha256",
+        ):
+            _validate_sha256(getattr(self, name), name)
+        _validate_dataset_split(self.dataset_split, schema_version=self.schema_version)
+        _validate_seed_sequence(self.data_seeds, "data_seeds")
+        _validate_seed_sequence(self.train_seeds, "train_seeds")
+        _validate_seed_sequence(self.eval_seeds, "eval_seeds")
+        _validate_dependencies(self.dependencies)
+        _validate_command(self.command)
+
+        object.__setattr__(self, "config", _manifest_mapping(self.config, "config"))
+        object.__setattr__(
+            self,
+            "dataset_split",
+            _manifest_mapping(self.dataset_split, "dataset_split"),
+        )
+        object.__setattr__(
+            self,
+            "dependencies",
+            _manifest_mapping(self.dependencies, "dependencies"),
+        )
+        object.__setattr__(
+            self,
+            "artifact_sha256",
+            _manifest_mapping(self.artifact_sha256, "artifact_sha256"),
+        )
+        object.__setattr__(
+            self,
+            "interventions",
+            _manifest_mapping(self.interventions, "interventions"),
+        )
+        object.__setattr__(self, "metrics", _manifest_mapping(self.metrics, "metrics"))
+        for name in ("data_seeds", "train_seeds", "eval_seeds", "command", "pair_ids"):
+            normalized = _jsonable(getattr(self, name))
+            if not isinstance(normalized, list):
+                raise TypeError(f"{name} must be a sequence")
+            object.__setattr__(self, name, normalized)
+        object.__setattr__(
+            self,
+            "paired_intervals",
+            _manifest_mapping_list(self.paired_intervals, "paired_intervals"),
+        )
+
+        resolved = ExperimentConfig.from_mapping(self.config)
+        if resolved.sha256() != self.config_sha256:
+            raise ValueError("manifest config_sha256 does not match its resolved config")
+        if self.schema_version == MANIFEST_SCHEMA_VERSION:
+            expected_data_seeds = [int(resolved.dataset["seed"])]
+            expected_train_seeds = [int(resolved.training["seed"])]
+            configured_eval_seeds = resolved.evaluation.get("seeds")
+            if configured_eval_seeds is None:
+                first_eval_seed = int(resolved.evaluation["seed"])
+                configured_eval_seeds = list(
+                    range(
+                        first_eval_seed,
+                        first_eval_seed + int(resolved.evaluation["episodes"]),
+                    )
+                )
+            if self.data_seeds != expected_data_seeds:
+                raise ValueError("data_seeds conflicts with config.dataset.seed")
+            if self.train_seeds != expected_train_seeds:
+                raise ValueError("train_seeds conflicts with config.training.seed")
+            if self.eval_seeds != [int(seed) for seed in configured_eval_seeds]:
+                raise ValueError("eval_seeds conflicts with config.evaluation seeds")
+            if self.policy_id != str(resolved.policy["type"]):
+                raise ValueError("policy_id conflicts with config.policy.type")
+            if self.task_id != str(resolved.task["id"]):
+                raise ValueError("task_id conflicts with config.task.id")
+
+        for name, digest in self.artifact_sha256.items():
+            _require_non_empty_string(name, "artifact_sha256 key")
+            _validate_sha256(digest, f"artifact_sha256.{name}")
+        for name, mode in self.interventions.items():
+            _require_non_empty_string(name, "interventions key")
+            _require_non_empty_string(mode, f"interventions.{name}")
+        seen_pair_ids: set[str] = set()
+        for index, pair_id in enumerate(self.pair_ids):
+            normalized_pair_id = _require_non_empty_string(pair_id, f"pair_ids[{index}]")
+            if normalized_pair_id in seen_pair_ids:
+                raise ValueError("pair_ids must not contain duplicates")
+            seen_pair_ids.add(normalized_pair_id)
+        _validate_embedded_sha256(self.config, "config")
+        _validate_embedded_sha256(self.metrics, "metrics")
+
         if (self.design_id is None) != (self.design_sha256 is None):
             raise ValueError("design_id and design_sha256 must be provided together")
         if self.design_id is not None:
-            if not isinstance(self.design_id, str) or not self.design_id.strip():
-                raise ValueError("design_id must be a non-empty string")
+            _require_non_empty_string(self.design_id, "design_id")
             assert self.design_sha256 is not None
             _validate_sha256(self.design_sha256, "design_sha256")
 
@@ -333,6 +583,8 @@ class RunManifest:
             "runtime_determinism",
             _manifest_mapping(self.runtime_determinism, "runtime_determinism"),
         )
+        for name in ("condition", "eval_fixture", "paired_data", "arms", "pairs"):
+            _validate_embedded_sha256(getattr(self, name), name)
         if self.schema_version == MANIFEST_SCHEMA_VERSION:
             if self.eval_fixture_sha256 is None:
                 raise ValueError("eval_fixture_sha256 is required for schema 3")
@@ -373,11 +625,45 @@ class RunManifest:
                     raise ValueError(f"{name} is missing required field(s): {', '.join(missing)}")
             if self.runtime_determinism["status"] not in {"verified", "unverified"}:
                 raise ValueError("runtime_determinism.status must be verified or unverified")
+            if not isinstance(
+                self.runtime_determinism["deterministic_flags_satisfied"], bool
+            ):
+                raise TypeError(
+                    "runtime_determinism.deterministic_flags_satisfied must be boolean"
+                )
+            _require_non_empty_string(
+                self.runtime_determinism["device"], "runtime_determinism.device"
+            )
+            _require_non_empty_string(
+                self.runtime_determinism["numpy_bit_generator"],
+                "runtime_determinism.numpy_bit_generator",
+            )
+            _require_non_empty_string(
+                self.runtime_determinism["torch_version"],
+                "runtime_determinism.torch_version",
+            )
+            python_hash_seed = self.runtime_determinism["PYTHONHASHSEED"]
+            if python_hash_seed is not None and not isinstance(python_hash_seed, str):
+                raise TypeError("runtime_determinism.PYTHONHASHSEED must be a string or null")
+            for name in (
+                "torch_deterministic_algorithms",
+                "cudnn_deterministic",
+                "cudnn_benchmark",
+            ):
+                if self.runtime_determinism[name] is not None and not isinstance(
+                    self.runtime_determinism[name], bool
+                ):
+                    raise TypeError(f"runtime_determinism.{name} must be boolean or null")
             if (
                 self.runtime_determinism["status"] == "verified"
                 and self.runtime_determinism["deterministic_flags_satisfied"] is not True
             ):
                 raise ValueError("verified runtime_determinism requires deterministic flags")
+
+        for item in fields(self):
+            value = getattr(self, item.name)
+            if isinstance(value, (Mapping, list, tuple)):
+                object.__setattr__(self, item.name, _deep_freeze(value))
 
     @classmethod
     def create(
@@ -499,37 +785,26 @@ class RunManifest:
         if not isinstance(payload, dict):
             raise TypeError("manifest root must be an object")
         schema_version = payload.get("schema_version")
-        if isinstance(schema_version, bool) or schema_version not in {
-            MANIFEST_SCHEMA_VERSION,
-            *_READ_ONLY_MANIFEST_SCHEMA_VERSIONS,
-        }:
+        if (
+            isinstance(schema_version, bool)
+            or not isinstance(schema_version, int)
+            or schema_version
+            not in {MANIFEST_SCHEMA_VERSION, *_READ_ONLY_MANIFEST_SCHEMA_VERSIONS}
+        ):
             raise ValueError(f"unsupported manifest schema_version: {schema_version}")
-        all_fields = {item.name for item in fields(cls)}
-        schema3_fields = all_fields
-        schema2_fields = all_fields - {
-            "design_id",
-            "design_sha256",
-            "condition",
-            "eval_fixture",
-            "eval_fixture_sha256",
-            "paired_data",
-            "paired_data_sha256",
-            "arms",
-            "pairs",
-            "runtime_determinism",
-        }
-        expected = schema3_fields if schema_version == MANIFEST_SCHEMA_VERSION else schema2_fields
+        expected = (
+            RUN_MANIFEST_SCHEMA3_FIELDS
+            if schema_version == MANIFEST_SCHEMA_VERSION
+            else RUN_MANIFEST_SCHEMA2_FIELDS
+        )
         unknown = sorted(set(payload) - expected)
         if unknown:
             raise ValueError("unknown manifest field(s): " + ", ".join(unknown))
-        if schema_version == MANIFEST_SCHEMA_VERSION:
-            missing = sorted(expected - set(payload))
-            if missing:
-                raise ValueError("missing manifest field(s): " + ", ".join(missing))
+        missing = sorted(expected - set(payload))
+        if missing:
+            raise ValueError("missing manifest field(s): " + ", ".join(missing))
         manifest = cls(**payload)
         resolved = ExperimentConfig.from_mapping(manifest.config)
-        if resolved.sha256() != manifest.config_sha256:
-            raise ValueError("manifest config_sha256 does not match its resolved config")
         if manifest.schema_version == MANIFEST_SCHEMA_VERSION:
             expected_condition = {
                 "language_ablation": str(resolved.evaluation["language_ablation"]),
@@ -559,7 +834,16 @@ class RunManifest:
         return manifest
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        allowed = (
+            RUN_MANIFEST_SCHEMA3_FIELDS
+            if self.schema_version == MANIFEST_SCHEMA_VERSION
+            else RUN_MANIFEST_SCHEMA2_FIELDS
+        )
+        return {
+            item.name: _deep_thaw(getattr(self, item.name))
+            for item in fields(self)
+            if item.name in allowed
+        }
 
     def write(self, path: str | Path) -> Path:
         if self.schema_version != MANIFEST_SCHEMA_VERSION:

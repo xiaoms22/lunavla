@@ -26,7 +26,7 @@ def test_fast_ci_maintains_main_and_v1x_without_collecting_v2_tests() -> None:
     assert "tests_v2" not in command
 
 
-def test_codeql_covers_all_maintained_branches() -> None:
+def test_codeql_covers_maintained_and_v2_integration_branches() -> None:
     payload = _workflow("codeql.yml")
     triggers = payload["on"]
     expected = {"main", "v1.x", "v2"}

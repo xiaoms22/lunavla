@@ -454,7 +454,7 @@ def test_mps_device_is_canonical_and_public_batch_trains() -> None:
     assert math.isfinite(policy.train_batch(batch, learning_rate=1e-3))
 
 
-@pytest.mark.parametrize("schema_version", [2, 999])
+@pytest.mark.parametrize("schema_version", [999])
 def test_checkpoint_rejects_incompatible_schema(
     tmp_path: Path, schema_version: int
 ) -> None:
@@ -469,6 +469,125 @@ def test_checkpoint_rejects_incompatible_schema(
         match=f"unsupported checkpoint schema_version: {schema_version}",
     ):
         TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
+
+
+def test_schema2_state_only_checkpoint_is_read_only_compatible_and_upgrades(
+    tmp_path: Path,
+) -> None:
+    policy = TransformerChunkCVAEPolicy(tiny_config())
+    observation = Observation(np.asarray([0.1, 0.2, 0.3], dtype=np.float32))
+    expected = policy.predict_chunk(observation)
+    legacy_path = policy.save_checkpoint(tmp_path / "schema2.pt")
+    legacy = torch.load(legacy_path, map_location="cpu", weights_only=True)
+    legacy["schema_version"] = 2
+    legacy.pop("image_spatial_encoding")
+    torch.save(legacy, legacy_path)
+
+    restored = TransformerChunkCVAEPolicy.load_checkpoint(legacy_path)
+    np.testing.assert_array_equal(restored.predict_chunk(observation).values, expected.values)
+    upgraded_path = restored.save_checkpoint(tmp_path / "schema3.pt")
+    upgraded = torch.load(upgraded_path, map_location="cpu", weights_only=True)
+    assert upgraded["schema_version"] == 3
+    assert upgraded["image_spatial_encoding"] == "coordconv_xy_v1"
+
+
+def test_schema2_visual_checkpoint_is_rejected_explicitly(tmp_path: Path) -> None:
+    policy = TransformerChunkCVAEPolicy(tiny_config(image_shape=(8, 8, 3)))
+    checkpoint = policy.save_checkpoint(tmp_path / "visual-schema2.pt")
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    payload["schema_version"] = 2
+    payload.pop("image_spatial_encoding")
+    torch.save(payload, checkpoint)
+
+    with pytest.raises(ValueError, match="schema 2 visual checkpoints"):
+        TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        (lambda payload: payload.__setitem__("schema_version", True), "schema_version"),
+        (lambda payload: payload.__setitem__("unexpected", 1), "unknown checkpoint root"),
+        (lambda payload: payload.pop("metadata"), "missing checkpoint root"),
+        (
+            lambda payload: payload["config"].__setitem__("schema_version", True),
+            "policy config schema_version",
+        ),
+        (lambda payload: payload["config"].pop("seed"), "missing checkpoint config"),
+        (
+            lambda payload: payload["config"].__setitem__("unexpected", 1),
+            "unknown checkpoint config",
+        ),
+    ],
+)
+def test_schema3_checkpoint_rejects_root_and_config_drift(
+    tmp_path: Path,
+    mutation: object,
+    message: str,
+) -> None:
+    policy = TransformerChunkCVAEPolicy(tiny_config())
+    checkpoint = policy.save_checkpoint(tmp_path / "strict.pt")
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    mutation(payload)  # type: ignore[operator]
+    torch.save(payload, checkpoint)
+    with pytest.raises((TypeError, ValueError), match=message):
+        TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
+
+
+def test_schema3_checkpoint_rejects_invalid_tensors_optimizer_and_metadata(
+    tmp_path: Path,
+) -> None:
+    states, actions, valid_mask = tensor_batch()
+    batch = PolicyBatch(
+        observations=tuple(Observation(row.numpy()) for row in states),
+        targets=actions.numpy(),
+        valid_mask=valid_mask.numpy(),
+        device="cpu",
+    )
+    policy = TransformerChunkCVAEPolicy(tiny_config())
+    policy.train_batch(batch, learning_rate=1e-3)
+    checkpoint = policy.save_checkpoint(tmp_path / "strict-tensors.pt")
+    original = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    parameter_name = next(iter(original["state_dict"]))
+
+    payload = dict(original)
+    payload["state_dict"] = dict(original["state_dict"])
+    payload["state_dict"][parameter_name] = torch.full_like(
+        payload["state_dict"][parameter_name], float("nan")
+    )
+    torch.save(payload, checkpoint)
+    with pytest.raises(ValueError, match="NaN or infinite"):
+        TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
+
+    payload = dict(original)
+    payload["state_dict"] = dict(original["state_dict"])
+    payload["state_dict"][parameter_name] = payload["state_dict"][
+        parameter_name
+    ].to(torch.float64)
+    torch.save(payload, checkpoint)
+    with pytest.raises(TypeError, match="dtype"):
+        TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
+
+    payload = dict(original)
+    payload["optimizer_state_dict"] = dict(original["optimizer_state_dict"])
+    payload["optimizer_state_dict"]["param_groups"] = [
+        dict(original["optimizer_state_dict"]["param_groups"][0])
+    ]
+    payload["optimizer_state_dict"]["param_groups"][0]["lr"] = float("inf")
+    torch.save(payload, checkpoint)
+    with pytest.raises(ValueError, match="infinite"):
+        TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
+
+    payload = dict(original)
+    payload["metadata"] = {"unsafe": torch.zeros(1)}
+    torch.save(payload, checkpoint)
+    with pytest.raises(TypeError, match="unsupported value type Tensor"):
+        TransformerChunkCVAEPolicy.load_checkpoint(checkpoint)
+
+    with pytest.raises(ValueError, match="finite"):
+        policy.save_checkpoint(tmp_path / "nan-metadata.pt", metadata={"x": float("nan")})
+    with pytest.raises(TypeError, match="unsupported value type"):
+        policy.save_checkpoint(tmp_path / "path-metadata.pt", metadata={"x": tmp_path})
 
 
 def test_temporal_ensembler_aligns_and_exponentially_weights_chunks() -> None:

@@ -535,7 +535,7 @@ def run_experiment(
             data_sha256=sha256_transitions(transitions),
             checkpoint_path=checkpoint_path,
             dataset_split=split_ids,
-            command=command,
+            command=command or ("lunavla-v2", "train"),
             metrics=metrics,
             ablation=ablation,
             artifact_paths={

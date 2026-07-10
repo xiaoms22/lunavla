@@ -1,0 +1,141 @@
+{
+  "descriptor_version": 1,
+  "numpy_checkpoint": {
+    "current_schema": 1,
+    "format": "lunavla.numpy_policy",
+    "legacy_unversioned": "read-only",
+    "parameter_fields": {
+      "numpy_bc_mlp": [
+        "b1",
+        "b2",
+        "w1",
+        "w2"
+      ],
+      "numpy_linear_chunk": [
+        "bias",
+        "weights"
+      ]
+    },
+    "policy_fields": {
+      "numpy_bc_mlp": [
+        "action_dim",
+        "chunk_size",
+        "hidden_dim",
+        "input_dim",
+        "parameters",
+        "type"
+      ],
+      "numpy_linear_chunk": [
+        "action_dim",
+        "chunk_size",
+        "input_dim",
+        "parameters",
+        "type"
+      ]
+    },
+    "root_fields": [
+      "format",
+      "metadata",
+      "policy",
+      "schema_version"
+    ]
+  },
+  "run_manifest": {
+    "current_schema": 3,
+    "read_only_schemas": [
+      2
+    ],
+    "schema2_root_fields": [
+      "artifact_sha256",
+      "checkpoint_sha256",
+      "command",
+      "config",
+      "config_sha256",
+      "data_seeds",
+      "data_sha256",
+      "dataset_split",
+      "dependencies",
+      "eval_seeds",
+      "git_dirty",
+      "git_sha",
+      "interventions",
+      "metrics",
+      "pair_ids",
+      "paired_intervals",
+      "policy_id",
+      "python_version",
+      "run_id",
+      "schema_version",
+      "source_diff_sha256",
+      "task_id",
+      "train_seeds"
+    ],
+    "schema3_root_fields": [
+      "arms",
+      "artifact_sha256",
+      "checkpoint_sha256",
+      "command",
+      "condition",
+      "config",
+      "config_sha256",
+      "data_seeds",
+      "data_sha256",
+      "dataset_split",
+      "dependencies",
+      "design_id",
+      "design_sha256",
+      "eval_fixture",
+      "eval_fixture_sha256",
+      "eval_seeds",
+      "git_dirty",
+      "git_sha",
+      "interventions",
+      "metrics",
+      "pair_ids",
+      "paired_data",
+      "paired_data_sha256",
+      "paired_intervals",
+      "pairs",
+      "policy_id",
+      "python_version",
+      "run_id",
+      "runtime_determinism",
+      "schema_version",
+      "source_diff_sha256",
+      "task_id",
+      "train_seeds"
+    ]
+  },
+  "transformer_checkpoint": {
+    "current_schema": 3,
+    "format": "lunavla.transformer_chunk_cvae",
+    "image_spatial_encoding": "coordconv_xy_v1",
+    "read_only_schemas": [
+      2
+    ],
+    "schema2_root_fields": [
+      "config",
+      "format",
+      "latent_rng_state",
+      "metadata",
+      "optimizer_state_dict",
+      "policy_id",
+      "schema_version",
+      "state_dict",
+      "train_step"
+    ],
+    "schema2_visual": "rejected",
+    "schema3_root_fields": [
+      "config",
+      "format",
+      "image_spatial_encoding",
+      "latent_rng_state",
+      "metadata",
+      "optimizer_state_dict",
+      "policy_id",
+      "schema_version",
+      "state_dict",
+      "train_step"
+    ]
+  }
+}

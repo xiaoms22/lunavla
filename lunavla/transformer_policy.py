@@ -12,6 +12,14 @@ import numpy.typing as npt
 import torch
 from torch import Tensor, nn
 
+from lunavla.artifact_contracts import (
+    TRANSFORMER_CHECKPOINT_FORMAT,
+    TRANSFORMER_CHECKPOINT_READ_ONLY_SCHEMAS,
+    TRANSFORMER_CHECKPOINT_SCHEMA_VERSION,
+    TRANSFORMER_IMAGE_SPATIAL_ENCODING,
+    TRANSFORMER_SCHEMA2_FIELDS,
+    TRANSFORMER_SCHEMA3_FIELDS,
+)
 from lunavla.contracts import Observation, PolicyBatch, normalize_device
 from lunavla.temporal import TemporalEnsembler as TemporalEnsembler
 from model.policy_base import ActionChunk
@@ -21,9 +29,9 @@ if TYPE_CHECKING:
 
 
 POLICY_ID: Final = "transformer_chunk_cvae"
-CHECKPOINT_SCHEMA_VERSION: Final = 3
-CHECKPOINT_FORMAT: Final = "lunavla.transformer_chunk_cvae"
-IMAGE_SPATIAL_ENCODING: Final = "coordconv_xy_v1"
+CHECKPOINT_SCHEMA_VERSION: Final = TRANSFORMER_CHECKPOINT_SCHEMA_VERSION
+CHECKPOINT_FORMAT: Final = TRANSFORMER_CHECKPOINT_FORMAT
+IMAGE_SPATIAL_ENCODING: Final = TRANSFORMER_IMAGE_SPATIAL_ENCODING
 
 _ACT_REQUIRED_CAPABILITIES: Final = frozenset(
     {
@@ -61,6 +69,70 @@ def _safe_checkpoint_value(value: Any, *, name: str) -> Any:
             result[key] = _safe_checkpoint_value(item, name=f"{name}.{key}")
         return result
     raise TypeError(f"{name} contains unsupported value type {type(value).__name__}")
+
+
+def _require_exact_fields(
+    value: Mapping[str, Any], expected: frozenset[str], *, name: str
+) -> None:
+    if any(not isinstance(key, str) for key in value):
+        raise TypeError(f"{name} keys must be strings")
+    unknown = sorted(set(value) - expected)
+    if unknown:
+        raise ValueError(f"unknown {name} field(s): {', '.join(unknown)}")
+    missing = sorted(expected - set(value))
+    if missing:
+        raise ValueError(f"missing {name} field(s): {', '.join(missing)}")
+
+
+def _validate_checkpoint_tensor(value: Any, *, name: str) -> Tensor:
+    if not isinstance(value, Tensor):
+        raise TypeError(f"{name} must be a torch.Tensor")
+    if value.layout != torch.strided:
+        raise TypeError(f"{name} must use strided tensor layout")
+    if (value.is_floating_point() or value.is_complex()) and not bool(
+        torch.isfinite(value).all().item()
+    ):
+        raise ValueError(f"{name} contains NaN or infinite values")
+    return value
+
+
+def _validate_optimizer_tree(value: Any, *, name: str) -> None:
+    if isinstance(value, Tensor):
+        _validate_checkpoint_tensor(value, name=name)
+        return
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if isinstance(key, bool) or not isinstance(key, (str, int)):
+                raise TypeError(f"{name} keys must be strings or integers")
+            _validate_optimizer_tree(item, name=f"{name}.{key}")
+        return
+    if isinstance(value, (list, tuple)):
+        for index, item in enumerate(value):
+            _validate_optimizer_tree(item, name=f"{name}[{index}]")
+        return
+    if value is None or isinstance(value, (str, bool, int)):
+        return
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError(f"{name} contains NaN or infinite values")
+        return
+    raise TypeError(f"{name} contains unsupported value type {type(value).__name__}")
+
+
+def _validated_checkpoint_config(
+    value: Any, *, schema_version: int, map_location: str
+) -> TransformerPolicyConfig:
+    if not isinstance(value, Mapping):
+        raise TypeError("checkpoint config must be a mapping")
+    expected = frozenset(item.name for item in fields(TransformerPolicyConfig))
+    _require_exact_fields(value, expected, name="checkpoint config")
+    recorded = TransformerPolicyConfig.from_mapping(value)
+    if schema_version in TRANSFORMER_CHECKPOINT_READ_ONLY_SCHEMAS:
+        if recorded.image_shape is not None:
+            raise ValueError(
+                "schema 2 visual checkpoints are incompatible with coordconv_xy_v1"
+            )
+    return replace(recorded, device=map_location)
 
 
 def _cpu_checkpoint_tree(value: Any) -> Any:
@@ -111,7 +183,11 @@ class TransformerPolicyConfig:
     schema_version: int = 1
 
     def __post_init__(self) -> None:
-        if self.schema_version != 1:
+        if (
+            isinstance(self.schema_version, bool)
+            or not isinstance(self.schema_version, int)
+            or self.schema_version != 1
+        ):
             raise ValueError(f"unsupported policy config schema_version: {self.schema_version}")
         positive_dimensions = {
             "state_dim": self.state_dim,
@@ -134,10 +210,16 @@ class TransformerPolicyConfig:
         ):
             raise ValueError("instruction_dim must be a non-negative integer")
         if self.image_shape is not None:
-            try:
-                image_shape = tuple(int(size) for size in self.image_shape)
-            except (TypeError, ValueError) as exc:
-                raise ValueError("image_shape must contain integer dimensions") from exc
+            if isinstance(self.image_shape, (str, bytes)) or not isinstance(
+                self.image_shape, Sequence
+            ):
+                raise ValueError("image_shape must contain integer dimensions")
+            if any(
+                isinstance(size, bool) or not isinstance(size, int)
+                for size in self.image_shape
+            ):
+                raise ValueError("image_shape must contain integer dimensions")
+            image_shape = tuple(self.image_shape)
             if len(image_shape) not in (2, 3) or any(size <= 0 for size in image_shape):
                 raise ValueError("image_shape must be positive HW or HWC dimensions")
             if len(image_shape) == 3 and image_shape[-1] not in (1, 3, 4):
@@ -145,16 +227,33 @@ class TransformerPolicyConfig:
             object.__setattr__(self, "image_shape", image_shape)
         if self.d_model % self.nhead:
             raise ValueError("d_model must be divisible by nhead")
-        if not math.isfinite(self.dropout) or not 0.0 <= self.dropout < 1.0:
+        if (
+            isinstance(self.dropout, bool)
+            or not isinstance(self.dropout, (int, float))
+            or not math.isfinite(self.dropout)
+            or not 0.0 <= self.dropout < 1.0
+        ):
             raise ValueError("dropout must be finite and in [0, 1)")
-        if not math.isfinite(self.kl_weight) or self.kl_weight < 0.0:
+        if (
+            isinstance(self.kl_weight, bool)
+            or not isinstance(self.kl_weight, (int, float))
+            or not math.isfinite(self.kl_weight)
+            or self.kl_weight < 0.0
+        ):
             raise ValueError("kl_weight must be finite and non-negative")
-        if not math.isfinite(self.max_grad_norm) or self.max_grad_norm <= 0.0:
+        if (
+            isinstance(self.max_grad_norm, bool)
+            or not isinstance(self.max_grad_norm, (int, float))
+            or not math.isfinite(self.max_grad_norm)
+            or self.max_grad_norm <= 0.0
+        ):
             raise ValueError("max_grad_norm must be a positive finite value")
         if not isinstance(self.sample_latent_during_training, bool):
             raise TypeError("sample_latent_during_training must be boolean")
         if isinstance(self.seed, bool) or not isinstance(self.seed, int) or self.seed < 0:
             raise ValueError("seed must be a non-negative integer")
+        if not isinstance(self.device, str) or not self.device.strip():
+            raise ValueError("device must be a non-empty string")
         object.__setattr__(self, "device", normalize_device(self.device))
 
     @classmethod
@@ -845,28 +944,41 @@ class TransformerChunkCVAEPolicy(nn.Module):
         *,
         metadata: Mapping[str, Any] | None = None,
     ) -> Path:
+        if metadata is not None and not isinstance(metadata, Mapping):
+            raise TypeError("metadata must be a mapping")
         target = Path(path)
         if not target.suffix:
             target = target / "checkpoint.pt"
         target.parent.mkdir(parents=True, exist_ok=True)
+        state_dict = {
+            name: value.detach().cpu() for name, value in self.state_dict().items()
+        }
+        for name, value in state_dict.items():
+            _validate_checkpoint_tensor(value, name=f"state_dict.{name}")
+        optimizer_state = (
+            None
+            if self._optimizer is None
+            else _cpu_checkpoint_tree(self._optimizer.state_dict())
+        )
+        if optimizer_state is not None:
+            _validate_optimizer_tree(optimizer_state, name="optimizer_state_dict")
+        latent_rng_state = self._latent_generator.get_state().cpu()
+        _validate_checkpoint_tensor(latent_rng_state, name="latent_rng_state")
+        safe_metadata = _safe_checkpoint_value(dict(metadata or {}), name="metadata")
+        assert isinstance(safe_metadata, dict)
         payload = {
             "schema_version": CHECKPOINT_SCHEMA_VERSION,
             "format": CHECKPOINT_FORMAT,
             "image_spatial_encoding": IMAGE_SPATIAL_ENCODING,
             "policy_id": self.policy_id,
             "config": asdict(self.config),
-            "state_dict": {
-                name: value.detach().cpu() for name, value in self.state_dict().items()
-            },
-            "optimizer_state_dict": (
-                None
-                if self._optimizer is None
-                else _cpu_checkpoint_tree(self._optimizer.state_dict())
-            ),
-            "latent_rng_state": self._latent_generator.get_state().cpu(),
+            "state_dict": state_dict,
+            "optimizer_state_dict": optimizer_state,
+            "latent_rng_state": latent_rng_state,
             "train_step": self._train_step,
-            "metadata": _safe_checkpoint_value(dict(metadata or {}), name="metadata"),
+            "metadata": safe_metadata,
         }
+        _require_exact_fields(payload, TRANSFORMER_SCHEMA3_FIELDS, name="checkpoint root")
         torch.save(payload, target)
         return target
 
@@ -877,30 +989,67 @@ class TransformerChunkCVAEPolicy(nn.Module):
             source = source / "checkpoint.pt"
         map_location = normalize_device(device or "cpu")
         payload = torch.load(source, map_location=map_location, weights_only=True)
-        if not isinstance(payload, dict):
-            raise ValueError("checkpoint payload must be a mapping")
-        if payload.get("schema_version") != CHECKPOINT_SCHEMA_VERSION:
+        if not isinstance(payload, Mapping):
+            raise TypeError("checkpoint payload must be a mapping")
+        raw_schema_version = payload.get("schema_version")
+        if isinstance(raw_schema_version, bool) or not isinstance(raw_schema_version, int):
             raise ValueError(
-                f"unsupported checkpoint schema_version: {payload.get('schema_version')!r}"
+                f"unsupported checkpoint schema_version: {raw_schema_version!r}"
             )
+        if raw_schema_version not in {
+            CHECKPOINT_SCHEMA_VERSION,
+            *TRANSFORMER_CHECKPOINT_READ_ONLY_SCHEMAS,
+        }:
+            raise ValueError(
+                f"unsupported checkpoint schema_version: {raw_schema_version!r}"
+            )
+        expected_fields = (
+            TRANSFORMER_SCHEMA3_FIELDS
+            if raw_schema_version == CHECKPOINT_SCHEMA_VERSION
+            else TRANSFORMER_SCHEMA2_FIELDS
+        )
+        _require_exact_fields(payload, expected_fields, name="checkpoint root")
         if payload.get("format") != CHECKPOINT_FORMAT:
             raise ValueError(f"unsupported checkpoint format: {payload.get('format')!r}")
-        if payload.get("image_spatial_encoding") != IMAGE_SPATIAL_ENCODING:
+        if (
+            raw_schema_version == CHECKPOINT_SCHEMA_VERSION
+            and payload.get("image_spatial_encoding") != IMAGE_SPATIAL_ENCODING
+        ):
             raise ValueError(
                 "unsupported checkpoint image_spatial_encoding: "
                 f"{payload.get('image_spatial_encoding')!r}"
             )
         if payload.get("policy_id") != POLICY_ID:
             raise ValueError(f"checkpoint contains policy_id {payload.get('policy_id')!r}")
-        raw_config = payload.get("config")
-        if not isinstance(raw_config, Mapping):
-            raise ValueError("checkpoint config must be a mapping")
-        config_data = dict(raw_config)
-        config_data["device"] = map_location
-        policy = cls(TransformerPolicyConfig.from_mapping(config_data))
+        config = _validated_checkpoint_config(
+            payload.get("config"),
+            schema_version=raw_schema_version,
+            map_location=map_location,
+        )
+        policy = cls(config)
         raw_state = payload.get("state_dict")
         if not isinstance(raw_state, Mapping):
-            raise ValueError("checkpoint state_dict must be a mapping")
+            raise TypeError("checkpoint state_dict must be a mapping")
+        expected_state = policy.state_dict()
+        _require_exact_fields(
+            raw_state,
+            frozenset(expected_state),
+            name="checkpoint state_dict",
+        )
+        for name, expected_tensor in expected_state.items():
+            tensor = _validate_checkpoint_tensor(
+                raw_state[name], name=f"state_dict.{name}"
+            )
+            if tensor.shape != expected_tensor.shape:
+                raise ValueError(
+                    f"state_dict.{name} has shape {tuple(tensor.shape)}; "
+                    f"expected {tuple(expected_tensor.shape)}"
+                )
+            if tensor.dtype != expected_tensor.dtype:
+                raise TypeError(
+                    f"state_dict.{name} has dtype {tensor.dtype}; "
+                    f"expected {expected_tensor.dtype}"
+                )
         policy.load_state_dict(raw_state, strict=True)
         raw_train_step = payload.get("train_step")
         if isinstance(raw_train_step, bool) or not isinstance(raw_train_step, int):
@@ -908,29 +1057,46 @@ class TransformerChunkCVAEPolicy(nn.Module):
         if raw_train_step < 0:
             raise ValueError("checkpoint train_step must be a non-negative integer")
         raw_rng_state = payload.get("latent_rng_state")
-        if not isinstance(raw_rng_state, Tensor):
-            raise ValueError("checkpoint latent_rng_state must be a tensor")
+        raw_rng_state = _validate_checkpoint_tensor(
+            raw_rng_state, name="latent_rng_state"
+        )
+        if raw_rng_state.dtype != torch.uint8 or raw_rng_state.ndim != 1:
+            raise TypeError("checkpoint latent_rng_state must be a one-dimensional uint8 tensor")
         policy._latent_generator.set_state(raw_rng_state.cpu())
         policy._train_step = raw_train_step
         raw_optimizer = payload.get("optimizer_state_dict")
         if raw_optimizer is not None:
             if not isinstance(raw_optimizer, Mapping):
-                raise ValueError("checkpoint optimizer_state_dict must be a mapping or null")
+                raise TypeError("checkpoint optimizer_state_dict must be a mapping or null")
+            _require_exact_fields(
+                raw_optimizer,
+                frozenset({"state", "param_groups"}),
+                name="checkpoint optimizer_state_dict",
+            )
+            _validate_optimizer_tree(raw_optimizer, name="optimizer_state_dict")
             param_groups = raw_optimizer.get("param_groups")
             if not isinstance(param_groups, list) or not param_groups:
                 raise ValueError("checkpoint optimizer state has no parameter groups")
             first_group = param_groups[0]
             if not isinstance(first_group, Mapping):
                 raise ValueError("checkpoint optimizer parameter group must be a mapping")
-            learning_rate = float(first_group.get("lr", 1e-3))
-            if not math.isfinite(learning_rate) or learning_rate <= 0:
+            raw_learning_rate = first_group.get("lr")
+            if (
+                isinstance(raw_learning_rate, bool)
+                or not isinstance(raw_learning_rate, (int, float))
+                or not math.isfinite(raw_learning_rate)
+                or raw_learning_rate <= 0
+            ):
                 raise ValueError("checkpoint optimizer learning rate is invalid")
+            learning_rate = float(raw_learning_rate)
             policy._optimizer = torch.optim.Adam(policy.parameters(), lr=learning_rate)
             policy._optimizer.load_state_dict(dict(raw_optimizer))
         raw_metadata = payload.get("metadata", {})
         if not isinstance(raw_metadata, Mapping):
-            raise ValueError("checkpoint metadata must be a mapping")
-        policy.checkpoint_metadata = dict(raw_metadata)
+            raise TypeError("checkpoint metadata must be a mapping")
+        safe_metadata = _safe_checkpoint_value(raw_metadata, name="metadata")
+        assert isinstance(safe_metadata, dict)
+        policy.checkpoint_metadata = safe_metadata
         return policy
 
 
