@@ -28,7 +28,7 @@ v2 = [
 v2-integration = [
   "torch==2.11.*",
   "torchvision==0.26.*",
-  "lerobot[dataset]==0.6.*",
+  "lerobot[dataset,pusht]==0.6.*",
   "gym-pusht==0.1.6",
 ]
 dev = [

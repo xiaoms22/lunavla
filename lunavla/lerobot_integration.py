@@ -85,7 +85,7 @@ EXPECTED_DEPENDENCY_VERSIONS: Final = MappingProxyType(
         "av": "15.1.0",
         "gym-pusht": "0.1.6",
         "gymnasium": "1.3.0",
-        "pymunk": "7.3.0",
+        "pymunk": "6.11.1",
     }
 )
 _SHA256_PATTERN: Final = re.compile(r"^[0-9a-f]{64}$")

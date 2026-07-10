@@ -13,6 +13,7 @@ selection:
 - revision: `b1c3ecbae7f244acc039a3dbc255a00dad1372b9`
 - episode: `0`
 - LeRobot dataset format: v3.0 through `LeRobotDataset`
+- environment dependency profile: LeRobot `pusht` extra with Pymunk `6.11.1` (`<7`)
 - decoder: `pyav`
 - image output: `return_uint8=true`
 - preflight download ceiling: 12 MiB

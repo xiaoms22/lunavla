@@ -91,18 +91,9 @@ jobs:
           import numpy
           import torch
           import torchvision
+          from lunavla.lerobot_integration import EXPECTED_DEPENDENCY_VERSIONS
 
-          expected = {
-              "av": "15.1.0",
-              "gym-pusht": "0.1.6",
-              "gymnasium": "1.3.0",
-              "huggingface-hub": "1.23.0",
-              "lerobot": "0.6.0",
-              "numpy": "2.2.6",
-              "pymunk": "7.3.0",
-              "torch": "2.11.0+cpu",
-              "torchvision": "0.26.0+cpu",
-          }
+          expected = dict(EXPECTED_DEPENDENCY_VERSIONS)
           actual = {name: metadata.version(name) for name in expected}
           assert actual == expected, (actual, expected)
           assert numpy.__version__ == "2.2.6"
