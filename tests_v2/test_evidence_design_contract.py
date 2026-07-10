@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,16 @@ from lunavla.evidence_design import (
     EvidenceOutput,
     EvidenceSeeds,
 )
+
+
+class _MappingSequence(dict[int, Any], Sequence[Any]):
+    """Adversarial value that satisfies both Mapping and Sequence protocols."""
+
+    def __init__(self, values: list[Any]) -> None:
+        super().__init__(enumerate(values))
+
+    def __iter__(self):  # type: ignore[override]
+        return iter(self.values())
 
 
 def _design_payload() -> dict[str, Any]:
@@ -167,6 +178,28 @@ def test_evidence_design_rejects_ambiguous_or_uncontrolled_values(
     payload = copy.deepcopy(_design_payload())
     mutate(payload)
     with pytest.raises(error_type, match=message):
+        EvidenceDesign.from_mapping(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "message"),
+    [
+        ("seeds.train", "seeds.train must be a sequence"),
+        ("arms", "arms must be a sequence"),
+        ("metrics", "metrics must be a sequence"),
+    ],
+)
+def test_evidence_design_rejects_mapping_sequence_hybrids(
+    field: str,
+    message: str,
+) -> None:
+    payload = _design_payload()
+    if field == "seeds.train":
+        payload["seeds"]["train"] = _MappingSequence(payload["seeds"]["train"])
+    else:
+        payload[field] = _MappingSequence(payload[field])
+
+    with pytest.raises(TypeError, match=message):
         EvidenceDesign.from_mapping(payload)
 
 

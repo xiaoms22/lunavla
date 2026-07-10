@@ -116,7 +116,7 @@ def _slug(value: Any, name: str) -> str:
 
 
 def _sequence(value: Any, name: str) -> Sequence[Any]:
-    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+    if isinstance(value, (str, bytes, Mapping)) or not isinstance(value, Sequence):
         raise TypeError(f"{name} must be a sequence")
     return value
 
