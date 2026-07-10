@@ -211,6 +211,76 @@ def test_numpy_adapter_checkpoint_round_trip(
     assert np.array_equal(after.valid_mask, before.valid_mask)
 
 
+@pytest.mark.torch
+def test_transformer_trains_evaluates_and_resumes_through_engine(tmp_path: Path) -> None:
+    pytest.importorskip("torch")
+    from lunavla.transformer_policy import register_transformer_policy
+
+    policies = registry()
+    register_transformer_policy(policies)
+    engine = Engine(
+        EngineConfig(
+            seed=13,
+            batch_size=2,
+            train_steps=2,
+            learning_rate=1e-3,
+            eval_episodes=1,
+            max_steps=2,
+            execution_mode="receding_horizon",
+        ),
+        registry=policies,
+    )
+    data = make_point_reach_demonstrations(
+        episodes=2,
+        steps_per_episode=3,
+        seed=9,
+    )
+    policy_config = {
+        "state_dim": 4,
+        "instruction_dim": 8,
+        "action_dim": 2,
+        "chunk_size": 2,
+        "d_model": 8,
+        "nhead": 2,
+        "num_encoder_layers": 1,
+        "num_decoder_layers": 1,
+        "dim_feedforward": 16,
+        "latent_dim": 4,
+        "dropout": 0.0,
+        "kl_weight": 0.0,
+        "sample_latent_during_training": False,
+    }
+
+    trained = engine.train(
+        "transformer_chunk_cvae",
+        data,
+        policy_config=policy_config,
+    )
+    evaluation = engine.evaluate(trained.policy, PointReachTaskEnv())
+    observation = data.load()[0].observation
+    before = trained.policy.predict_chunk(observation)
+    checkpoint = engine.save_checkpoint(
+        trained.policy,
+        tmp_path / "checkpoint.pt",
+        metadata={"purpose": "engine-e2e"},
+    )
+    restored = engine.load_checkpoint(
+        checkpoint,
+        policy_id="transformer_chunk_cvae",
+    )
+    after = restored.predict_chunk(observation)
+    resumed = engine.train(restored, data)
+
+    assert len(trained.losses) == 2
+    assert np.isfinite(trained.final_loss)
+    assert len(evaluation.episodes) == 1
+    assert evaluation.episodes[0].steps == 2
+    np.testing.assert_allclose(after.values, before.values, atol=1e-7)
+    assert np.array_equal(after.valid_mask, before.valid_mask)
+    assert len(resumed.losses) == 2
+    assert np.isfinite(resumed.final_loss)
+
+
 class _ChunkPolicy:
     policy_id = "test_chunk"
     device = "cpu"

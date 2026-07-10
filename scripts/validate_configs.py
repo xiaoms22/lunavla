@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from numbers import Integral
 import sys
 from pathlib import Path
 
@@ -57,12 +58,20 @@ def validate(path: Path) -> list[str]:
             raw = yaml.safe_load(stream)
         if not isinstance(raw, dict):
             raise TypeError("configuration file must contain a mapping")
-        schema_version = int(raw.get("schema_version", 0))
+        raw_schema_version = raw.get("schema_version", 0)
+        if isinstance(raw_schema_version, bool) or not isinstance(
+            raw_schema_version, Integral
+        ):
+            raise TypeError("schema_version must be an integer")
+        schema_version = int(raw_schema_version)
         config = (
             V2ExperimentConfig.from_mapping(raw)
             if schema_version == 2
             else V1ExperimentConfig.from_mapping(raw)
         )
+    except yaml.YAMLError as exc:
+        problem = getattr(exc, "problem", None) or "malformed YAML"
+        return [f"invalid YAML: {problem}"]
     except (OSError, TypeError, ValueError) as exc:
         return [str(exc)]
     errors: list[str] = []

@@ -2,7 +2,7 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
-## Unreleased — v2.0.0-alpha
+## Unreleased — v2.0.0-alpha.1
 
 ### Added
 
@@ -11,11 +11,19 @@ All notable user-visible changes are recorded here. This project follows semanti
 - Added instruction-dependent task fixtures with held-out paraphrases and mask/shuffle/counterfactual pair construction.
 - Added rendered direct-reach and waypoint-reach fixtures, state-only controls, image occlusion/shuffle pairing, and a lazy LeRobot adapter.
 - Added a strict schema-v2 configuration contract, v1.1-to-v2 migration command, versioned dependency lock, CPU gates, and an isolated manual GPU workflow.
+- Added hash-locked Linux CPU profiles, a guarded release-evidence entry point, and a real Transformer-through-Engine integration test.
+
+### Hardened
+
+- Invalid task, modality-ablation, state-only, rendered-image, and Transformer head configurations now fail before training starts.
+- CPU CI rejects CUDA-only packages and verifies exact NumPy 2.2.6, PyTorch 2.11 CPU, and torchvision 0.26 dependencies.
+- Release candidates must come from a clean checkout at an explicitly supplied immutable Git SHA.
 
 ### Boundaries
 
 - v2 modality adapters are experimental inputs. They are not evidence that language or vision contributes until controlled paired confidence intervals exclude zero.
 - Public v2 APIs and checkpoint schemas are not frozen until the stable release gate.
+- Alpha evidence establishes implementation integrity only; it is not a language, vision, LeRobot performance, or CUDA support claim.
 
 ## v1.1.0 — 2026-07-10
 
