@@ -36,6 +36,26 @@ def _parser() -> argparse.ArgumentParser:
 
     verify = subparsers.add_parser("verify-run", help="verify a v2 run manifest and hashes")
     verify.add_argument("run_dir", type=Path)
+
+    evidence_run = subparsers.add_parser(
+        "evidence-run",
+        help="execute a predeclared multi-seed evidence design",
+    )
+    evidence_run.add_argument("design", type=Path)
+    evidence_run.add_argument("--allow-reduced-design", action="store_true")
+
+    evidence_verify = subparsers.add_parser(
+        "evidence-verify",
+        help="verify an evidence matrix, provenance, and all source hashes",
+    )
+    evidence_verify.add_argument("output_root", type=Path)
+
+    evidence_snapshot = subparsers.add_parser(
+        "evidence-snapshot",
+        help="copy a verified review-sized snapshot without checkpoints",
+    )
+    evidence_snapshot.add_argument("output_root", type=Path)
+    evidence_snapshot.add_argument("--out", required=True, type=Path)
     return parser
 
 
@@ -105,6 +125,40 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "verify-run":
         manifest = RunManifest.verify_run_dir(args.run_dir)
         print(json.dumps({"run_id": manifest.run_id, "verified": True}))
+        return 0
+    if args.command == "evidence-run":
+        from lunavla.evidence_runner import run_evidence_design
+
+        evidence_manifest = run_evidence_design(
+            args.design,
+            allow_reduced_design=args.allow_reduced_design,
+            command=["lunavla-v2", *raw_argv],
+        )
+        print(
+            json.dumps(
+                {
+                    "design_id": evidence_manifest.design_id,
+                    "design_sha256": evidence_manifest.design_sha256,
+                    "reduced_design": evidence_manifest.reduced_design,
+                    "matrix_complete": evidence_manifest.matrix_complete,
+                    "claim_allowed": any(
+                        claim.allowed for claim in evidence_manifest.claims
+                    ),
+                }
+            )
+        )
+        return 0
+    if args.command == "evidence-verify":
+        from lunavla.evidence_runner import verify_evidence
+
+        report = verify_evidence(args.output_root)
+        print(json.dumps(report.to_dict()))
+        return 0
+    if args.command == "evidence-snapshot":
+        from lunavla.evidence_runner import snapshot_evidence
+
+        destination = snapshot_evidence(args.output_root, args.out)
+        print(json.dumps({"snapshot": str(destination), "verified": True}))
         return 0
     raise AssertionError(f"unhandled command: {args.command}")
 
