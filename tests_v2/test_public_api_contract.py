@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import fields, is_dataclass
+from dataclasses import FrozenInstanceError, fields, is_dataclass
 import inspect
 import json
 from pathlib import Path
@@ -23,6 +23,7 @@ from lunavla.contracts import (
 
 CONTRACT_PATH = Path(__file__).parents[1] / "docs/v2/public_api_contract.json"
 PUBLIC_CONTRACTS = {
+    "ActionChunk": lunavla.ActionChunk,
     "Observation": Observation,
     "Transition": Transition,
     "PolicyBatch": PolicyBatch,
@@ -105,6 +106,36 @@ def test_public_array_values_are_owned_read_only_and_value_comparable() -> None:
         batch.targets.setflags(write=True)
     with pytest.raises(ValueError, match="read-only"):
         batch.valid_mask[0, 0] = False
+
+
+def test_action_chunk_owns_buffers_is_top_level_frozen_and_compares_values() -> None:
+    values = np.asarray([[0.1, 0.2], [0.3, 0.4]], dtype=np.float64)
+    valid_mask = np.asarray([True, False], dtype=bool)
+    chunk = lunavla.ActionChunk(values, valid_mask)
+    equivalent = lunavla.ActionChunk(values.copy(), valid_mask.copy())
+
+    values[:] = 99.0
+    valid_mask[:] = False
+    assert chunk == equivalent
+    assert chunk != lunavla.ActionChunk(
+        np.asarray([[0.1, 0.2], [0.3, 0.5]]),
+        np.asarray([True, False]),
+    )
+    assert chunk != lunavla.ActionChunk(
+        np.asarray([[0.1, 0.2]]),
+        np.asarray([True]),
+    )
+    assert chunk != object()
+    assert chunk.values.dtype == np.float32
+    assert chunk.valid_mask.dtype == np.bool_
+    with pytest.raises(ValueError, match="read-only"):
+        chunk.values[0, 0] = 1.0
+    with pytest.raises(ValueError, match="WRITEABLE"):
+        chunk.values.setflags(write=True)
+    with pytest.raises(ValueError, match="WRITEABLE"):
+        chunk.valid_mask.setflags(write=True)
+    with pytest.raises(FrozenInstanceError):
+        chunk.values = np.zeros((1, 2), dtype=np.float32)
 
 
 def test_transition_owns_action_and_recursively_freezes_info() -> None:

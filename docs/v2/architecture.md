@@ -49,4 +49,4 @@ version, required parameter, or enum requires an explicit descriptor update.
 
 ## Stability
 
-These interfaces are frozen for `v2.0.0-rc.1`. The machine-readable [`public_api_contract.json`](public_api_contract.json) records the public fields and `inspect.signature` values for `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `PolicyBatch`, and `Transition`; CI rejects accidental drift. The complete schema and compatibility matrix is in [`contract_freeze.md`](contract_freeze.md). v2.0 stable must preserve this boundary unless an explicit versioned migration is added.
+These interfaces are frozen for `v2.0.0-rc.1`. The machine-readable [`public_api_contract.json`](public_api_contract.json) records the public fields and `inspect.signature` values for `ActionChunk`, `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `PolicyBatch`, and `Transition`; CI rejects accidental drift. The complete schema and compatibility matrix is in [`contract_freeze.md`](contract_freeze.md). v2.0 stable must preserve this boundary unless an explicit versioned migration is added.

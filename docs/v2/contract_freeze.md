@@ -4,7 +4,7 @@
 
 | Contract | Writable schema | Compatibility input | Golden descriptor |
 | --- | ---: | --- | --- |
-| `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `Transition`, `PolicyBatch` | API descriptor 1 | Exact signatures and ownership rules | [`public_api_contract.json`](public_api_contract.json) |
+| `ActionChunk`, `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `Transition`, `PolicyBatch` | API descriptor 1 | Exact signatures and ownership rules | [`public_api_contract.json`](public_api_contract.json) |
 | `ExperimentConfig` | 2 | v1.1 mapping through the strict migration layer | [`contracts/config-design-schema.json`](contracts/config-design-schema.json) |
 | `EvidenceDesign` | 1 | None | [`contracts/config-design-schema.json`](contracts/config-design-schema.json) |
 | `RunManifest` | 3 | Schema 2, read-only | [`artifact_contracts.json`](artifact_contracts.json) |
@@ -15,6 +15,7 @@
 ## Runtime semantics
 
 - Public arrays are copied on construction, normalized, exposed read-only, and compared by shape, dtype, and value.
+- `ExperimentConfig` and every `EvidenceDesign` value are created only by their strict `from_mapping()`/`load()` parsers; direct dataclass construction is rejected.
 - `Transition.info` and resolved configuration/manifest trees are detached and recursively read-only. Their `to_dict()` methods return ordinary mutable JSON-compatible copies.
 - `Engine.evaluate()` owns the supplied `TaskEnv` lifecycle and closes it exactly once, including exceptional paths. Callers must not reuse that environment afterward.
 - NumPy policies accept CPU only. Unsupported task, modality, policy, device, or nested parameter combinations fail while parsing the configuration.

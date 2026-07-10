@@ -118,7 +118,7 @@ def test_rollout_rejects_invalid_policy_chunk() -> None:
 
     class WrongActionDimPolicy:
         def predict_chunk(self, sample: np.ndarray) -> ActionChunk:
-            return ActionChunk(np.zeros((1, 3)), np.ones(1))
+            return ActionChunk(np.zeros((1, 3)), np.ones(1, dtype=bool))
 
     with pytest.raises(TypeError, match="ActionChunk"):
         rollout(WrongTypePolicy(), "receding_horizon")

@@ -55,12 +55,14 @@ EVIDENCE_ARCHIVE_NAMES = {
     "vision": "lunavla-v2-vision-evidence.tar.gz",
 }
 RC_ARCHIVE_NAME = "lunavla-v2-rc-evidence.tar.gz"
+RC_INTEGRITY_NAME = "rc-release-integrity.json"
 RC_CONTRACT_SOURCES = (
     Path("docs/v2/public_api_contract.json"),
     Path("docs/v2/contracts/config-design-schema.json"),
     Path("docs/v2/artifact_contracts.json"),
     Path("docs/v2/contract_freeze.md"),
     Path("docs/v2/compatibility.md"),
+    Path("docs/v2/evidence_contract.md"),
     Path("docs/v2/MODEL_CARD.md"),
     Path("docs/v2/DATA_CARD.md"),
     Path("SECURITY.md"),
@@ -109,6 +111,18 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def release_asset_record(path: Path) -> dict[str, str]:
+    """Return the stable release-relative identity of one existing asset."""
+
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError(f"release asset must be a real file: {path}")
+    try:
+        relative = path.relative_to(RELEASE_ROOT).as_posix()
+    except ValueError as exc:
+        raise RuntimeError(f"release asset is outside release-assets/: {path}") from exc
+    return {"path": relative, "sha256": sha256_file(path)}
 
 
 def canonical_origin(remote: str) -> str:
@@ -761,6 +775,8 @@ def write_rc_candidate(
     distributions: Sequence[Path],
 ) -> Path:
     path = RELEASE_ROOT / "release-candidate.json"
+    environment = RELEASE_ROOT / "environment-requirements.txt"
+    sbom = RELEASE_ROOT / "sbom.json"
     payload = {
         "schema_version": 3,
         "profile": "rc",
@@ -771,11 +787,17 @@ def write_rc_candidate(
         "modality_effect_claims": False,
         "published_evidence": list(published_evidence),
         "contracts": list(contracts),
+        "release_assets": {
+            "environment_requirements": release_asset_record(environment),
+            "sbom": release_asset_record(sbom),
+            "rc_evidence_archive": {
+                "path": RC_ARCHIVE_NAME,
+                "sha256_record": RC_INTEGRITY_NAME,
+            },
+            "integrity_manifest": {"path": RC_INTEGRITY_NAME},
+        },
         "distributions": [
-            {
-                "path": item.relative_to(RELEASE_ROOT).as_posix(),
-                "sha256": sha256_file(item),
-            }
+            release_asset_record(item)
             for item in distributions
         ],
     }
@@ -798,6 +820,32 @@ def write_rc_archive() -> Path:
         stream.add(RELEASE_ROOT / "contracts", arcname="release-assets/contracts")
         stream.add(RELEASE_ROOT / "dist", arcname="release-assets/dist")
     return archive
+
+
+def write_rc_integrity(expected_sha: str, archive: Path) -> Path:
+    """Bind the completed RC archive without introducing a self-reference."""
+
+    paths = (
+        RELEASE_ROOT / "release-candidate.json",
+        RELEASE_ROOT / "environment-requirements.txt",
+        RELEASE_ROOT / "sbom.json",
+        archive,
+        *sorted((RELEASE_ROOT / "contracts").iterdir()),
+        *sorted((RELEASE_ROOT / "dist").iterdir()),
+    )
+    target = RELEASE_ROOT / RC_INTEGRITY_NAME
+    payload = {
+        "schema_version": 1,
+        "profile": "rc",
+        "expected_sha": expected_sha,
+        "hash_layer": "post-archive",
+        "assets": [release_asset_record(path) for path in paths],
+    }
+    target.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+    return target
 
 
 def run_alpha(expected_sha: str) -> None:
@@ -834,7 +882,8 @@ def run_rc(expected_sha: str) -> None:
             contracts=contracts,
             distributions=distributions,
         )
-        write_rc_archive()
+        archive = write_rc_archive()
+        write_rc_integrity(expected_sha, archive)
         write_checksums()
     except Exception:
         shutil.rmtree(RELEASE_ROOT, ignore_errors=True)

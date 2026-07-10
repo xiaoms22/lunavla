@@ -35,7 +35,7 @@ uv run pytest tests_v2 -m "not torch and not lerobot"
 
 Install the PyTorch CPU bridge with `uv sync --extra dev --extra v2-core`. The full `v2` extra additionally installs LeRobot's dataset profile. The versioned [`uv.lock`](uv.lock) resolves NumPy 2.2, PyTorch 2.11, torchvision 0.26, and LeRobot 0.6 under Python 3.12. Linux CI and release evidence use separate hash-locked CPU profiles so they cannot pull CUDA-only packages.
 
-The RC-frozen public surface includes `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, `EvidenceDesign`, `RunManifest`, `EvidenceManifest`, and the policy registry/engine. See the [`v2.0.0 RC contract freeze`](docs/v2/contract_freeze.md), [`architecture`](docs/v2/architecture.md), [`evidence contract`](docs/v2/evidence_contract.md), [`compatibility guide`](docs/v2/compatibility.md), and [`release process`](docs/v2/release_process.md). Bug fixes may land before v2.0.0, but incompatible contract changes require an explicit versioned migration.
+The RC-frozen public surface includes `ActionChunk`, `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, `EvidenceDesign`, `RunManifest`, and `EvidenceManifest`. See the [`v2.0.0 RC contract freeze`](docs/v2/contract_freeze.md), [`architecture`](docs/v2/architecture.md), [`evidence contract`](docs/v2/evidence_contract.md), [`compatibility guide`](docs/v2/compatibility.md), and [`release process`](docs/v2/release_process.md). Bug fixes may land before v2.0.0, but incompatible contract changes require an explicit versioned migration.
 
 The predeclared language and visual studies are executed and verified with:
 

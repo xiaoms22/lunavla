@@ -48,3 +48,20 @@ def test_v2_dispatcher_does_not_interpolate_inputs_in_shell() -> None:
     checkout = next(step for step in steps if step.get("uses") == "actions/checkout@v4")
     assert checkout["with"]["persist-credentials"] == "false"
     assert checkout["with"]["ref"] == "${{ inputs.source_ref }}"
+
+
+def test_v2_dispatcher_attests_every_rc_release_layer() -> None:
+    payload = _load()
+    steps = payload["jobs"]["dispatch"]["steps"]
+    attestation = next(
+        step for step in steps if step.get("uses") == "actions/attest-build-provenance@v2"
+    )
+    subjects = set(attestation["with"]["subject-path"].splitlines())
+    assert subjects >= {
+        "release-assets/dist/*",
+        "release-assets/lunavla-v2-*-evidence.tar.gz",
+        "release-assets/SHA256SUMS",
+        "release-assets/sbom.json",
+        "release-assets/release-candidate.json",
+        "release-assets/environment-requirements.txt",
+    }

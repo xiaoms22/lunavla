@@ -7,7 +7,14 @@ from typing import Any
 import pytest
 import yaml
 
-from lunavla.evidence_design import EvidenceDesign
+from lunavla.evidence_design import (
+    EvidenceArm,
+    EvidenceBudget,
+    EvidenceDesign,
+    EvidenceMetric,
+    EvidenceOutput,
+    EvidenceSeeds,
+)
 
 
 def _design_payload() -> dict[str, Any]:
@@ -81,6 +88,17 @@ def test_evidence_design_round_trip_freezes_every_controlled_input(tmp_path: Pat
 
 
 @pytest.mark.parametrize(
+    "contract",
+    [EvidenceDesign, EvidenceSeeds, EvidenceArm, EvidenceMetric, EvidenceBudget, EvidenceOutput],
+)
+def test_evidence_contract_values_reject_direct_dataclass_construction(
+    contract: type[object],
+) -> None:
+    with pytest.raises(TypeError, match="cannot be constructed directly.*from_mapping"):
+        contract()
+
+
+@pytest.mark.parametrize(
     ("mutate", "error_type", "message"),
     [
         (lambda value: value.update({"typo": 1}), ValueError, "unknown field"),
@@ -108,6 +126,16 @@ def test_evidence_design_round_trip_freezes_every_controlled_input(tmp_path: Pat
             lambda value: value["seeds"].update({"evaluation": [1000, 1000]}),
             ValueError,
             "evaluation values must be unique",
+        ),
+        (
+            lambda value: value["seeds"].update({"evaluation": []}),
+            ValueError,
+            "evaluation cannot be empty",
+        ),
+        (
+            lambda value: value["budget"].update({"training_steps": -1}),
+            ValueError,
+            "training_steps must be a positive integer",
         ),
         (
             lambda value: value["budget"].update({"evaluation_episodes": 3}),

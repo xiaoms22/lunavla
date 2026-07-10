@@ -14,19 +14,24 @@ from model.policy_io import canonical_policy_type, load_policy
 
 
 def test_action_chunk_normalizes_values_and_validates_shape() -> None:
-    chunk = ActionChunk(values=np.array([[1, 2], [3, 4]]), valid_mask=np.array([1, 0]))
+    chunk = ActionChunk(
+        values=np.array([[1, 2], [3, 4]]),
+        valid_mask=np.array([True, False]),
+    )
     assert chunk.values.shape == (2, 2)
     assert chunk.values.dtype == np.float32
     assert chunk.valid_mask.dtype == np.bool_
 
     with pytest.raises(ValueError, match=r"\[chunk, action\]"):
-        ActionChunk(np.zeros(2), np.ones(2))
+        ActionChunk(np.zeros(2), np.ones(2, dtype=bool))
     with pytest.raises(ValueError, match="valid_mask"):
-        ActionChunk(np.zeros((2, 2)), np.ones(3))
+        ActionChunk(np.zeros((2, 2)), np.ones(3, dtype=bool))
+    with pytest.raises(TypeError, match="boolean dtype"):
+        ActionChunk(np.zeros((2, 2)), np.ones(2))
     with pytest.raises(ValueError, match="at least one"):
-        ActionChunk(np.zeros((2, 2)), np.zeros(2))
+        ActionChunk(np.zeros((2, 2)), np.zeros(2, dtype=bool))
     with pytest.raises(ValueError, match="NaN"):
-        ActionChunk(np.array([[np.nan, 0.0]]), np.ones(1))
+        ActionChunk(np.array([[np.nan, 0.0]]), np.ones(1, dtype=bool))
 
 
 @pytest.mark.parametrize(

@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass
 from numbers import Integral, Real
 from pathlib import Path
-from typing import Any, Literal, Mapping, Sequence, cast
+from typing import Any, Literal, Mapping, Sequence, TypeVar, cast
 
 import yaml
 
@@ -49,6 +49,20 @@ _SUITE_MODES = {
     "visual": {"none", "occlusion", "shuffle", "state_only"},
 }
 _SLUG = re.compile(r"^[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*$")
+_Resolved = TypeVar("_Resolved")
+
+
+def _resolved_instance(cls: type[_Resolved], **values: Any) -> _Resolved:
+    """Construct an already-validated frozen value without exposing public init."""
+
+    instance = object.__new__(cls)
+    for name, value in values.items():
+        object.__setattr__(instance, name, value)
+    return instance
+
+
+def _reject_direct_construction(name: str) -> None:
+    raise TypeError(f"{name} cannot be constructed directly; use {name}.from_mapping()")
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
@@ -129,13 +143,17 @@ def _repository_path(value: Any, name: str, *, prefix: tuple[str, ...]) -> str:
     return normalized
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class EvidenceSeeds:
     train: tuple[int, ...]
     data: int
     split: int
     evaluation: tuple[int, ...]
     bootstrap: int
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        _reject_direct_construction(type(self).__name__)
 
     @classmethod
     def from_mapping(cls, source: Mapping[str, Any]) -> "EvidenceSeeds":
@@ -157,7 +175,8 @@ class EvidenceSeeds:
             raise ValueError("seeds.train values must be unique")
         if len(set(evaluation)) != len(evaluation):
             raise ValueError("seeds.evaluation values must be unique")
-        return cls(
+        return _resolved_instance(
+            cls,
             train=train,
             data=_integer(payload["data"], "seeds.data"),
             split=_integer(payload["split"], "seeds.split"),
@@ -175,11 +194,15 @@ class EvidenceSeeds:
         }
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class EvidenceArm:
     id: str
     role: ArmRole
     mode: str
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        _reject_direct_construction(type(self).__name__)
 
     @classmethod
     def from_mapping(
@@ -209,17 +232,21 @@ class EvidenceArm:
             expected_role = "intervention"
         if role != expected_role:
             raise ValueError(f"{name}.mode={mode!r} requires role={expected_role!r}")
-        return cls(id=arm_id, role=role, mode=mode)
+        return _resolved_instance(cls, id=arm_id, role=role, mode=mode)
 
     def to_dict(self) -> dict[str, str]:
         return {"id": self.id, "role": self.role, "mode": self.mode}
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class EvidenceMetric:
     name: str
     kind: MetricKind
     direction: MetricDirection
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        _reject_direct_construction(type(self).__name__)
 
     @classmethod
     def from_mapping(cls, source: Mapping[str, Any], *, index: int) -> "EvidenceMetric":
@@ -233,7 +260,8 @@ class EvidenceMetric:
         raw_direction = str(payload["direction"])
         if raw_direction not in {"positive", "negative"}:
             raise ValueError(f"{name}.direction must be positive or negative")
-        return cls(
+        return _resolved_instance(
+            cls,
             name=metric_name,
             kind=cast(MetricKind, raw_kind),
             direction=cast(MetricDirection, raw_direction),
@@ -243,7 +271,7 @@ class EvidenceMetric:
         return {"name": self.name, "kind": self.kind, "direction": self.direction}
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class EvidenceBudget:
     dataset_episodes: int
     batch_size: int
@@ -252,11 +280,16 @@ class EvidenceBudget:
     evaluation_episodes: int
     bootstrap_samples: int
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        _reject_direct_construction(type(self).__name__)
+
     @classmethod
     def from_mapping(cls, source: Mapping[str, Any]) -> "EvidenceBudget":
         payload = _mapping(source, "budget")
         _strict_fields("budget", payload, _BUDGET_FIELDS)
-        return cls(
+        return _resolved_instance(
+            cls,
             dataset_episodes=_integer(
                 payload["dataset_episodes"], "budget.dataset_episodes", positive=True
             ),
@@ -286,16 +319,21 @@ class EvidenceBudget:
         }
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class EvidenceOutput:
     run_root: str
     snapshot_root: str
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        _reject_direct_construction(type(self).__name__)
 
     @classmethod
     def from_mapping(cls, source: Mapping[str, Any]) -> "EvidenceOutput":
         payload = _mapping(source, "output")
         _strict_fields("output", payload, _OUTPUT_FIELDS)
-        return cls(
+        return _resolved_instance(
+            cls,
             run_root=_repository_path(payload["run_root"], "output.run_root", prefix=("outputs",)),
             snapshot_root=_repository_path(
                 payload["snapshot_root"],
@@ -308,7 +346,7 @@ class EvidenceOutput:
         return {"run_root": self.run_root, "snapshot_root": self.snapshot_root}
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class EvidenceDesign:
     """A complete, immutable declaration of one controlled evidence matrix."""
 
@@ -321,6 +359,10 @@ class EvidenceDesign:
     metrics: tuple[EvidenceMetric, ...]
     budget: EvidenceBudget
     output: EvidenceOutput
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        _reject_direct_construction(type(self).__name__)
 
     @classmethod
     def from_mapping(cls, source: Mapping[str, Any]) -> "EvidenceDesign":
@@ -364,7 +406,8 @@ class EvidenceDesign:
         if budget.evaluation_episodes != len(seeds.evaluation):
             raise ValueError("budget.evaluation_episodes must equal the number of evaluation seeds")
         output = EvidenceOutput.from_mapping(_mapping(payload["output"], "output"))
-        return cls(
+        return _resolved_instance(
+            cls,
             schema_version=schema_version,
             design_id=design_id,
             suite=suite,

@@ -354,6 +354,27 @@ def test_schema3_strictly_validates_hash_and_source_state_contracts(
 
 
 @pytest.mark.parametrize(
+    "git_sha",
+    ["", "a" * 39, "a" * 41, "A" * 40, "g" * 40, "a" * 63, "a" * 65],
+)
+def test_manifest_rejects_non_oid_git_sha(tmp_path: Path, git_sha: str) -> None:
+    payload = _valid_manifest(tmp_path).to_dict()
+    payload["git_sha"] = git_sha
+    path = tmp_path / "invalid-git-oid.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="git_sha"):
+        RunManifest.load(path)
+
+
+def test_manifest_accepts_sha256_width_git_oid(tmp_path: Path) -> None:
+    payload = _valid_manifest(tmp_path).to_dict()
+    payload["git_sha"] = "b" * 64
+    path = tmp_path / "sha256-git-oid.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    assert RunManifest.load(path).git_sha == "b" * 64
+
+
+@pytest.mark.parametrize(
     ("mutation", "message"),
     [
         (lambda payload: payload.__setitem__("data_seeds", [True]), "data_seeds"),
@@ -405,6 +426,12 @@ def test_manifest_is_deeply_read_only_but_to_dict_is_mutable_and_round_trips(
         loaded.eval_seeds.append(999)
     with pytest.raises(TypeError, match="read-only"):
         loaded.arms[0]["id"] = "tampered"
+    assert not isinstance(loaded.config, dict)
+    assert not isinstance(loaded.eval_seeds, list)
+    with pytest.raises(TypeError):
+        dict.__setitem__(loaded.config, "bypass", True)
+    with pytest.raises(TypeError):
+        list.append(loaded.eval_seeds, 999)
 
     exported = loaded.to_dict()
     exported["config"]["policy"]["type"] = "local-copy"

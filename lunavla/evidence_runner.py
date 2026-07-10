@@ -94,8 +94,15 @@ _PAIR_FIELDS = (
 
 
 def _canonical_json(value: Any) -> bytes:
+    def compatible(item: Any) -> Any:
+        if isinstance(item, Mapping):
+            return {str(key): compatible(nested) for key, nested in item.items()}
+        if isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
+            return [compatible(nested) for nested in item]
+        return item
+
     return json.dumps(
-        value,
+        compatible(value),
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,

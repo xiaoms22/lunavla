@@ -11,6 +11,8 @@ import pytest
 from scripts.run_v2_release_profile import (
     EVIDENCE_ARCHIVE_NAMES,
     RC_ARCHIVE_NAME,
+    RC_CONTRACT_SOURCES,
+    RC_INTEGRITY_NAME,
     SHA256_PATTERN,
     canonical_origin,
     evidence_profile_design,
@@ -20,6 +22,10 @@ from scripts.run_v2_release_profile import (
     validated_project_version,
     write_evidence_candidate,
 )
+
+
+def test_rc_contract_bundle_includes_evidence_semantics() -> None:
+    assert Path("docs/v2/evidence_contract.md") in RC_CONTRACT_SOURCES
 
 
 def test_release_sha_contract_is_exact() -> None:
@@ -198,6 +204,18 @@ def test_rc_candidate_and_archive_bind_contracts_evidence_and_distributions(
     assert payload["modality_effect_claims"] is False
     assert payload["contracts"] == contracts
     assert payload["published_evidence"] == evidence
+    assert payload["release_assets"]["environment_requirements"] == {
+        "path": "environment-requirements.txt",
+        "sha256": sha256_file(release_root / "environment-requirements.txt"),
+    }
+    assert payload["release_assets"]["sbom"] == {
+        "path": "sbom.json",
+        "sha256": sha256_file(release_root / "sbom.json"),
+    }
+    assert payload["release_assets"]["rc_evidence_archive"] == {
+        "path": RC_ARCHIVE_NAME,
+        "sha256_record": RC_INTEGRITY_NAME,
+    }
 
     archive = release.write_rc_archive()
     assert archive.name == RC_ARCHIVE_NAME
@@ -206,6 +224,21 @@ def test_rc_candidate_and_archive_bind_contracts_evidence_and_distributions(
     assert "release-assets/release-candidate.json" in names
     assert "release-assets/contracts/public_api_contract.json" in names
     assert "release-assets/dist/lunavla-2.0.0rc1-py3-none-any.whl" in names
+    assert f"release-assets/{RC_INTEGRITY_NAME}" not in names
+
+    integrity = release.write_rc_integrity("a" * 40, archive)
+    integrity_payload = json.loads(integrity.read_text(encoding="utf-8"))
+    assert integrity.name == RC_INTEGRITY_NAME
+    assert integrity_payload["hash_layer"] == "post-archive"
+    integrity_assets = {item["path"]: item["sha256"] for item in integrity_payload["assets"]}
+    assert integrity_assets[RC_ARCHIVE_NAME] == sha256_file(archive)
+    assert integrity_assets["release-candidate.json"] == sha256_file(candidate)
+    assert RC_INTEGRITY_NAME not in integrity_assets
+
+    checksums = release.write_checksums()
+    checksum_text = checksums.read_text(encoding="utf-8")
+    assert RC_INTEGRITY_NAME in checksum_text
+    assert RC_ARCHIVE_NAME in checksum_text
 
 
 def test_evidence_candidate_preserves_fail_closed_claim_text(

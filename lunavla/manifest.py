@@ -12,7 +12,8 @@ import subprocess
 import copy
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import Any, Iterable, Mapping, NoReturn, Sequence
+from types import MappingProxyType
+from typing import Any, Iterable, Iterator, Mapping, NoReturn, Sequence
 
 import numpy as np
 
@@ -31,22 +32,39 @@ _READ_ONLY_MANIFEST_SCHEMA_VERSIONS = RUN_MANIFEST_READ_ONLY_SCHEMAS
 _SHA256_HEX = frozenset("0123456789abcdef")
 
 
-class _FrozenDict(dict[str, Any]):
-    """A JSON-compatible dictionary that rejects every mutation path."""
+class _FrozenMapping(Mapping[str, Any]):
+    """Read-only mapping backed by ``mappingproxy``, never a mutable ``dict``."""
 
-    @staticmethod
-    def _immutable(*args: Any, **kwargs: Any) -> NoReturn:
-        del args, kwargs
+    __slots__ = ("_values",)
+    _values: Mapping[str, Any]
+
+    def __init__(self, values: Mapping[str, Any]) -> None:
+        object.__setattr__(self, "_values", MappingProxyType(dict(values)))
+
+    def __setattr__(self, name: str, value: Any) -> NoReturn:
+        del name, value
         raise TypeError("manifest values are read-only")
 
-    __setitem__ = _immutable
-    __delitem__ = _immutable
-    clear = _immutable
-    pop = _immutable
-    popitem = _immutable
-    setdefault = _immutable
-    update = _immutable
-    __ior__ = _immutable
+    def __getitem__(self, key: str) -> Any:
+        return self._values[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._values)
+
+    def __len__(self) -> int:
+        return len(self._values)
+
+    def __setitem__(self, key: str, value: Any) -> NoReturn:
+        del key, value
+        raise TypeError("manifest values are read-only")
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Mapping):
+            return False
+        return dict(self.items()) == dict(other.items())
+
+    def __repr__(self) -> str:
+        return repr(dict(self.items()))
 
     def __deepcopy__(self, memo: dict[int, Any]) -> dict[str, Any]:
         return {
@@ -55,18 +73,38 @@ class _FrozenDict(dict[str, Any]):
         }
 
 
-class _FrozenList(list[Any]):
-    """A JSON-compatible list that rejects every mutation path."""
+class _FrozenSequence(Sequence[Any]):
+    """Read-only sequence backed by a tuple, never a mutable ``list``."""
+
+    __slots__ = ("_values",)
+    _values: tuple[Any, ...]
+
+    def __init__(self, values: Iterable[Any]) -> None:
+        object.__setattr__(self, "_values", tuple(values))
+
+    def __setattr__(self, name: str, value: Any) -> NoReturn:
+        del name, value
+        raise TypeError("manifest values are read-only")
+
+    def __getitem__(self, index: int | slice) -> Any:
+        return self._values[index]
+
+    def __len__(self) -> int:
+        return len(self._values)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (str, bytes)) or not isinstance(other, Sequence):
+            return False
+        return tuple(self) == tuple(other)
+
+    def __repr__(self) -> str:
+        return repr(list(self))
 
     @staticmethod
     def _immutable(*args: Any, **kwargs: Any) -> NoReturn:
         del args, kwargs
         raise TypeError("manifest values are read-only")
 
-    __setitem__ = _immutable
-    __delitem__ = _immutable
-    __iadd__ = _immutable
-    __imul__ = _immutable
     append = _immutable
     clear = _immutable
     extend = _immutable
@@ -82,16 +120,16 @@ class _FrozenList(list[Any]):
 
 def _deep_freeze(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return _FrozenDict({str(key): _deep_freeze(item) for key, item in value.items()})
+        return _FrozenMapping({str(key): _deep_freeze(item) for key, item in value.items()})
     if isinstance(value, (list, tuple)):
-        return _FrozenList(_deep_freeze(item) for item in value)
+        return _FrozenSequence(_deep_freeze(item) for item in value)
     return value
 
 
 def _deep_thaw(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {str(key): _deep_thaw(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
         return [_deep_thaw(item) for item in value]
     return value
 
@@ -113,7 +151,10 @@ def _require_non_empty_string(value: Any, name: str) -> str:
 
 
 def _validate_git_sha(value: Any) -> str:
-    return _require_non_empty_string(value, "git_sha")
+    git_sha = _require_non_empty_string(value, "git_sha")
+    if len(git_sha) not in {40, 64} or any(character not in _SHA256_HEX for character in git_sha):
+        raise ValueError("git_sha must be a 40- or 64-character lowercase hexadecimal Git OID")
+    return git_sha
 
 
 def _validate_embedded_sha256(value: Any, name: str) -> None:
@@ -200,7 +241,7 @@ def _jsonable(value: Any) -> Any:
         if any(not isinstance(key, str) for key in value):
             raise TypeError("manifest mapping keys must be strings")
         return {key: _jsonable(value[key]) for key in sorted(value)}
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
         return [_jsonable(item) for item in value]
     if isinstance(value, float) and not math.isfinite(value):
         raise ValueError("manifest values must be finite")
@@ -283,14 +324,19 @@ def sha256_transitions(transitions: Sequence[Transition]) -> str:
 
 
 def _git_sha(root: Path) -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip() if result.returncode == 0 else "unknown"
+    candidates = (root, Path(__file__).resolve().parents[1])
+    for candidate in candidates:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=candidate,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        value = result.stdout.strip()
+        if result.returncode == 0:
+            return _validate_git_sha(value)
+    raise RuntimeError("cannot determine a Git OID for the LunaVLA source tree")
 
 
 def git_source_state(root: Path) -> tuple[bool, str | None]:

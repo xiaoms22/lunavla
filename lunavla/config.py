@@ -193,6 +193,14 @@ def _episode_ids(value: Any, name: str) -> list[int]:
     return episodes
 
 
+def _sequence(value: Any, name: str) -> list[Any]:
+    """Copy a sequence while rejecting string and mapping lookalikes."""
+
+    if isinstance(value, (str, bytes, Mapping)) or not isinstance(value, Sequence):
+        raise TypeError(f"{name} must be a non-string sequence")
+    return list(value)
+
+
 def _finite_float(value: Any, name: str, *, positive: bool = False) -> float:
     if isinstance(value, bool) or not isinstance(value, Real):
         raise TypeError(f"{name} must be a number")
@@ -504,7 +512,7 @@ def _validate_cross_section_contracts(
         )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class ExperimentConfig:
     """Resolved v2 configuration.
 
@@ -522,6 +530,46 @@ class ExperimentConfig:
     training: Mapping[str, Any]
     evaluation: Mapping[str, Any]
     artifacts: Mapping[str, Any]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        raise TypeError(
+            "ExperimentConfig cannot be constructed directly; "
+            "use ExperimentConfig.from_mapping() or ExperimentConfig.load()"
+        )
+
+    @classmethod
+    def _from_resolved(
+        cls,
+        *,
+        schema_version: int,
+        project_name: str,
+        engine: str,
+        policy: Mapping[str, Any],
+        task: Mapping[str, Any],
+        dataset: Mapping[str, Any],
+        training: Mapping[str, Any],
+        evaluation: Mapping[str, Any],
+        artifacts: Mapping[str, Any],
+    ) -> "ExperimentConfig":
+        """Create an instance only after ``from_mapping`` resolves every field."""
+
+        instance = object.__new__(cls)
+        resolved: dict[str, Any] = {
+            "schema_version": schema_version,
+            "project_name": project_name,
+            "engine": engine,
+            "policy": policy,
+            "task": task,
+            "dataset": dataset,
+            "training": training,
+            "evaluation": evaluation,
+            "artifacts": artifacts,
+        }
+        for name, value in resolved.items():
+            object.__setattr__(instance, name, value)
+        instance.__post_init__()
+        return instance
 
     def __post_init__(self) -> None:
         for name in (
@@ -576,11 +624,12 @@ class ExperimentConfig:
         policy["device"] = normalize_device(str(policy.get("device", "cpu")))
         image_shape = policy.get("image_shape")
         if image_shape is not None:
-            if not isinstance(image_shape, (list, tuple)) or len(image_shape) != 3:
+            image_shape_values = _sequence(image_shape, "policy.image_shape")
+            if len(image_shape_values) != 3:
                 raise ValueError("policy.image_shape must be [height, width, channels] or null")
             policy["image_shape"] = [
                 _positive_int(part, f"policy.image_shape[{index}]")
-                for index, part in enumerate(image_shape)
+                for index, part in enumerate(image_shape_values)
             ]
             if policy["image_shape"][-1] not in {1, 3, 4}:
                 raise ValueError("policy.image_shape channel count must be 1, 3, or 4")
@@ -629,7 +678,7 @@ class ExperimentConfig:
         task["family"] = str(task.get("family", "point_reach"))
         task["max_steps"] = _positive_int(task.get("max_steps", 40), "task.max_steps")
         if "goal" in task:
-            goal = list(task["goal"])
+            goal = _sequence(task["goal"], "task.goal")
             if len(goal) != 2:
                 raise ValueError("task.goal must contain two coordinates")
             task["goal"] = [
@@ -762,14 +811,17 @@ class ExperimentConfig:
             evaluation.get("seed", 1000), "evaluation.seed", nonnegative=True
         )
         if "seeds" in evaluation:
+            raw_seeds = _sequence(evaluation["seeds"], "evaluation.seeds")
             seeds = [
-                _integer(value, "evaluation.seeds item", nonnegative=True)
-                for value in list(evaluation["seeds"])
+                _integer(value, f"evaluation.seeds[{index}]", nonnegative=True)
+                for index, value in enumerate(raw_seeds)
             ]
             if not seeds:
                 raise ValueError("evaluation.seeds cannot be empty")
             if len(seeds) != evaluation["episodes"]:
                 raise ValueError("evaluation.seeds must contain exactly evaluation.episodes values")
+            if len(set(seeds)) != len(seeds):
+                raise ValueError("evaluation.seeds must not contain duplicate seeds")
             evaluation["seeds"] = seeds
         for name in ("language_ablation", "image_ablation"):
             evaluation[name] = str(evaluation.get(name, "none"))
@@ -834,7 +886,7 @@ class ExperimentConfig:
                 raise ValueError("artifacts.report_path must be inside artifacts.output_dir")
             artifacts["report_path"] = report_path
 
-        return cls(
+        return cls._from_resolved(
             schema_version=version,
             project_name=project_name,
             engine=engine,

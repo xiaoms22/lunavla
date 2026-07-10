@@ -2,6 +2,11 @@
   "schema_version": 1,
   "release_stage": "v2.0.0-rc.1",
   "contracts": {
+    "ActionChunk": {
+      "kind": "dataclass",
+      "fields": ["values", "valid_mask"],
+      "signature": "(values: 'Float32Array', valid_mask: 'BoolArray') -> None"
+    },
     "Observation": {
       "kind": "dataclass",
       "fields": ["state", "instruction", "image"],

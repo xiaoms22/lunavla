@@ -85,9 +85,14 @@ jobs:
       - name: Attest release distributions and evidence bundle
         uses: actions/attest-build-provenance@v2
         with:
+          # The action accepts a glob or list of paths (up to 1024 subjects).
           subject-path: |
             release-assets/dist/*
             release-assets/lunavla-v2-*-evidence.tar.gz
+            release-assets/SHA256SUMS
+            release-assets/sbom.json
+            release-assets/release-candidate.json
+            release-assets/environment-requirements.txt
       - name: Upload release candidate
         uses: actions/upload-artifact@v4
         with:

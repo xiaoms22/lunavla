@@ -98,6 +98,33 @@ def test_experiment_config_is_deeply_immutable_and_thaws_cleanly() -> None:
     assert config.task["goal"] == (0.8, 0.2)
 
 
+def test_experiment_config_rejects_direct_dataclass_construction() -> None:
+    with pytest.raises(TypeError, match=r"from_mapping\(\).*load\(\)"):
+        ExperimentConfig(**_point_mapping())
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "message"),
+    [
+        ("goal", "12", "task.goal must be a non-string sequence"),
+        ("goal", {"x": 0.8, "y": 0.2}, "task.goal must be a non-string sequence"),
+        ("seeds", "12", "evaluation.seeds must be a non-string sequence"),
+        ("seeds", {"first": 1000, "second": 1001}, "evaluation.seeds must be a non-string sequence"),
+        ("seeds", [1000, 1000], "must not contain duplicate seeds"),
+    ],
+)
+def test_config_vector_fields_reject_mapping_string_and_duplicate_lookalikes(
+    field: str,
+    replacement: object,
+    message: str,
+) -> None:
+    payload = _point_mapping()
+    section = payload["task"] if field == "goal" else payload["evaluation"]
+    section[field] = replacement
+    with pytest.raises((TypeError, ValueError), match=message):
+        ExperimentConfig.from_mapping(payload)
+
+
 @pytest.mark.parametrize(
     ("section", "message"),
     [

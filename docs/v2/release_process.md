@@ -52,7 +52,13 @@ snapshots, builds the `2.0.0rc1` wheel and sdist, and packages the three machine
 descriptors together with the contract freeze, compatibility guide, model/data cards, and security
 policy. Its release candidate records every contract-file hash and the original evidence Git SHA,
 EvidenceManifest hash, workflow URL, closed claim statement, distributions, environment, and SBOM.
-`lunavla-v2-rc-evidence.tar.gz` and top-level `SHA256SUMS` are provenance-attested by the dispatcher.
+The candidate hashes the environment and SBOM and names the RC archive without attempting to hash
+an archive that contains the candidate itself. After the archive is closed,
+`rc-release-integrity.json` hashes the candidate, archive, contracts, distributions, environment,
+and SBOM; top-level `SHA256SUMS` then covers that post-archive integrity record and every other
+release-side asset. The dispatcher provenance-attests the distributions, RC evidence archive,
+`SHA256SUMS`, SBOM, candidate, and environment requirements as separate subjects in one supported
+multi-path attestation action.
 The RC profile freezes interfaces; it does not rerun or reinterpret modality performance.
 
 ## Publishing boundary
