@@ -21,4 +21,4 @@ Each failure case should include:
 - one sentence explanation;
 - next minimal fix.
 
-`eval_vla.py` writes automatic labels for common rollout failures. Treat them as a first-pass teaching aid: inspect the saved rollout JSON or web demo before making a final project conclusion.
+`eval_vla.py` writes automatic labels for common rollout failures. Treat them as a first-pass teaching aid: inspect the saved rollout JSON before making a final project conclusion.

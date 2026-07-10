@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import json
@@ -7,45 +7,39 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-EXPECTED_ARTIFACTS = [
-    ("environment check", "outputs/environment_check.md", "machine readiness"),
-    ("dataset inspection", "outputs/dataset_inspection.md", "one VLA sample"),
-    ("checkpoint", "outputs/cpu_smoke/checkpoint.pt", "tiny policy weights"),
-    ("smoke summary", "outputs/cpu_smoke/summary_report.md", "headline smoke metrics"),
-    ("rollout browser", "outputs/cpu_smoke/web_demo.html", "static rollout inspection"),
-    ("first-run checklist", "outputs/first_run_checklist.md", "what to open first"),
-    ("troubleshooting guide", "outputs/troubleshooting_guide.md", "recovery commands"),
-    ("code walkthrough", "outputs/code_walkthrough.md", "guided code reading"),
-    ("action chunk lesson", "outputs/action_chunk_lesson.md", "ACT/action-chunk explanation"),
-]
-
-
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the one-command LunaVLA beginner quickstart.")
-    parser.add_argument("--out", default="outputs/quickstart_summary.md", help="Markdown quickstart summary path.")
-    parser.add_argument(
-        "--skip-run",
-        action="store_true",
-        help="Do not rerun smoke commands; only refresh checklist, troubleshooting, and summary from existing artifacts.",
-    )
-    parser.add_argument("--strict", action="store_true", help="Exit non-zero if any expected quickstart artifact is missing.")
+    parser = argparse.ArgumentParser(description="Run and summarize the smallest LunaVLA v1.1 teaching loop.")
+    parser.add_argument("--config", default="configs/act_pusht_cpu_smoke.yaml")
+    parser.add_argument("--out", default="outputs/quickstart_summary.md")
+    parser.add_argument("--skip-run", action="store_true")
+    parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--strict", action="store_true")
     return parser.parse_args()
 
 
-def resolve(path: str | Path) -> Path:
-    candidate = Path(path)
-    return candidate if candidate.is_absolute() else ROOT / candidate
+def resolve(raw: str | Path) -> Path:
+    path = Path(raw)
+    return path if path.is_absolute() else ROOT / path
 
 
 def relative(path: Path) -> str:
     try:
-        return path.relative_to(ROOT).as_posix()
+        return path.resolve().relative_to(ROOT).as_posix()
     except ValueError:
-        return path.as_posix()
+        return path.resolve().as_posix()
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, dict) else {}
 
 
 def run(command: list[str]) -> None:
@@ -53,139 +47,63 @@ def run(command: list[str]) -> None:
     subprocess.run(command, cwd=ROOT, check=True)
 
 
-def read_json(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+def main() -> int:
+    args = parse_args()
+    config_path = resolve(args.config)
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    if not isinstance(config, dict):
+        raise ValueError(f"Expected mapping in {config_path}")
+    run_dir = resolve(str(config.get("artifacts", {}).get("output_dir", "outputs/cpu_smoke")))
 
+    if not args.skip_run:
+        run([sys.executable, "scripts/check_environment.py"])
+        command = [sys.executable, "scripts/run_cpu_smoke.py", "--config", relative(config_path)]
+        if args.overwrite:
+            command.append("--overwrite")
+        run(command)
 
-def format_value(value: Any) -> str:
-    if value is None:
-        return "n/a"
-    if isinstance(value, float):
-        return f"{value:.6g}"
-    if isinstance(value, dict):
-        if not value:
-            return "none"
-        return ", ".join(f"{key}:{item}" for key, item in sorted(value.items()))
-    return str(value)
-
-
-def markdown_table(rows: list[dict[str, Any]]) -> list[str]:
-    if not rows:
-        return ["No rows."]
-    headers = list(rows[0].keys())
-    lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * len(headers)) + " |"]
-    for row in rows:
-        lines.append("| " + " | ".join(format_value(row.get(header, "")) for header in headers) + " |")
-    return lines
-
-
-def artifact_rows() -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    for name, path, purpose in EXPECTED_ARTIFACTS:
-        rows.append(
-            {
-                "artifact": name,
-                "path": path,
-                "exists": "yes" if resolve(path).exists() else "no",
-                "purpose": purpose,
-            }
-        )
-    return rows
-
-
-def metric_rows() -> list[dict[str, Any]]:
-    training = read_json(ROOT / "outputs/cpu_smoke/training_summary.json")
-    evaluation = read_json(ROOT / "outputs/cpu_smoke/eval_summary.json")
-    return [
-        {"metric": "records", "value": training.get("records", "n/a")},
-        {"metric": "chunk_size", "value": training.get("chunk_size", "n/a")},
-        {"metric": "final_loss", "value": training.get("final_loss", "n/a")},
-        {"metric": "episodes", "value": evaluation.get("episodes", "n/a")},
-        {"metric": "success_rate", "value": evaluation.get("success_rate", "n/a")},
-        {"metric": "mean_final_distance", "value": evaluation.get("mean_final_distance", "n/a")},
-        {"metric": "failure_count", "value": evaluation.get("failure_count", "n/a")},
+    training = read_json(run_dir / "training_summary.json")
+    evaluation = read_json(run_dir / "eval_summary.json")
+    manifest = read_json(run_dir / "manifest.json")
+    required = [
+        run_dir / "training_summary.json",
+        run_dir / "eval_summary.json",
+        run_dir / "manifest.json",
+        run_dir / "config.resolved.json",
+        run_dir / "evidence.json",
     ]
-
-
-def quickstart_status(rows: list[dict[str, str]]) -> str:
-    missing = [row for row in rows if row["exists"] != "yes"]
-    return "ready" if not missing else "needs attention"
-
-
-def build_summary() -> tuple[str, str]:
-    artifacts = artifact_rows()
-    status = quickstart_status(artifacts)
-    lines: list[str] = [
-        "# LunaVLA Quickstart Summary",
-        "",
-        "This file summarizes the one-command beginner path for running the smallest LunaVLA loop.",
+    status = "ready" if all(path.is_file() for path in required) else "needs attention"
+    lines = [
+        "# LunaVLA quickstart summary",
         "",
         f"Status: `{status}`",
         "",
-        "## Commands Covered",
+        "This is a local CPU smoke result, not controlled release evidence.",
         "",
-        "```bash",
-        "python scripts/check_environment.py",
-        "python scripts/inspect_dataset.py",
-        "python scripts/run_cpu_smoke.py",
-        "python scripts/generate_first_run_checklist.py",
-        "python scripts/generate_troubleshooting_guide.py",
-        "python scripts/generate_code_walkthrough.py",
-        "python scripts/generate_action_chunk_lesson.py",
-        "```",
+        "| item | value |",
+        "| --- | --- |",
+        f"| policy | `{manifest.get('policy_id', training.get('policy_name', 'n/a'))}` |",
+        f"| task | `{manifest.get('task_id', 'n/a')}` |",
+        f"| records | `{training.get('records', 'n/a')}` |",
+        f"| chunk size | `{training.get('chunk_size', 'n/a')}` |",
+        f"| final loss | `{training.get('final_loss', 'n/a')}` |",
+        f"| eval episodes | `{evaluation.get('episodes', 'n/a')}` |",
+        f"| success rate | `{evaluation.get('success_rate', 'n/a')}` |",
+        f"| mean final distance | `{evaluation.get('mean_final_distance', 'n/a')}` |",
         "",
-        "## Smoke Metrics",
+        "## Inspect next",
+        "",
+        f"- `{relative(run_dir / 'manifest.json')}` for hashes, seeds, runtime, and command.",
+        f"- `{relative(run_dir / 'eval_summary.json')}` for aggregate rollout metrics.",
+        f"- `{relative(run_dir / 'rollouts')}` for episode-level behavior.",
+        "",
+        "To publish results, use the controlled runner and build a validated `results/v1.1` snapshot.",
         "",
     ]
-    lines.extend(markdown_table(metric_rows()))
-    lines.extend(["", "## Generated Artifacts", ""])
-    lines.extend(markdown_table(artifacts))
-    lines.extend(
-        [
-            "",
-            "## Open Next",
-            "",
-            "1. `outputs/first_run_checklist.md` for the beginner review order.",
-            "2. `outputs/cpu_smoke/summary_report.md` for metrics.",
-            "3. `outputs/cpu_smoke/web_demo.html` for rollout behavior.",
-            "4. `outputs/code_walkthrough.md` for the code reading order.",
-            "5. `outputs/action_chunk_lesson.md` for the ACT/action-chunk explanation.",
-            "6. `outputs/troubleshooting_guide.md` if something is missing.",
-            "",
-            "## Next Step",
-            "",
-            "Run `python scripts/run_baseline_evidence.py` when the quickstart is ready and you want stronger project evidence.",
-            "",
-            "## Rebuild",
-            "",
-            "```bash",
-            "python scripts/run_quickstart.py",
-            "```",
-        ]
-    )
-    return "\n".join(lines) + "\n", status
-
-
-def main() -> int:
-    args = parse_args()
-    python = sys.executable
-    if not args.skip_run:
-        run([python, "scripts/check_environment.py"])
-        run([python, "scripts/inspect_dataset.py"])
-        run([python, "scripts/run_cpu_smoke.py"])
-    run([python, "scripts/generate_first_run_checklist.py"])
-    run([python, "scripts/generate_troubleshooting_guide.py"])
-    run([python, "scripts/generate_code_walkthrough.py"])
-    run([python, "scripts/generate_action_chunk_lesson.py", "--config", "configs/act_pusht_cpu_smoke.yaml", "--run-dir", "outputs/cpu_smoke"])
-
-    report, status = build_summary()
-    out_path = resolve(args.out)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(report, encoding="utf-8")
-    print(f"quickstart summary: {out_path}")
-    print(f"quickstart status: {status}")
+    output = resolve(args.out)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text("\n".join(lines), encoding="utf-8")
+    print(f"quickstart summary: {relative(output)}")
     return 1 if args.strict and status != "ready" else 0
 
 

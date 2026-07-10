@@ -4,6 +4,10 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
+
+
+Array = npt.NDArray[np.generic]
 
 
 @dataclass(frozen=True)
@@ -29,8 +33,8 @@ def classify_pusht_phase(distance_to_goal: float, success_distance: float = 0.10
 
 
 def build_pusht_task_context(
-    position: list[float] | np.ndarray,
-    goal: list[float] | np.ndarray,
+    position: list[float] | Array,
+    goal: list[float] | Array,
     instruction: str | None,
     success_distance: float = 0.10,
 ) -> TaskContext:
@@ -39,7 +43,7 @@ def build_pusht_task_context(
     distance = float(np.linalg.norm(goal_array - position_array))
     phase = classify_pusht_phase(distance, success_distance=success_distance)
     return TaskContext(
-        task_id="pusht_mock",
+        task_id="pusht_style_point_reach",
         subtask_id=phase,
         phase=phase,
         instruction=instruction,

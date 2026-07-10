@@ -1,0 +1,30 @@
+name: Sync Issue Labels
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/labels.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install YAML parser
+        run: python -m pip install "PyYAML>=6,<7"
+      - name: Create or update declared labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -c 'import yaml; [print("{}\t{}\t{}".format(x["name"], x["color"], x["description"])) for x in yaml.safe_load(open(".github/labels.yml", encoding="utf-8"))]' > /tmp/labels.tsv
+          while IFS=$'\t' read -r name color description; do
+            gh label create "$name" --color "$color" --description "$description" --force
+          done < /tmp/labels.tsv

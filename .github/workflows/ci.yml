@@ -1,4 +1,4 @@
-﻿name: LunaVLA CI
+name: Fast CI
 
 on:
   push:
@@ -9,178 +9,100 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: fast-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  smoke:
-    name: Smoke And Public Assets
+  quality:
+    name: quality
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
-
-      - name: Install dependencies
+          cache-dependency-path: requirements-dev.txt
+      - name: Install development dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Compile Python files
+          python -m pip install -r requirements-dev.txt
+      - name: Ruff
+        run: ruff check .
+      - name: Mypy
+        run: mypy dataset model trainer eval_vla.py
+      - name: Compile Python sources
         run: python -m compileall -q dataset model scripts trainer eval_vla.py
-
-      - name: Check public repo quality
-        run: python scripts/check_repo_quality.py
-
-      - name: Run quickstart path
-        run: python scripts/run_quickstart.py
-
-      - name: Check environment
-        run: python scripts/check_environment.py
-
-      - name: Inspect dataset sample
-        run: python scripts/inspect_dataset.py
-
-      - name: Validate configs
+      - name: Validate configuration files
         run: python scripts/validate_configs.py
+      - name: Check repository claims and paths
+        run: python scripts/check_repo_quality.py
+      - name: Check local documentation links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --offline --no-progress
+            --exclude-path docs/archive
+            README.md CONTRIBUTING.md SECURITY.md MODEL_CARD.md DATA_CARD.md docs
+          fail: true
 
-      - name: Generate config diff
-        run: python scripts/generate_config_diff.py
-
-      - name: Check release failure modes
-        run: python scripts/check_negative_paths.py
-
-      - name: Run CPU smoke loop
-        run: python scripts/run_cpu_smoke.py
-
-      - name: Check Task Layer diagnostics
-        run: python scripts/check_task_layer.py --run-dir outputs/cpu_smoke --require-generated
-
-      - name: Check policy interface
-        run: python scripts/check_policy_interface.py
-
-      - name: Run BC smoke loop
-        run: python scripts/run_bc_smoke.py
-
-      - name: Generate first run checklist
-        run: python scripts/generate_first_run_checklist.py
-
-      - name: Generate command reference
-        run: python scripts/generate_command_reference.py
-
-      - name: Generate code walkthrough
-        run: python scripts/generate_code_walkthrough.py
-
-      - name: Run baseline evidence path
-        run: python scripts/run_baseline_evidence.py
-
-      - name: Generate action statistics
-        run: python scripts/generate_action_statistics.py
-
-      - name: Generate policy ladder
-        run: python scripts/generate_policy_ladder.py
-
-      - name: Generate action chunk lesson
-        run: python scripts/generate_action_chunk_lesson.py
-
-      - name: Check README assets
-        run: python scripts/check_readme_assets.py
-
-      - name: Check project progress
-        run: python scripts/check_project_progress.py
-
-      - name: Run ablation evidence path
-        run: python scripts/run_ablation_evidence.py --skip-baseline
-
-      - name: Generate failure review
-        run: python scripts/generate_failure_review.py
-
-      - name: Generate learning checkpoint
-        run: python scripts/generate_learning_checkpoint.py
-
-      - name: Generate interview flashcards
-        run: python scripts/generate_interview_flashcards.py
-
-      - name: Generate skill evidence map
-        run: python scripts/generate_skill_evidence_map.py
-
-      - name: Generate project card
-        run: python scripts/generate_project_card.py
-
-      - name: Generate experiment ledger
-        run: python scripts/generate_experiment_ledger.py
-
-      - name: Generate learner showcase
-        run: python scripts/generate_showcase_issue.py
-
-      - name: Build evidence index
-        run: python scripts/build_evidence_pack.py --skip-runs
-
-      - name: Generate troubleshooting guide
-        run: python scripts/generate_troubleshooting_guide.py
-
-      - name: Check release readiness
-        run: python scripts/check_release_readiness.py
-
-      - name: Upload generated evidence
+  tests:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+      - name: Run test suite with coverage gate
+        run: python -m pytest --cov --cov-report=term-missing --cov-report=xml
+      - name: Upload coverage report
+        if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4
         with:
-          name: lunavla-ci-evidence
-          path: |
-            outputs/environment_check.md
-            outputs/quickstart_summary.md
-            outputs/first_run_checklist.md
-            outputs/troubleshooting_guide.md
-            outputs/command_reference.md
-            outputs/code_walkthrough.md
-            outputs/action_chunk_lesson.md
-            outputs/action_statistics.json
-            outputs/action_statistics.md
-            outputs/policy_ladder.md
-            outputs/policy_ladder.csv
-            outputs/readme_asset_check.md
-            outputs/project_progress.md
-            outputs/project_card.md
-            outputs/experiment_ledger.md
-            outputs/experiment_ledger.json
-            outputs/learning_checkpoint.md
-            outputs/interview_flashcards.md
-            outputs/skill_evidence_map.md
-            outputs/learner_showcase.md
-            outputs/failure_review.md
-            outputs/cpu_smoke/summary_report.md
-            outputs/cpu_smoke/action_statistics.json
-            outputs/cpu_smoke/project_report.md
-            outputs/cpu_smoke/resume_pack.md
-            outputs/cpu_smoke/run_diagnostic.md
-            outputs/cpu_smoke/web_demo.html
-            outputs/bc_pusht_cpu_smoke/summary_report.md
-            outputs/bc_pusht_cpu_smoke/action_statistics.json
-            outputs/bc_pusht_cpu_smoke/project_report.md
-            outputs/bc_pusht_cpu_smoke/run_diagnostic.md
-            outputs/bc_pusht_cpu_smoke/web_demo.html
-            outputs/dataset_inspection.md
-            outputs/act_pusht_baseline/summary_report.md
-            outputs/act_pusht_baseline/action_statistics.json
-            outputs/act_pusht_baseline/project_report.md
-            outputs/act_pusht_baseline/resume_pack.md
-            outputs/act_pusht_baseline/run_diagnostic.md
-            outputs/act_pusht_ablation_chunk_size/summary_report.md
-            outputs/act_pusht_ablation_chunk_size/action_statistics.json
-            outputs/act_pusht_ablation_chunk_size/project_report.md
-            outputs/act_pusht_ablation_chunk_size/resume_pack.md
-            outputs/act_pusht_ablation_chunk_size/run_diagnostic.md
-            outputs/run_comparison.md
-            outputs/run_comparison.csv
-            outputs/run_comparison_deltas.csv
-            outputs/config_diff.md
-            outputs/config_diff.json
-            outputs/evidence_index.md
-            outputs/submission_pack/**
-            images/pusht_act_eval.gif
-            images/pusht_diffusion_policy_eval.gif
-            images/policy_ladder.svg
-            images/asset_manifest.json
+          name: coverage-python-3.12
+          path: coverage.xml
+
+  cpu-smoke:
+    name: cpu-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Run the beginner CPU quickstart
+        run: timeout 120 python scripts/run_quickstart.py
+
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan the complete Git history
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

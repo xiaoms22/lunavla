@@ -11,6 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 MIN_PYTHON = (3, 10)
+MAX_PYTHON = (3, 12)
 
 
 def parse_args() -> argparse.Namespace:
@@ -52,10 +53,11 @@ def package_version(package_name: str) -> str:
 def check_python(rows: list[dict[str, str]]) -> None:
     version = sys.version_info
     version_text = f"{version.major}.{version.minor}.{version.micro}"
-    if (version.major, version.minor) >= MIN_PYTHON:
+    current = (version.major, version.minor)
+    if MIN_PYTHON <= current <= MAX_PYTHON:
         add_row(rows, "python", "pass", f"Python {version_text}", "Continue to dependency checks.")
     else:
-        add_row(rows, "python", "fail", f"Python {version_text}", "Use Python 3.10 or newer.")
+        add_row(rows, "python", "fail", f"Python {version_text}", "Use Python 3.10, 3.11, or 3.12.")
 
 
 def check_imports(rows: list[dict[str, str]]) -> None:

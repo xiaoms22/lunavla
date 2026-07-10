@@ -1,0 +1,45 @@
+name: Controlled experiment
+description: Propose or report a predeclared, reproducible experiment.
+title: "[Experiment]: "
+labels: [experiment]
+body:
+  - type: dropdown
+    id: family
+    attributes:
+      label: Experiment family
+      options:
+        - Action chunk size
+        - BC capacity
+        - Data quality
+        - Language ablation
+        - Vision ablation
+    validations:
+      required: true
+  - type: textarea
+    id: invariant
+    attributes:
+      label: Controlled invariant
+      description: State what remains fixed and the single treatment that changes.
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Seeds, episodes, and metrics
+      description: Include train/eval seeds, paired units, intervals, and stopping rule.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence manifest
+      description: Link manifests and hashes, or explain how they will be produced.
+    validations:
+      required: true
+  - type: checkboxes
+    id: claims
+    attributes:
+      label: Claim boundary
+      options:
+        - label: I will not make causal or modality claims unless the declared interval supports them.
+          required: true

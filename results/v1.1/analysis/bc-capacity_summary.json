@@ -1,0 +1,56 @@
+{
+  "aggregates": [
+    {
+      "mean_action_smoothness": 0.000517605053692054,
+      "mean_final_distance": 0.20704316414892673,
+      "success_rate": 0.42,
+      "success_wilson_95": [
+        0.3279838267435473,
+        0.5179351329695703
+      ],
+      "successes": 42,
+      "treatment": "hidden-32",
+      "trials": 100
+    },
+    {
+      "mean_action_smoothness": 0.0009141792004632477,
+      "mean_final_distance": 0.19210199020802976,
+      "success_rate": 0.5,
+      "success_wilson_95": [
+        0.4038315303659957,
+        0.5961684696340044
+      ],
+      "successes": 50,
+      "treatment": "hidden-64",
+      "trials": 100
+    }
+  ],
+  "contrasts": [
+    {
+      "analysis_seed": 202611,
+      "mean_difference": -0.014941173940896987,
+      "metric": "final_distance",
+      "paired_bootstrap_95": [
+        -0.024398799687623977,
+        -0.006912399381399155
+      ],
+      "paired_n": 100,
+      "reference": "hidden-32",
+      "treatment": "hidden-64"
+    },
+    {
+      "analysis_seed": 202611,
+      "mean_difference": 0.0003965741467711937,
+      "metric": "action_smoothness",
+      "paired_bootstrap_95": [
+        0.00030933367205380997,
+        0.00048752748108033385
+      ],
+      "paired_n": 100,
+      "reference": "hidden-32",
+      "treatment": "hidden-64"
+    }
+  ],
+  "controlled": true,
+  "family": "bc-capacity"
+}

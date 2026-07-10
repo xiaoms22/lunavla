@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible defect in the teaching pipeline.
+title: "[Bug]: "
+labels: [bug, python]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, private datasets, or identifying rollout data.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v1.1.0 or a Git SHA
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the command, compact configuration, and exact error.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Python, NumPy, operating system, and CPU architecture.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data-safety check
+      options:
+        - label: I removed credentials, private data, checkpoints, and local absolute paths.
+          required: true

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "project_name": "v11-chunk-chunk-2-seed-22",
+  "framework": "lunavla",
+  "task": "pusht_style_point_reach",
+  "policy": {
+    "type": "numpy_linear_chunk",
+    "chunk_size": 2,
+    "observation_dim": 4,
+    "instruction_dim": 8,
+    "action_dim": 2
+  },
+  "dataset": {
+    "source": "mock_pusht",
+    "num_episodes": 128,
+    "steps_per_episode": 32,
+    "seed": 42,
+    "split_seed": 42,
+    "train_fraction": 0.8,
+    "validation_fraction": 0.1,
+    "test_fraction": 0.1,
+    "language_instruction": "push the T block to the goal",
+    "split": "train"
+  },
+  "training": {
+    "device": "cpu",
+    "batch_size": 64,
+    "num_steps": 2000,
+    "learning_rate": 0.04,
+    "seed": 22,
+    "log_interval": 100
+  },
+  "eval": {
+    "episodes": 20,
+    "rollout_steps": 40,
+    "success_distance": 0.1,
+    "seed": 1000,
+    "goal": [
+      0.8,
+      0.2
+    ],
+    "start_low": 0.05,
+    "start_high": 0.95,
+    "action_clip": 0.12,
+    "execution_mode": "open_loop_chunk"
+  },
+  "artifacts": {
+    "output_dir": "outputs/controlled_v11/chunk/chunk-2/seed-22",
+    "checkpoint_name": "checkpoint.json",
+    "report_path": "outputs/controlled_v11/chunk/chunk-2/seed-22/summary_report.md"
+  }
+}

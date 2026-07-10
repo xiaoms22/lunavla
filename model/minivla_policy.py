@@ -5,19 +5,22 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 
-from .policy_base import MiniVLAPolicyBase, PolicyBatch, PolicySample
+from .losses import masked_mse, masked_mse_gradient
+from .policy_base import ActionChunk, MiniVLAPolicyBase, PolicyBatch, PolicySample
 
 
-class MiniVLAPolicy(MiniVLAPolicyBase):
-    """A tiny linear VLA policy for smoke tests and repository scaffolding.
+CHECKPOINT_SCHEMA_VERSION = 1
+CHECKPOINT_FORMAT = "lunavla.numpy_policy"
+Array = npt.NDArray[np.generic]
+Float32Array = npt.NDArray[np.float32]
 
-    The model predicts an action chunk from observation + instruction features.
-    It is intentionally small so the GitHub repo can be verified without a robot
-    simulator or a GPU.
-    """
 
-    policy_name = "tiny_linear"
+class NumpyLinearChunkPolicy(MiniVLAPolicyBase):
+    """Small CPU-only linear action-chunk policy implemented with NumPy."""
+
+    policy_name = "numpy_linear_chunk"
 
     def __init__(
         self,
@@ -25,78 +28,168 @@ class MiniVLAPolicy(MiniVLAPolicyBase):
         action_dim: int = 2,
         chunk_size: int = 1,
         seed: int = 42,
-        weights: np.ndarray | None = None,
-        bias: np.ndarray | None = None,
+        weights: Array | None = None,
+        bias: Array | None = None,
     ) -> None:
-        self.input_dim = input_dim
-        self.action_dim = action_dim
-        self.chunk_size = chunk_size
-        self.output_dim = action_dim * chunk_size
+        if input_dim <= 0 or action_dim <= 0 or chunk_size <= 0:
+            raise ValueError("input_dim, action_dim, and chunk_size must be positive")
+        self.input_dim = int(input_dim)
+        self.action_dim = int(action_dim)
+        self.chunk_size = int(chunk_size)
+        self.output_dim = self.action_dim * self.chunk_size
         rng = np.random.default_rng(seed)
         self.weights = (
-            weights.astype(np.float32)
+            np.asarray(weights, dtype=np.float32)
             if weights is not None
-            else rng.normal(0.0, 0.02, size=(input_dim, self.output_dim)).astype(np.float32)
+            else rng.normal(0.0, 0.02, size=(self.input_dim, self.output_dim)).astype(np.float32)
         )
         self.bias = (
-            bias.astype(np.float32)
+            np.asarray(bias, dtype=np.float32)
             if bias is not None
             else np.zeros(self.output_dim, dtype=np.float32)
         )
+        if self.weights.shape != (self.input_dim, self.output_dim):
+            raise ValueError(
+                f"weights must have shape {(self.input_dim, self.output_dim)}; "
+                f"got {self.weights.shape}"
+            )
+        if self.bias.shape != (self.output_dim,):
+            raise ValueError(f"bias must have shape {(self.output_dim,)}; got {self.bias.shape}")
+        if not np.all(np.isfinite(self.weights)) or not np.all(np.isfinite(self.bias)):
+            raise ValueError("policy parameters contain NaN or infinite values")
 
-    def predict(self, inputs: np.ndarray) -> np.ndarray:
-        if inputs.ndim == 1:
-            inputs = inputs[None, :]
-        return inputs @ self.weights + self.bias
+    def _inputs(self, inputs: Array) -> Float32Array:
+        raw = np.asarray(inputs)
+        if raw.dtype.kind not in "fiu":
+            raise TypeError("inputs must have a numeric dtype")
+        if raw.ndim == 1:
+            raw = raw[None, :]
+        if raw.ndim != 2 or raw.shape[1] != self.input_dim:
+            raise ValueError(f"inputs must have shape [batch, {self.input_dim}]; got {raw.shape}")
+        result = raw.astype(np.float32, copy=False)
+        if not np.all(np.isfinite(result)):
+            raise ValueError("inputs contain NaN or infinite values")
+        return result
+
+    def _targets(self, targets: Array, batch_size: int) -> Float32Array:
+        raw = np.asarray(targets)
+        if raw.dtype.kind not in "fiu":
+            raise TypeError("targets must have a numeric dtype")
+        if raw.shape == (batch_size, self.output_dim):
+            raw = raw.reshape(batch_size, self.chunk_size, self.action_dim)
+        expected = (batch_size, self.chunk_size, self.action_dim)
+        if raw.shape != expected:
+            raise ValueError(f"targets must have shape {expected}; got {raw.shape}")
+        result = raw.astype(np.float32, copy=False)
+        if not np.all(np.isfinite(result)):
+            raise ValueError("targets contain NaN or infinite values")
+        return result
+
+    def predict(self, inputs: Array) -> Float32Array:
+        """Compatibility helper returning flattened chunks for a batch."""
+
+        inputs_array = self._inputs(inputs)
+        return (inputs_array @ self.weights + self.bias).astype(np.float32)
+
+    def _prediction_tensor(self, inputs: Array) -> Float32Array:
+        flat = self.predict(inputs)
+        return flat.reshape(len(flat), self.chunk_size, self.action_dim)
 
     def forward(self, batch: PolicyBatch) -> dict[str, float]:
-        inputs = np.asarray(batch["inputs"], dtype=np.float32)
-        targets = np.asarray(batch["targets"], dtype=np.float32)
-        predictions = self.predict(inputs)
-        loss = float(np.mean((predictions - targets) ** 2))
+        inputs = self._inputs(batch["inputs"])
+        targets = self._targets(batch["targets"], len(inputs))
+        predictions = self._prediction_tensor(inputs)
+        loss = masked_mse(predictions, targets, batch.get("valid_mask"))
         return {"loss": loss, "mse_loss": loss}
 
-    def predict_action(self, sample: PolicySample) -> np.ndarray:
-        if isinstance(sample, dict):
-            inputs = np.asarray(sample["inputs"], dtype=np.float32)
-        else:
-            inputs = np.asarray(sample, dtype=np.float32)
-        return self.predict(inputs)[0]
+    def predict_chunk(self, sample: PolicySample) -> ActionChunk:
+        inputs = np.asarray(sample["inputs"] if isinstance(sample, dict) else sample)
+        prediction = self._prediction_tensor(inputs)
+        if len(prediction) != 1:
+            raise ValueError("predict_chunk accepts exactly one sample")
+        return ActionChunk(
+            values=prediction[0],
+            valid_mask=np.ones(self.chunk_size, dtype=bool),
+        )
 
-    def train_step(self, inputs: np.ndarray, targets: np.ndarray, learning_rate: float) -> float:
-        predictions = self.predict(inputs)
-        error = predictions - targets
-        loss = float(np.mean(error**2))
-        grad = (2.0 / len(inputs)) * error
-        grad_w = inputs.T @ grad
-        grad_b = np.mean(grad, axis=0)
-        self.weights -= learning_rate * grad_w.astype(np.float32)
-        self.bias -= learning_rate * grad_b.astype(np.float32)
+    def train_step(
+        self,
+        inputs: Array,
+        targets: Array,
+        learning_rate: float,
+        valid_mask: Array | None = None,
+    ) -> float:
+        if not np.isfinite(learning_rate) or learning_rate <= 0:
+            raise ValueError("learning_rate must be a positive finite value")
+        inputs_array = self._inputs(inputs)
+        targets_array = self._targets(targets, len(inputs_array))
+        predictions = self._prediction_tensor(inputs_array)
+        loss = masked_mse(predictions, targets_array, valid_mask)
+        grad_predictions = masked_mse_gradient(predictions, targets_array, valid_mask)
+        grad_flat = grad_predictions.reshape(len(inputs_array), self.output_dim)
+        grad_w = inputs_array.T @ grad_flat
+        grad_b = np.sum(grad_flat, axis=0)
+        self.weights -= float(learning_rate) * grad_w.astype(np.float32)
+        self.bias -= float(learning_rate) * grad_b.astype(np.float32)
         return loss
+
+    def _checkpoint_payload(self, metadata: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "schema_version": CHECKPOINT_SCHEMA_VERSION,
+            "format": CHECKPOINT_FORMAT,
+            "policy": {
+                "type": self.policy_name,
+                "input_dim": self.input_dim,
+                "action_dim": self.action_dim,
+                "chunk_size": self.chunk_size,
+                "parameters": {
+                    "weights": self.weights.tolist(),
+                    "bias": self.bias.tolist(),
+                },
+            },
+            "metadata": metadata,
+        }
 
     def save(self, path: str | Path, metadata: dict[str, Any]) -> None:
         target = Path(path)
+        if target.suffix != ".json":
+            raise ValueError("new checkpoints must use the checkpoint.json format")
         target.parent.mkdir(parents=True, exist_ok=True)
-        payload = {
-            "policy_name": getattr(self, "policy_name", self.__class__.policy_name),
-            "input_dim": self.input_dim,
-            "action_dim": self.action_dim,
-            "chunk_size": self.chunk_size,
-            "weights": self.weights.tolist(),
-            "bias": self.bias.tolist(),
-            "metadata": metadata,
-        }
-        target.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        target.write_text(
+            json.dumps(self._checkpoint_payload(metadata), indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
 
-    def save_pretrained(self, run_dir: str | Path, metadata: dict[str, Any] | None = None) -> Path:
+    def save_pretrained(
+        self, run_dir: str | Path, metadata: dict[str, Any] | None = None
+    ) -> Path:
         run_path = Path(run_dir)
-        checkpoint_path = run_path if run_path.suffix else run_path / "checkpoint.pt"
+        checkpoint_path = run_path if run_path.suffix else run_path / "checkpoint.json"
         self.save(checkpoint_path, metadata=metadata or {})
         return checkpoint_path
 
     @classmethod
-    def load(cls, path: str | Path) -> tuple["MiniVLAPolicy", dict[str, Any]]:
+    def load(cls, path: str | Path) -> tuple["NumpyLinearChunkPolicy", dict[str, Any]]:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if "schema_version" in payload:
+            if payload.get("schema_version") != CHECKPOINT_SCHEMA_VERSION:
+                raise ValueError(f"unsupported checkpoint schema_version: {payload.get('schema_version')}")
+            if payload.get("format") != CHECKPOINT_FORMAT:
+                raise ValueError(f"unsupported checkpoint format: {payload.get('format')}")
+            policy_payload = payload["policy"]
+            if policy_payload.get("type") != cls.policy_name:
+                raise ValueError(f"checkpoint contains policy type {policy_payload.get('type')!r}")
+            parameters = policy_payload["parameters"]
+            policy = cls(
+                input_dim=int(policy_payload["input_dim"]),
+                action_dim=int(policy_payload["action_dim"]),
+                chunk_size=int(policy_payload["chunk_size"]),
+                weights=np.asarray(parameters["weights"], dtype=np.float32),
+                bias=np.asarray(parameters["bias"], dtype=np.float32),
+            )
+            return policy, dict(payload.get("metadata", {}))
+
+        # Read-only compatibility for JSON payloads historically named checkpoint.pt.
         policy = cls(
             input_dim=int(payload["input_dim"]),
             action_dim=int(payload["action_dim"]),
@@ -104,11 +197,21 @@ class MiniVLAPolicy(MiniVLAPolicyBase):
             weights=np.asarray(payload["weights"], dtype=np.float32),
             bias=np.asarray(payload["bias"], dtype=np.float32),
         )
-        policy.policy_name = str(payload.get("policy_name", policy.policy_name))
-        return policy, payload.get("metadata", {})
+        return policy, dict(payload.get("metadata", {}))
 
     @classmethod
-    def from_pretrained(cls, run_dir: str | Path) -> tuple["MiniVLAPolicy", dict[str, Any]]:
+    def from_pretrained(
+        cls, run_dir: str | Path
+    ) -> tuple["NumpyLinearChunkPolicy", dict[str, Any]]:
         run_path = Path(run_dir)
-        checkpoint_path = run_path if run_path.suffix else run_path / "checkpoint.pt"
+        if run_path.suffix:
+            checkpoint_path = run_path
+        elif (run_path / "checkpoint.json").exists():
+            checkpoint_path = run_path / "checkpoint.json"
+        else:
+            checkpoint_path = run_path / "checkpoint.pt"
         return cls.load(checkpoint_path)
+
+
+# Source compatibility for imports used by the v1.0 lessons.
+MiniVLAPolicy = NumpyLinearChunkPolicy

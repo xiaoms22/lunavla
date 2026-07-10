@@ -1,0 +1,33 @@
+{
+  "controlled": true,
+  "created_at": null,
+  "declared_eval_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019
+  ],
+  "declared_train_seeds": [
+    11
+  ],
+  "experiment_family": "chunk",
+  "manifest": "manifest.json",
+  "manifest_sha256": "74dadd456a5ab0176fe64fff775321ec4fb8dc03a8005d78c37a4152373f8265",
+  "schema_version": 1
+}

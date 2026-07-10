@@ -1,0 +1,1088 @@
+{
+  "success": false,
+  "task_id": "pusht_style_point_reach",
+  "instruction": "push the T block to the goal",
+  "execution_mode": "open_loop_chunk",
+  "action_clip": 0.12,
+  "initial_position": [
+    0.6013354063034058,
+    0.06413041800260544
+  ],
+  "goal": [
+    0.800000011920929,
+    0.20000000298023224
+  ],
+  "initial_task_context": {
+    "task_id": "pusht_style_point_reach",
+    "subtask_id": "align_push",
+    "phase": "align_push",
+    "instruction": "push the T block to the goal",
+    "metadata": {
+      "distance_to_goal": 0.2406827211380005,
+      "success_distance": 0.1
+    }
+  },
+  "final_task_context": {
+    "task_id": "pusht_style_point_reach",
+    "subtask_id": "align_push",
+    "phase": "align_push",
+    "instruction": "push the T block to the goal",
+    "metadata": {
+      "distance_to_goal": 0.2651687562465668,
+      "success_distance": 0.1
+    }
+  },
+  "initial_distance": 0.2406827211380005,
+  "min_distance": 0.16871872544288635,
+  "final_distance": 0.2651687562465668,
+  "steps": 40,
+  "action_smoothness": 0.019957877659740355,
+  "subtask_frame_counts": {
+    "push_to_goal": 8,
+    "align_push": 32
+  },
+  "frames": [
+    {
+      "timestep": 0,
+      "chunk_index": 0,
+      "position": [
+        0.6532633304595947,
+        0.05552726611495018
+      ],
+      "action": [
+        0.051927901804447174,
+        -0.008603152818977833
+      ],
+      "distance_to_goal": 0.20592238008975983,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "push_to_goal",
+        "phase": "push_to_goal",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.20592238008975983,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "push_to_goal",
+      "phase": "push_to_goal"
+    },
+    {
+      "timestep": 1,
+      "chunk_index": 1,
+      "position": [
+        0.6993849277496338,
+        0.044654104858636856
+      ],
+      "action": [
+        0.04612157121300697,
+        -0.01087316032499075
+      ],
+      "distance_to_goal": 0.1850830763578415,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "push_to_goal",
+        "phase": "push_to_goal",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.1850830763578415,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "push_to_goal",
+      "phase": "push_to_goal"
+    },
+    {
+      "timestep": 2,
+      "chunk_index": 2,
+      "position": [
+        0.7415794730186462,
+        0.04171844944357872
+      ],
+      "action": [
+        0.04219453036785126,
+        -0.002935655415058136
+      ],
+      "distance_to_goal": 0.16871872544288635,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "push_to_goal",
+        "phase": "push_to_goal",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.16871872544288635,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "push_to_goal",
+      "phase": "push_to_goal"
+    },
+    {
+      "timestep": 3,
+      "chunk_index": 3,
+      "position": [
+        0.773589015007019,
+        0.030785739421844482
+      ],
+      "action": [
+        0.03200951963663101,
+        -0.010932710021734238
+      ],
+      "distance_to_goal": 0.1712629795074463,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "push_to_goal",
+        "phase": "push_to_goal",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.1712629795074463,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "push_to_goal",
+      "phase": "push_to_goal"
+    },
+    {
+      "timestep": 4,
+      "chunk_index": 4,
+      "position": [
+        0.8197053074836731,
+        0.013276221230626106
+      ],
+      "action": [
+        0.04611627757549286,
+        -0.017509518191218376
+      ],
+      "distance_to_goal": 0.18776066601276398,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "push_to_goal",
+        "phase": "push_to_goal",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.18776066601276398,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "push_to_goal",
+      "phase": "push_to_goal"
+    },
+    {
+      "timestep": 5,
+      "chunk_index": 5,
+      "position": [
+        0.8585907220840454,
+        0.003188162110745907
+      ],
+      "action": [
+        0.03888539969921112,
+        -0.0100880591198802
+      ],
+      "distance_to_goal": 0.2053479254245758,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "push_to_goal",
+        "phase": "push_to_goal",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2053479254245758,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "push_to_goal",
+      "phase": "push_to_goal"
+    },
+    {
+      "timestep": 6,
+      "chunk_index": 6,
+      "position": [
+        0.8963518738746643,
+        0.0
+      ],
+      "action": [
+        0.03776117414236069,
+        -0.016160717234015465
+      ],
+      "distance_to_goal": 0.22199928760528564,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.22199928760528564,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 7,
+      "chunk_index": 7,
+      "position": [
+        0.889683723449707,
+        0.010710623115301132
+      ],
+      "action": [
+        -0.006668169517070055,
+        0.010710623115301132
+      ],
+      "distance_to_goal": 0.20946034789085388,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "push_to_goal",
+        "phase": "push_to_goal",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.20946034789085388,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "push_to_goal",
+      "phase": "push_to_goal"
+    },
+    {
+      "timestep": 8,
+      "chunk_index": 0,
+      "position": [
+        0.9068371057510376,
+        0.01373924408107996
+      ],
+      "action": [
+        0.017153387889266014,
+        0.0030286209657788277
+      ],
+      "distance_to_goal": 0.21472594141960144,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "push_to_goal",
+        "phase": "push_to_goal",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.21472594141960144,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "push_to_goal",
+      "phase": "push_to_goal"
+    },
+    {
+      "timestep": 9,
+      "chunk_index": 1,
+      "position": [
+        0.9264727234840393,
+        0.008477751165628433
+      ],
+      "action": [
+        0.019635634496808052,
+        -0.005261492915451527
+      ],
+      "distance_to_goal": 0.2295127809047699,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2295127809047699,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 10,
+      "chunk_index": 2,
+      "position": [
+        0.9440159201622009,
+        0.007862340658903122
+      ],
+      "action": [
+        0.01754317432641983,
+        -0.0006154105067253113
+      ],
+      "distance_to_goal": 0.24011968076229095,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.24011968076229095,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 11,
+      "chunk_index": 3,
+      "position": [
+        0.9624761343002319,
+        0.0
+      ],
+      "action": [
+        0.018460221588611603,
+        -0.009652651846408844
+      ],
+      "distance_to_goal": 0.2576790452003479,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2576790452003479,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 12,
+      "chunk_index": 4,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04373858869075775,
+        -0.025349071249365807
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 13,
+      "chunk_index": 5,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04245881363749504,
+        -0.009744501672685146
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 14,
+      "chunk_index": 6,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.042536333203315735,
+        -0.0178159698843956
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 15,
+      "chunk_index": 7,
+      "position": [
+        0.9901642799377441,
+        0.01366657018661499
+      ],
+      "action": [
+        -0.00983572006225586,
+        0.01366657018661499
+      ],
+      "distance_to_goal": 0.26623785495758057,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.26623785495758057,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 16,
+      "chunk_index": 0,
+      "position": [
+        0.9954946637153625,
+        0.01777786761522293
+      ],
+      "action": [
+        0.005330383777618408,
+        0.004111296497285366
+      ],
+      "distance_to_goal": 0.2672509551048279,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2672509551048279,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 17,
+      "chunk_index": 1,
+      "position": [
+        1.0,
+        0.012175682932138443
+      ],
+      "action": [
+        0.0105543602257967,
+        -0.005602184683084488
+      ],
+      "distance_to_goal": 0.2743683159351349,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2743683159351349,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 18,
+      "chunk_index": 2,
+      "position": [
+        1.0,
+        0.010123157873749733
+      ],
+      "action": [
+        0.008789204061031342,
+        -0.00205252505838871
+      ],
+      "distance_to_goal": 0.2757774591445923,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2757774591445923,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 19,
+      "chunk_index": 3,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.013797659426927567,
+        -0.010491488501429558
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 20,
+      "chunk_index": 4,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04219108819961548,
+        -0.028887441381812096
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 21,
+      "chunk_index": 5,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.043312959372997284,
+        -0.010229156352579594
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 22,
+      "chunk_index": 6,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04382271319627762,
+        -0.018611451610922813
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 23,
+      "chunk_index": 7,
+      "position": [
+        0.9894899129867554,
+        0.014540398493409157
+      ],
+      "action": [
+        -0.010510073974728584,
+        0.014540398493409157
+      ],
+      "distance_to_goal": 0.2651446461677551,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2651446461677551,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 24,
+      "chunk_index": 0,
+      "position": [
+        0.9949118494987488,
+        0.01852135732769966
+      ],
+      "action": [
+        0.005421951413154602,
+        0.003980959765613079
+      ],
+      "distance_to_goal": 0.2663177251815796,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2663177251815796,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 25,
+      "chunk_index": 1,
+      "position": [
+        1.0,
+        0.012826330959796906
+      ],
+      "action": [
+        0.010621452704071999,
+        -0.005695026367902756
+      ],
+      "distance_to_goal": 0.2739233076572418,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2739233076572418,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 26,
+      "chunk_index": 2,
+      "position": [
+        1.0,
+        0.010690417140722275
+      ],
+      "action": [
+        0.008841171860694885,
+        -0.0021359138190746307
+      ],
+      "distance_to_goal": 0.2753872275352478,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2753872275352478,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 27,
+      "chunk_index": 3,
+      "position": [
+        1.0,
+        0.0001513250172138214
+      ],
+      "action": [
+        0.013831395655870438,
+        -0.010539092123508453
+      ],
+      "distance_to_goal": 0.2827357351779938,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2827357351779938,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 28,
+      "chunk_index": 4,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04217169061303139,
+        -0.028897104784846306
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 29,
+      "chunk_index": 5,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04329102486371994,
+        -0.010250943712890148
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 30,
+      "chunk_index": 6,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04379843547940254,
+        -0.018615173175930977
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 31,
+      "chunk_index": 7,
+      "position": [
+        0.9895122647285461,
+        0.0145280621945858
+      ],
+      "action": [
+        -0.010487755760550499,
+        0.0145280621945858
+      ],
+      "distance_to_goal": 0.26516926288604736,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.26516926288604736,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 32,
+      "chunk_index": 0,
+      "position": [
+        0.9949313998222351,
+        0.018511053174734116
+      ],
+      "action": [
+        0.005419135093688965,
+        0.003982990048825741
+      ],
+      "distance_to_goal": 0.2663390338420868,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2663390338420868,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 33,
+      "chunk_index": 1,
+      "position": [
+        1.0,
+        0.01281733438372612
+      ],
+      "action": [
+        0.01061934418976307,
+        -0.005693718791007996
+      ],
+      "distance_to_goal": 0.2739294469356537,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2739294469356537,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 34,
+      "chunk_index": 2,
+      "position": [
+        1.0,
+        0.010682452470064163
+      ],
+      "action": [
+        0.008839331567287445,
+        -0.002134881913661957
+      ],
+      "distance_to_goal": 0.27539268136024475,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.27539268136024475,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 35,
+      "chunk_index": 3,
+      "position": [
+        1.0,
+        0.00014394894242286682
+      ],
+      "action": [
+        0.01383032277226448,
+        -0.010538503527641296
+      ],
+      "distance_to_goal": 0.28274092078208923,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.28274092078208923,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 36,
+      "chunk_index": 4,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04217178001999855,
+        -0.02889740653336048
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 37,
+      "chunk_index": 5,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.043291449546813965,
+        -0.010250686667859554
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 38,
+      "chunk_index": 6,
+      "position": [
+        1.0,
+        0.0
+      ],
+      "action": [
+        0.04379894956946373,
+        -0.01861521787941456
+      ],
+      "distance_to_goal": 0.2828426957130432,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2828426957130432,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    },
+    {
+      "timestep": 39,
+      "chunk_index": 7,
+      "position": [
+        0.9895118474960327,
+        0.014528350904583931
+      ],
+      "action": [
+        -0.01048816554248333,
+        0.014528350904583931
+      ],
+      "distance_to_goal": 0.2651687562465668,
+      "task_context": {
+        "task_id": "pusht_style_point_reach",
+        "subtask_id": "align_push",
+        "phase": "align_push",
+        "instruction": "push the T block to the goal",
+        "metadata": {
+          "distance_to_goal": 0.2651687562465668,
+          "success_distance": 0.1
+        }
+      },
+      "task_id": "pusht_style_point_reach",
+      "subtask_id": "align_push",
+      "phase": "align_push"
+    }
+  ],
+  "episode_id": 1,
+  "seed": 1001
+}

@@ -1,34 +1,20 @@
 # Evaluation
 
-VLA projects cannot be evaluated by training loss alone. A policy can fit demonstration actions and still behave poorly when its own predictions are rolled out over time.
+Training loss alone does not establish rollout behavior. `eval_vla.py` evaluates the synthetic `pusht_style_point_reach` task using configuration-driven goal, start range, action clip, threshold, seeds, horizon, and execution mode.
+
+It writes `eval_summary.json`, optional `rollouts/episode_*.json`, and categorized `failure_cases.jsonl`. Before saving rollouts it removes stale files from the run being evaluated.
 
 ## Metrics
 
-- `success_rate`: fraction of episodes that reach the goal threshold.
-- `mean_final_distance`: average final distance to the goal.
-- `rollout_length`: number of steps before success or timeout.
-- `action_smoothness`: average action delta across a rollout.
-- `failure_cases`: labeled failed episodes.
-- `failure_category_counts`: first-pass counts for failure types such as `wrong_direction`, `stuck`, `oscillation`, and `action_clipping`.
-- `subtask_frame_counts`: how many rollout frames fell into each coarse task stage.
-- `failure_subtask_counts`: which subtask the rollout ended in when the episode failed.
+- success count/rate and 95% Wilson interval in controlled summaries;
+- final distance, rollout length, and action smoothness;
+- failure categories and final task stage;
+- paired-bootstrap intervals for continuous treatment differences.
 
-## Current Implementation
+Automatic failure labels are inspection aids, not ground truth. Review the saved rollout before reporting a conclusion.
 
-`eval_vla.py` evaluates saved checkpoints on a PushT-style rollout. It writes:
+## Execution semantics
 
-- `eval_summary.json`
-- optional `rollouts/episode_*.json`
-- `failure_cases.jsonl`
+`receding_horizon` executes the first valid action and replans. `open_loop_chunk` executes every valid action before replanning. v1.1 chunk-size experiments use open-loop execution; chunk size one has the same single-action behavior.
 
-Saved rollouts include a `task_context` object on each frame. This gives the project a small task-understanding layer without introducing an LLM dependency.
-
-`scripts/compare_runs.py` compares baseline and ablation run directories.
-
-## Why Failure Taxonomy Matters
-
-Failure labels help turn a weak result into a useful learning artifact. A failed rollout can reveal wrong direction, action clipping, poor coverage, oscillation, or action smoothing issues.
-
-Automatic labels are meant to start the inspection, not replace it. Before writing a resume bullet or report conclusion, open the saved rollout JSON or rollout browser and check whether the label matches the behavior you see.
-
-See `docs/failure_taxonomy.md`.
+Use `scripts/run_controlled_experiments.py` for publishable comparisons and `scripts/run_cpu_smoke.py` only for a local functional check.

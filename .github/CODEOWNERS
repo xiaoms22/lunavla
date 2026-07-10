@@ -1,0 +1,8 @@
+# Default review ownership for repository changes.
+* @xiaoms22
+
+# Security and automation changes require maintainer review.
+/.github/ @xiaoms22
+/SECURITY.md @xiaoms22
+/model/ @xiaoms22
+/trainer/ @xiaoms22
