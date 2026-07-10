@@ -191,19 +191,21 @@ def installed_requirements() -> str:
     )
 
 
+def sbom_command(requirements: Path, output: Path) -> tuple[str, ...]:
+    return (
+        "cyclonedx-py",
+        "requirements",
+        str(requirements),
+        "--output-reproducible",
+        "--output-file",
+        str(output),
+    )
+
+
 def write_environment_and_sbom() -> None:
     requirements = RELEASE_ROOT / "environment-requirements.txt"
     requirements.write_text(installed_requirements(), encoding="utf-8")
-    run(
-        (
-            "cyclonedx-py",
-            "requirements",
-            str(requirements),
-            "--output-reproducible",
-            "--outfile",
-            str(RELEASE_ROOT / "sbom.json"),
-        )
-    )
+    run(sbom_command(requirements, RELEASE_ROOT / "sbom.json"))
 
 
 def write_candidate(
