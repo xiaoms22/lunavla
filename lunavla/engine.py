@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol, runtime_checkable
 
 import numpy as np
 
@@ -29,6 +29,64 @@ _EXECUTION_MODE_ALIASES = {
 }
 
 
+def _json_safe_value(value: Any, name: str) -> Any:
+    if isinstance(value, np.ndarray):
+        return _json_safe_value(value.tolist(), name)
+    if isinstance(value, np.generic):
+        return _json_safe_value(value.item(), name)
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError(f"{name} contains NaN or infinite values")
+        return value
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise TypeError(f"{name} keys must be strings")
+            result[key] = _json_safe_value(item, f"{name}.{key}")
+        return result
+    if isinstance(value, (list, tuple)):
+        return [_json_safe_value(item, f"{name}[{index}]") for index, item in enumerate(value)]
+    raise TypeError(f"{name} contains unsupported value type {type(value).__name__}")
+
+
+def _json_safe_mapping(value: Mapping[str, Any], name: str) -> dict[str, Any]:
+    result = _json_safe_value(value, name)
+    assert isinstance(result, dict)
+    return result
+
+
+def _optional_info_string(
+    info: Mapping[str, Any],
+    primary: str,
+    fallback: str,
+) -> str | None:
+    value = info.get(primary, info.get(fallback))
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise TypeError(f"transition.info.{primary}/{fallback} must be a string")
+    return value
+
+
+def _optional_info_distance(info: Mapping[str, Any]) -> float | None:
+    value: Any = None
+    for key in ("final_distance", "distance", "distance_to_goal"):
+        if key in info:
+            value = info[key]
+            break
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError("transition.info distance must be numeric")
+    result = float(value)
+    if not math.isfinite(result) or result < 0:
+        raise ValueError("transition.info distance must be finite and non-negative")
+    return result
+
+
 def _integer(value: object, name: str, *, positive: bool = False) -> int:
     if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
         raise TypeError(f"{name} must be an integer, not boolean or floating point")
@@ -46,8 +104,7 @@ def normalize_execution_mode(mode: str) -> str:
         return _EXECUTION_MODE_ALIASES[value]
     except KeyError as exc:
         raise ValueError(
-            "execution_mode must be open_loop/open_loop_chunk or "
-            "receding/receding_horizon"
+            "execution_mode must be open_loop/open_loop_chunk or receding/receding_horizon"
         ) from exc
 
 
@@ -73,8 +130,12 @@ class EngineConfig:
             eval_seeds = tuple(_integer(value, "eval_seeds item") for value in eval_seeds)
             if len(eval_seeds) != self.eval_episodes:
                 raise ValueError("eval_seeds must contain exactly eval_episodes values")
-        object.__setattr__(self, "batch_size", _integer(self.batch_size, "batch_size", positive=True))
-        object.__setattr__(self, "train_steps", _integer(self.train_steps, "train_steps", positive=True))
+        object.__setattr__(
+            self, "batch_size", _integer(self.batch_size, "batch_size", positive=True)
+        )
+        object.__setattr__(
+            self, "train_steps", _integer(self.train_steps, "train_steps", positive=True)
+        )
         object.__setattr__(
             self, "eval_episodes", _integer(self.eval_episodes, "eval_episodes", positive=True)
         )
@@ -129,9 +190,7 @@ class EngineConfig:
     def evaluation_seeds(self) -> tuple[int, ...]:
         if self.eval_seeds is not None:
             return self.eval_seeds
-        return tuple(
-            self.evaluation_seed + episode for episode in range(self.eval_episodes)
-        )
+        return tuple(self.evaluation_seed + episode for episode in range(self.eval_episodes))
 
 
 @dataclass(frozen=True)
@@ -145,6 +204,19 @@ class TrainingResult:
         return self.losses[-1]
 
 
+@runtime_checkable
+class ObservationIntervention(Protocol):
+    """Transform only the policy-facing modalities during an evaluation rollout."""
+
+    def apply(
+        self,
+        observation: Observation,
+        *,
+        episode_seed: int,
+        step_index: int,
+    ) -> Observation: ...
+
+
 @dataclass(frozen=True)
 class EpisodeResult:
     seed: int
@@ -154,6 +226,31 @@ class EpisodeResult:
     success: bool
     actions: tuple[tuple[float, ...], ...]
     final_state: tuple[float, ...]
+    task: str | None = None
+    family: str | None = None
+    pair: str | None = None
+    final_distance: float | None = None
+    final_info: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        for name in ("task", "family", "pair"):
+            value = getattr(self, name)
+            if value is not None and not isinstance(value, str):
+                raise TypeError(f"{name} must be a string or None")
+        if self.final_distance is not None:
+            if isinstance(self.final_distance, bool) or not isinstance(
+                self.final_distance, (int, float)
+            ):
+                raise TypeError("final_distance must be numeric or None")
+            distance = float(self.final_distance)
+            if not math.isfinite(distance) or distance < 0:
+                raise ValueError("final_distance must be finite and non-negative")
+            object.__setattr__(self, "final_distance", distance)
+        object.__setattr__(
+            self,
+            "final_info",
+            _json_safe_mapping(self.final_info, "final_info"),
+        )
 
 
 @dataclass(frozen=True)
@@ -237,9 +334,7 @@ class Engine:
                 device=self.config.device,
             )
             loss = float(
-                resolved_policy.train_batch(
-                    step_batch, learning_rate=self.config.learning_rate
-                )
+                resolved_policy.train_batch(step_batch, learning_rate=self.config.learning_rate)
             )
             if not math.isfinite(loss) or loss < 0:
                 raise ValueError("policy returned an invalid training loss")
@@ -250,12 +345,20 @@ class Engine:
             samples=batch.batch_size,
         )
 
-    def evaluate(self, policy: VLAPolicy, env: TaskEnv) -> EvaluationResult:
+    def evaluate(
+        self,
+        policy: VLAPolicy,
+        env: TaskEnv,
+        *,
+        intervention: ObservationIntervention | None = None,
+    ) -> EvaluationResult:
         self._validate_policy(policy)
         if not isinstance(env, TaskEnv):
             raise TypeError("env must implement TaskEnv.reset() and TaskEnv.step()")
+        if intervention is not None and not isinstance(intervention, ObservationIntervention):
+            raise TypeError("intervention must implement ObservationIntervention.apply()")
         episodes = tuple(
-            self._evaluate_episode(policy, env, seed)
+            self._evaluate_episode(policy, env, seed, intervention)
             for seed in self.config.evaluation_seeds
         )
         return EvaluationResult(episodes, self.config.execution_mode)
@@ -279,9 +382,7 @@ class Engine:
     ) -> VLAPolicy:
         load_config = dict(policy_config or {})
         load_config.setdefault("device", self.config.device)
-        policy = self.registry.load_checkpoint(
-            path, policy_id=policy_id, config=load_config
-        )
+        policy = self.registry.load_checkpoint(path, policy_id=policy_id, config=load_config)
         self._validate_policy(policy)
         return policy
 
@@ -329,6 +430,7 @@ class Engine:
         policy: VLAPolicy,
         env: TaskEnv,
         seed: int,
+        intervention: ObservationIntervention | None = None,
     ) -> EpisodeResult:
         observation = env.reset(seed=seed)
         if not isinstance(observation, Observation):
@@ -337,6 +439,7 @@ class Engine:
         actions: list[tuple[float, ...]] = []
         terminated = False
         success = False
+        final_info: dict[str, Any] = {}
         ensembler: Any | None = None
         if self.config.temporal_ensemble_decay is not None:
             from .temporal import TemporalEnsembler
@@ -348,10 +451,18 @@ class Engine:
             )
 
         while len(actions) < self.config.max_steps and not terminated:
-            chunk = policy.predict_chunk(observation)
+            policy_observation = self._policy_observation(
+                observation,
+                intervention=intervention,
+                episode_seed=seed,
+                step_index=len(actions),
+            )
+            chunk = policy.predict_chunk(policy_observation)
             self._validate_chunk(chunk, policy)
             if ensembler is None:
-                executable = [chunk.values[int(index)] for index in np.flatnonzero(chunk.valid_mask)]
+                executable = [
+                    chunk.values[int(index)] for index in np.flatnonzero(chunk.valid_mask)
+                ]
                 if self.config.execution_mode == "receding":
                     executable = executable[:1]
             else:
@@ -369,8 +480,14 @@ class Engine:
                 observation = transition.next_observation
                 terminated = transition.terminated
                 success = bool(transition.info.get("success", False))
+                final_info = _json_safe_mapping(transition.info, "transition.info")
                 if terminated:
                     break
+
+        task = _optional_info_string(final_info, "task_id", "task")
+        family = _optional_info_string(final_info, "task_family", "family")
+        pair = _optional_info_string(final_info, "pair_id", "pair")
+        final_distance = _optional_info_distance(final_info)
 
         return EpisodeResult(
             seed=seed,
@@ -380,6 +497,43 @@ class Engine:
             success=success,
             actions=tuple(actions),
             final_state=tuple(float(value) for value in observation.state),
+            task=task,
+            family=family,
+            pair=pair,
+            final_distance=final_distance,
+            final_info=final_info,
+        )
+
+    @staticmethod
+    def _policy_observation(
+        observation: Observation,
+        *,
+        intervention: ObservationIntervention | None,
+        episode_seed: int,
+        step_index: int,
+    ) -> Observation:
+        state = np.array(observation.state, copy=True)
+        image = None if observation.image is None else np.array(observation.image, copy=True)
+        policy_observation = Observation(
+            state=state,
+            instruction=observation.instruction,
+            image=image,
+        )
+        if intervention is None:
+            return policy_observation
+        intervened = intervention.apply(
+            policy_observation,
+            episode_seed=episode_seed,
+            step_index=step_index,
+        )
+        if not isinstance(intervened, Observation):
+            raise TypeError("ObservationIntervention.apply() must return Observation")
+        if not np.array_equal(intervened.state, observation.state):
+            raise ValueError("an observation intervention must not change state")
+        return Observation(
+            state=intervened.state,
+            instruction=intervened.instruction,
+            image=intervened.image,
         )
 
     def _validate_policy(self, policy: object) -> None:

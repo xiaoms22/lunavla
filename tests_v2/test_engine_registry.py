@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from lunavla.contracts import Observation, PolicyBatch, Transition, VLAPolicy
-from lunavla.engine import Engine, EngineConfig
+from lunavla.engine import Engine, EngineConfig, ObservationIntervention
 from lunavla.memory_data import (
     InMemoryDatasetSource,
     PointReachTaskEnv,
@@ -184,9 +184,7 @@ def test_numpy_adapter_checkpoint_round_trip(
     policy_id: str,
     extra: dict[str, Any],
 ) -> None:
-    engine = Engine(
-        EngineConfig(seed=4, batch_size=8, train_steps=10), registry=registry()
-    )
+    engine = Engine(EngineConfig(seed=4, batch_size=8, train_steps=10), registry=registry())
     data = make_point_reach_demonstrations(episodes=4, steps_per_episode=6, seed=3)
     policy_config = {
         "state_dim": 4,
@@ -328,6 +326,67 @@ class _CountingEnv:
         return transition
 
 
+class _RecordingPolicy(_ChunkPolicy):
+    def __init__(self) -> None:
+        self.observations: list[Observation] = []
+
+    def predict_chunk(self, observation: Observation) -> ActionChunk:
+        self.observations.append(observation)
+        return super().predict_chunk(observation)
+
+
+class _ModalityIntervention:
+    def __init__(self) -> None:
+        self.calls: list[tuple[int, int]] = []
+
+    def apply(
+        self,
+        observation: Observation,
+        *,
+        episode_seed: int,
+        step_index: int,
+    ) -> Observation:
+        self.calls.append((episode_seed, step_index))
+        return Observation(
+            state=observation.state,
+            instruction=f"intervened-{episode_seed}-{step_index}",
+            image=np.full((2, 2, 3), step_index, dtype=np.uint8),
+        )
+
+
+class _StateChangingIntervention:
+    def apply(
+        self,
+        observation: Observation,
+        *,
+        episode_seed: int,
+        step_index: int,
+    ) -> Observation:
+        del episode_seed, step_index
+        observation.state[:] = -999.0
+        return observation
+
+
+class _MetadataEnv(_CountingEnv):
+    def step(self, action: np.ndarray[Any, Any]) -> Transition:
+        transition = super().step(action)
+        return Transition(
+            observation=transition.observation,
+            action=transition.action,
+            reward=transition.reward,
+            next_observation=transition.next_observation,
+            terminated=transition.terminated,
+            info={
+                "success": False,
+                "task_id": "language_goal_left",
+                "task_family": "point_reach",
+                "pair_id": "train-11:episode-1000",
+                "distance": 0.25,
+                "nested": {"values": np.asarray([1, 2], dtype=np.int64)},
+            },
+        )
+
+
 def test_open_loop_and_receding_execution_are_distinct() -> None:
     policy = _ChunkPolicy()
     receding = Engine(
@@ -339,6 +398,63 @@ def test_open_loop_and_receding_execution_are_distinct() -> None:
 
     assert receding.episodes[0].actions == ((1.0,), (1.0,), (1.0,))
     assert open_loop.episodes[0].actions == ((1.0,), (2.0,), (1.0,))
+
+
+@pytest.mark.parametrize(
+    ("execution_mode", "expected_steps", "expected_final_state"),
+    [("receding", [0, 1, 2], (43.0,)), ("open_loop", [0, 2], (44.0,))],
+)
+def test_observation_intervention_applies_at_each_policy_decision(
+    execution_mode: str,
+    expected_steps: list[int],
+    expected_final_state: tuple[float, ...],
+) -> None:
+    policy = _RecordingPolicy()
+    intervention = _ModalityIntervention()
+    assert isinstance(intervention, ObservationIntervention)
+    env = _CountingEnv()
+    result = Engine(
+        EngineConfig(
+            eval_seed=40,
+            eval_episodes=1,
+            max_steps=3,
+            execution_mode=execution_mode,
+        )
+    ).evaluate(policy, env, intervention=intervention)
+
+    assert intervention.calls == [(40, step) for step in expected_steps]
+    assert [item.instruction for item in policy.observations] == [
+        f"intervened-40-{step}" for step in expected_steps
+    ]
+    assert result.episodes[0].final_state == expected_final_state
+    assert env.observation is not None
+    assert env.observation.instruction is None
+    assert env.observation.image is None
+
+
+def test_observation_intervention_cannot_change_state_or_environment() -> None:
+    env = _CountingEnv()
+    with pytest.raises(ValueError, match="must not change state"):
+        Engine(EngineConfig(eval_seed=8, eval_episodes=1, max_steps=1)).evaluate(
+            _ChunkPolicy(), env, intervention=_StateChangingIntervention()
+        )
+
+    assert env.observation is not None
+    np.testing.assert_array_equal(env.observation.state, [8.0])
+
+
+def test_episode_result_records_final_pairing_metadata() -> None:
+    episode = (
+        Engine(EngineConfig(eval_seed=17, eval_episodes=1, max_steps=1))
+        .evaluate(_ChunkPolicy(), _MetadataEnv())
+        .episodes[0]
+    )
+
+    assert episode.task == "language_goal_left"
+    assert episode.family == "point_reach"
+    assert episode.pair == "train-11:episode-1000"
+    assert episode.final_distance == pytest.approx(0.25)
+    assert episode.final_info["nested"] == {"values": [1, 2]}
 
 
 def test_receding_temporal_ensemble_uses_aligned_chunk_history() -> None:
@@ -363,12 +479,12 @@ def test_receding_temporal_ensemble_uses_aligned_chunk_history() -> None:
 
 def test_eval_seed_is_independent_and_defaults_to_training_seed() -> None:
     policy = _ChunkPolicy()
-    inherited = Engine(
-        EngineConfig(seed=23, eval_episodes=2, max_steps=1)
-    ).evaluate(policy, _CountingEnv())
-    explicit = Engine(
-        EngineConfig(seed=23, eval_seed=700, eval_episodes=2, max_steps=1)
-    ).evaluate(policy, _CountingEnv())
+    inherited = Engine(EngineConfig(seed=23, eval_episodes=2, max_steps=1)).evaluate(
+        policy, _CountingEnv()
+    )
+    explicit = Engine(EngineConfig(seed=23, eval_seed=700, eval_episodes=2, max_steps=1)).evaluate(
+        policy, _CountingEnv()
+    )
     noncontiguous = Engine(
         EngineConfig(
             seed=23,
@@ -393,9 +509,7 @@ def test_numpy_device_and_image_fail_clearly() -> None:
             "numpy_linear_chunk",
             {"state_dim": 2, "device": "cuda", "action_dim": 1},
         )
-    policy = registry().create(
-        "numpy_linear_chunk", {"state_dim": 2, "action_dim": 1}
-    )
+    policy = registry().create("numpy_linear_chunk", {"state_dim": 2, "action_dim": 1})
     observation = Observation(
         np.zeros(2, dtype=np.float32), image=np.zeros((4, 4, 3), dtype=np.uint8)
     )
