@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from scripts.run_v2_release_profile import SHA256_PATTERN, canonical_origin, sha256_file
+from scripts.run_v2_release_profile import (
+    SHA256_PATTERN,
+    canonical_origin,
+    installed_requirements,
+    sha256_file,
+)
 
 
 def test_release_sha_contract_is_exact() -> None:
@@ -37,6 +42,13 @@ def test_release_sha256_file(tmp_path: Path) -> None:
 )
 def test_release_origin_normalization(raw: str, expected: str) -> None:
     assert canonical_origin(raw) == expected
+
+
+def test_installed_requirements_is_sorted_and_contains_project() -> None:
+    rows = installed_requirements().splitlines()
+    canonical = [row.split("==", maxsplit=1)[0].lower().replace("_", "-") for row in rows]
+    assert canonical == sorted(canonical)
+    assert any(row.lower().startswith("lunavla==") for row in rows)
 
 
 def test_non_alpha_profiles_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
