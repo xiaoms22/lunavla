@@ -31,4 +31,4 @@ Add `--overwrite` only when replacement is intentional. The migration preserves 
 | v2-core extra | 3.12 | 2.0–2.2 | PyTorch 2.11, torchvision 0.26 |
 | v2 extra | 3.12 | 2.0–2.2 | v2-core plus LeRobot 0.6 dataset profile |
 
-The exact resolution is committed in `uv.lock`. GPU full training is a separate manual workflow and does not block dependency-light or CPU checks.
+The cross-platform resolution is committed in `uv.lock`. Linux CPU CI additionally uses generated, hash-locked `requirements-v2-*-cpu.lock` profiles and rejects CUDA-only packages. GPU full training is a separate experimental manual workflow and does not block dependency-light or CPU checks.

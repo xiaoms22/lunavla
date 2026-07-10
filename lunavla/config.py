@@ -73,6 +73,7 @@ _TASK_IDS = {
     "rendered_visual_point_reach",
 }
 _DATASET_TYPES = {"memory", "mock_pusht", "generated", "jsonl", "lerobot"}
+_VISUAL_FAMILIES = {"all", "direct_reach", "waypoint_reach"}
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
@@ -128,6 +129,145 @@ def _output_path(value: Any, name: str, *, allow_root: bool = False) -> str:
     ):
         raise ValueError(f"{name} must be a normalized repository-relative path under outputs/")
     return path.as_posix()
+
+
+def _validate_cross_section_contracts(
+    policy: dict[str, Any],
+    task: dict[str, Any],
+    dataset: dict[str, Any],
+    evaluation: dict[str, Any],
+) -> None:
+    """Reject combinations that the train/evaluation engine cannot execute."""
+
+    policy_type = str(policy["type"])
+    task_id = str(task["id"])
+    family = str(task["family"])
+    language_ablation = str(evaluation["language_ablation"])
+    image_ablation = str(evaluation["image_ablation"])
+    image_shape = policy.get("image_shape")
+    raw_state_only = dataset["parameters"].get("state_only", False)
+    if not isinstance(raw_state_only, bool):
+        raise TypeError("dataset.parameters.state_only must be boolean")
+    state_only = raw_state_only
+
+    if language_ablation != "none" and image_ablation != "none":
+        raise ValueError("run one language or image ablation at a time")
+    if (
+        language_ablation != "none"
+        and task_id != "language_conditioned_point_reach"
+    ):
+        raise ValueError(
+            "evaluation.language_ablation requires "
+            "task.id=language_conditioned_point_reach"
+        )
+    if image_ablation != "none" and task_id != "rendered_visual_point_reach":
+        raise ValueError(
+            "evaluation.image_ablation requires task.id=rendered_visual_point_reach"
+        )
+    if state_only and task_id != "rendered_visual_point_reach":
+        raise ValueError(
+            "dataset.parameters.state_only is only valid for "
+            "task.id=rendered_visual_point_reach"
+        )
+
+    if policy_type == "transformer_chunk_cvae":
+        d_model = int(policy.get("d_model", 64))
+        nhead = int(policy.get("nhead", 4))
+        if d_model % nhead:
+            raise ValueError("policy.d_model must be divisible by policy.nhead")
+        if policy["instruction_dim"] == 0:
+            raise ValueError(
+                "current v2 task environments provide instructions; Transformer "
+                "policies require policy.instruction_dim > 0"
+            )
+
+    if policy["action_dim"] != 2:
+        raise ValueError(f"task.id={task_id} requires policy.action_dim=2")
+
+    if task_id == "pusht_style_point_reach":
+        if family != "point_reach":
+            raise ValueError(
+                "task.id=pusht_style_point_reach requires task.family=point_reach"
+            )
+        if policy["state_dim"] != 4:
+            raise ValueError(
+                "task.id=pusht_style_point_reach requires policy.state_dim=4"
+            )
+        if image_shape is not None:
+            raise ValueError("pusht_style_point_reach does not provide image observations")
+        if language_ablation != "none" or image_ablation != "none":
+            raise ValueError("pusht_style_point_reach does not support modality ablations")
+        if "render_size" in task:
+            raise ValueError("task.render_size is only valid for rendered visual tasks")
+        return
+
+    if task_id == "language_conditioned_point_reach":
+        if family != "point_reach":
+            raise ValueError(
+                "task.id=language_conditioned_point_reach requires task.family=point_reach"
+            )
+        if policy["state_dim"] != 2:
+            raise ValueError(
+                "task.id=language_conditioned_point_reach requires policy.state_dim=2"
+            )
+        if policy["instruction_dim"] <= 0:
+            raise ValueError(
+                "language_conditioned_point_reach requires policy.instruction_dim > 0"
+            )
+        if image_shape is not None:
+            raise ValueError(
+                "language_conditioned_point_reach does not provide image observations"
+            )
+        split = str(task["parameters"].get("language_split", "heldout"))
+        if split not in {"train", "heldout"}:
+            raise ValueError(
+                "task.parameters.language_split must be train or heldout"
+            )
+        if "render_size" in task:
+            raise ValueError("task.render_size is only valid for rendered visual tasks")
+        return
+
+    if family not in _VISUAL_FAMILIES:
+        raise ValueError(
+            "rendered_visual_point_reach task.family must be all, direct_reach, "
+            "or waypoint_reach"
+        )
+    render_size = int(task.get("render_size", 64))
+    if render_size < 24:
+        raise ValueError("rendered visual task.render_size must be at least 24")
+    task["render_size"] = render_size
+    if policy["instruction_dim"] <= 0:
+        raise ValueError(
+            "rendered_visual_point_reach requires policy.instruction_dim > 0"
+        )
+
+    if state_only:
+        if image_shape is not None:
+            raise ValueError(
+                "visual state-only mode requires policy.image_shape=null"
+            )
+        if image_ablation != "state_only":
+            raise ValueError(
+                "dataset.parameters.state_only=true requires "
+                "evaluation.image_ablation=state_only"
+            )
+        return
+
+    if image_ablation == "state_only":
+        raise ValueError(
+            "evaluation.image_ablation=state_only requires "
+            "dataset.parameters.state_only=true"
+        )
+    if image_shape is None:
+        raise ValueError(
+            "rendered visual image mode requires policy.image_shape=[H, W, 3]"
+        )
+    expected_shape = [render_size, render_size, 3]
+    if image_shape != expected_shape:
+        raise ValueError(
+            "policy.image_shape must match the rendered RGB observation shape "
+            f"{expected_shape}"
+        )
 
 
 @dataclass(frozen=True)
@@ -352,6 +492,8 @@ class ExperimentConfig:
         ):
             raise ValueError("temporal ensembling requires receding_horizon evaluation")
 
+        _validate_cross_section_contracts(policy, task, dataset, evaluation)
+
         artifacts = _mapping(payload.get("artifacts", {}), "artifacts")
         _reject_unknown("artifacts", artifacts, _ARTIFACT_FIELDS)
         artifacts["output_dir"] = _output_path(
@@ -399,8 +541,21 @@ class ExperimentConfig:
 
     @classmethod
     def load(cls, path: str | Path) -> "ExperimentConfig":
-        with Path(path).open("r", encoding="utf-8-sig") as stream:
-            payload = yaml.safe_load(stream)
+        source = Path(path)
+        try:
+            with source.open("r", encoding="utf-8-sig") as stream:
+                payload = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            problem = getattr(exc, "problem", None) or "malformed YAML"
+            mark = getattr(exc, "problem_mark", None)
+            location = (
+                f" at line {mark.line + 1}, column {mark.column + 1}"
+                if mark is not None
+                else ""
+            )
+            raise ValueError(
+                f"invalid YAML in {source}: {problem}{location}"
+            ) from exc
         if not isinstance(payload, Mapping):
             raise TypeError("configuration file must contain a mapping")
         return cls.from_mapping(payload)

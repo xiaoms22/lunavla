@@ -33,9 +33,9 @@ uv run lunavla-v2 validate-config configs/v2/numpy_baseline.yaml
 uv run pytest tests_v2 -m "not torch and not lerobot"
 ```
 
-Install the PyTorch CPU bridge with `uv sync --extra dev --extra v2-core`. The full `v2` extra additionally installs LeRobot's dataset profile. The versioned [`uv.lock`](uv.lock) resolves NumPy 2.2, PyTorch 2.11, torchvision 0.26, and LeRobot 0.6 under Python 3.12.
+Install the PyTorch CPU bridge with `uv sync --extra dev --extra v2-core`. The full `v2` extra additionally installs LeRobot's dataset profile. The versioned [`uv.lock`](uv.lock) resolves NumPy 2.2, PyTorch 2.11, torchvision 0.26, and LeRobot 0.6 under Python 3.12. Linux CI and release evidence use separate hash-locked CPU profiles so they cannot pull CUDA-only packages.
 
-The experimental public surface is `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, and the policy registry/engine. See [`docs/v2/architecture.md`](docs/v2/architecture.md) and [`docs/v2/compatibility.md`](docs/v2/compatibility.md). These APIs remain subject to change until v2.0 stable.
+The experimental public surface is `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, and the policy registry/engine. See [`docs/v2/architecture.md`](docs/v2/architecture.md), [`docs/v2/compatibility.md`](docs/v2/compatibility.md), and [`docs/v2/release_process.md`](docs/v2/release_process.md). These APIs remain subject to change until v2.0 stable.
 
 ## What is implemented
 

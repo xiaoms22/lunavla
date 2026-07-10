@@ -27,10 +27,13 @@ jobs:
           cache: pip
       - name: Install uv and lightweight development profile
         run: |
-          python -m pip install --upgrade pip "uv>=0.11,<0.12"
+          python -m pip install --upgrade pip "uv==0.11.26"
           uv sync --frozen --extra dev
-      - name: Verify the versioned dependency lock
-        run: uv lock --check
+      - name: Verify versioned dependency locks
+        run: |
+          uv lock --check
+          uv pip check
+          uv run --no-sync python scripts/lock_v2_cpu.py --check
       - name: Validate v1.1 and v2 configuration contracts
         run: |
           uv run --no-sync python scripts/validate_configs.py
@@ -55,15 +58,34 @@ jobs:
           python-version: "3.12"
       - name: Install CPU-only PyTorch test environment
         run: |
-          python -m pip install --upgrade pip "uv>=0.11,<0.12"
-          uv sync --frozen --extra dev --extra v2-core \
-            --no-install-package torch --no-install-package torchvision
-          uv pip install torch==2.11.0 torchvision==0.26.0 \
-            --index https://download.pytorch.org/whl/cpu
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v2-core-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
       - name: Verify pinned runtime versions
         run: |
-          uv run --no-sync python -c \
-            "import torch, torchvision; assert torch.__version__.startswith('2.11.'); assert torchvision.__version__.startswith('0.26.')"
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata as metadata
+
+          import numpy
+          import torch
+          import torchvision
+
+          assert numpy.__version__ == "2.2.6"
+          assert torch.__version__ == "2.11.0+cpu"
+          assert torch.version.cuda is None
+          assert not torch.cuda.is_available()
+          assert torchvision.__version__ == "0.26.0+cpu"
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in metadata.distributions()
+              if dist.metadata["Name"]
+          }
+          forbidden = {name for name in installed if name == "triton" or name.startswith("nvidia-")}
+          assert not forbidden, f"CUDA-only packages installed in CPU job: {sorted(forbidden)}"
+          PY
       - name: Run PyTorch CPU contract tests
         run: uv run --no-sync pytest tests_v2 -m torch
 
@@ -78,11 +100,33 @@ jobs:
           python-version: "3.12"
       - name: Install the full CPU v2 dataset profile
         run: |
-          python -m pip install --upgrade pip "uv>=0.11,<0.12"
-          uv sync --frozen --extra dev --extra v2 \
-            --no-install-package torch --no-install-package torchvision
-          uv pip install torch==2.11.0 torchvision==0.26.0 \
-            --index https://download.pytorch.org/whl/cpu
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v2-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+      - name: Reject CUDA-only packages in the CPU adapter profile
+        run: |
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata as metadata
+
+          import numpy
+          import torch
+          import torchvision
+
+          assert numpy.__version__ == "2.2.6"
+          assert torch.__version__ == "2.11.0+cpu"
+          assert torch.version.cuda is None
+          assert torchvision.__version__ == "0.26.0+cpu"
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in metadata.distributions()
+              if dist.metadata["Name"]
+          }
+          forbidden = {name for name in installed if name == "triton" or name.startswith("nvidia-")}
+          assert not forbidden, f"CUDA-only packages installed in CPU job: {sorted(forbidden)}"
+          PY
       - name: Verify the real LeRobot dataset import path
         run: uv run --no-sync pytest tests_v2 -m lerobot
         env:
