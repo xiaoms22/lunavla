@@ -10,6 +10,7 @@ import pytest
 
 from scripts.run_v2_release_profile import (
     EVIDENCE_ARCHIVE_NAMES,
+    RC_ARCHIVE_NAME,
     SHA256_PATTERN,
     canonical_origin,
     evidence_profile_design,
@@ -60,7 +61,7 @@ def test_installed_requirements_is_sorted_and_contains_project() -> None:
 
 
 def test_release_version_contract_matches_all_sources() -> None:
-    assert validated_project_version() == "2.0.0b1"
+    assert validated_project_version() == "2.0.0rc1"
 
 
 def test_release_version_contract_fails_closed_on_mismatch(
@@ -137,6 +138,76 @@ def test_language_and_vision_main_route_without_running_full_matrix(
     assert calls == [("language", "a" * 40), ("vision", "a" * 40)]
 
 
+def test_rc_main_routes_to_contract_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    from scripts import run_v2_release_profile as release
+
+    calls: list[str] = []
+    monkeypatch.setattr(release, "verify_source", lambda expected_sha: None)
+    monkeypatch.setattr(release, "run_rc", lambda expected_sha: calls.append(expected_sha))
+
+    assert release.main(["--profile", "rc", "--expected-sha", "a" * 40]) == 0
+    assert calls == ["a" * 40]
+
+
+def test_rc_candidate_and_archive_bind_contracts_evidence_and_distributions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts import run_v2_release_profile as release
+
+    release_root = tmp_path / "release-assets"
+    (release_root / "dist").mkdir(parents=True)
+    (release_root / "contracts").mkdir()
+    monkeypatch.setattr(release, "RELEASE_ROOT", release_root)
+    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0rc1")
+    distribution = release_root / "dist/lunavla-2.0.0rc1-py3-none-any.whl"
+    distribution.write_bytes(b"wheel")
+    contract = release_root / "contracts/public_api_contract.json"
+    contract.write_text("{}\n", encoding="utf-8")
+    for name in ("environment-requirements.txt", "sbom.json"):
+        (release_root / name).write_text("{}\n", encoding="utf-8")
+    contracts = [
+        {
+            "source_path": "docs/v2/public_api_contract.json",
+            "release_path": "contracts/public_api_contract.json",
+            "sha256": sha256_file(contract),
+        }
+    ]
+    evidence = [
+        {
+            "suite": "visual",
+            "source_git_sha": "b" * 40,
+            "evidence_manifest_sha256": "c" * 64,
+            "snapshot_manifest_sha256": "d" * 64,
+            "workflow_url": "https://github.com/xiaoms22/lunavla/actions/runs/1",
+            "claim_allowed": False,
+            "statement": "Visual-control contribution has not yet been established.",
+        }
+    ]
+
+    candidate = release.write_rc_candidate(
+        expected_sha="a" * 40,
+        published_evidence=evidence,
+        contracts=contracts,
+        distributions=(distribution,),
+    )
+    payload = json.loads(candidate.read_text(encoding="utf-8"))
+    assert payload["profile"] == "rc"
+    assert payload["package_version"] == "2.0.0rc1"
+    assert payload["contract_freeze"] is True
+    assert payload["modality_effect_claims"] is False
+    assert payload["contracts"] == contracts
+    assert payload["published_evidence"] == evidence
+
+    archive = release.write_rc_archive()
+    assert archive.name == RC_ARCHIVE_NAME
+    with tarfile.open(archive, "r:gz") as stream:
+        names = set(stream.getnames())
+    assert "release-assets/release-candidate.json" in names
+    assert "release-assets/contracts/public_api_contract.json" in names
+    assert "release-assets/dist/lunavla-2.0.0rc1-py3-none-any.whl" in names
+
+
 def test_evidence_candidate_preserves_fail_closed_claim_text(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -146,7 +217,7 @@ def test_evidence_candidate_preserves_fail_closed_claim_text(
     release_root = tmp_path / "release-assets"
     release_root.mkdir()
     monkeypatch.setattr(release, "RELEASE_ROOT", release_root)
-    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0b1")
+    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0rc1")
     claim_payload = {
         "claim_id": "instruction_following",
         "allowed": False,
@@ -191,12 +262,12 @@ def test_evidence_candidate_preserves_fail_closed_claim_text(
         distributions=(distribution,),
     )
     payload = json.loads(candidate.read_text(encoding="utf-8"))
-    assert payload["package_version"] == "2.0.0b1"
+    assert payload["package_version"] == "2.0.0rc1"
     assert payload["modality_effect_claims"] is False
     assert payload["claims"] == [claim_payload]
 
 
-def test_distribution_names_must_match_beta1_version(
+def test_distribution_names_must_match_rc1_version(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -204,21 +275,21 @@ def test_distribution_names_must_match_beta1_version(
 
     release_root = tmp_path / "release-assets"
     monkeypatch.setattr(release, "RELEASE_ROOT", release_root)
-    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0b1")
+    monkeypatch.setattr(release, "validated_project_version", lambda: "2.0.0rc1")
 
     def fake_run(command: tuple[str, ...], *, capture: bool = False) -> str:
         del capture
         if "build" in command:
             destination = release_root / "dist"
             destination.mkdir(parents=True)
-            (destination / "lunavla-2.0.0b1-py3-none-any.whl").write_bytes(b"wheel")
-            (destination / "lunavla-2.0.0b1.tar.gz").write_bytes(b"sdist")
+            (destination / "lunavla-2.0.0rc1-py3-none-any.whl").write_bytes(b"wheel")
+            (destination / "lunavla-2.0.0rc1.tar.gz").write_bytes(b"sdist")
         return ""
 
     monkeypatch.setattr(release, "run", fake_run)
     assert {path.name for path in release.build_distributions()} == {
-        "lunavla-2.0.0b1-py3-none-any.whl",
-        "lunavla-2.0.0b1.tar.gz",
+        "lunavla-2.0.0rc1-py3-none-any.whl",
+        "lunavla-2.0.0rc1.tar.gz",
     }
 
 

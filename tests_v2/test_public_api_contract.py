@@ -54,7 +54,7 @@ def _member_descriptor(contract: type[object]) -> dict[str, dict[str, str]]:
 def test_public_api_matches_machine_readable_rc_candidate_descriptor() -> None:
     descriptor = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
     assert descriptor["schema_version"] == 1
-    assert descriptor["release_stage"] == "v2.0.0-rc-candidate"
+    assert descriptor["release_stage"] == "v2.0.0-rc.1"
     assert set(descriptor["contracts"]) == set(PUBLIC_CONTRACTS)
 
     for name, contract in PUBLIC_CONTRACTS.items():

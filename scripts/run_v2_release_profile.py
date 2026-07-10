@@ -24,6 +24,16 @@ from lunavla.evidence_runner import (
     verify_evidence,
 )
 from lunavla.manifest import MANIFEST_SCHEMA_VERSION, RunManifest
+from lunavla.published_evidence import (
+    PUBLISHED_LANGUAGE_EVIDENCE_SHA256,
+    PUBLISHED_LANGUAGE_GIT_SHA,
+    PUBLISHED_LANGUAGE_WORKFLOW_URL,
+    PUBLISHED_VISUAL_EVIDENCE_SHA256,
+    PUBLISHED_VISUAL_GIT_SHA,
+    PUBLISHED_VISUAL_WORKFLOW_URL,
+    verify_language_snapshot,
+    verify_visual_snapshot,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,6 +54,17 @@ EVIDENCE_ARCHIVE_NAMES = {
     "language": "lunavla-v2-language-evidence.tar.gz",
     "vision": "lunavla-v2-vision-evidence.tar.gz",
 }
+RC_ARCHIVE_NAME = "lunavla-v2-rc-evidence.tar.gz"
+RC_CONTRACT_SOURCES = (
+    Path("docs/v2/public_api_contract.json"),
+    Path("docs/v2/contracts/config-design-schema.json"),
+    Path("docs/v2/artifact_contracts.json"),
+    Path("docs/v2/contract_freeze.md"),
+    Path("docs/v2/compatibility.md"),
+    Path("docs/v2/MODEL_CARD.md"),
+    Path("docs/v2/DATA_CARD.md"),
+    Path("SECURITY.md"),
+)
 
 
 @dataclass(frozen=True)
@@ -59,11 +80,13 @@ class ControlledEvidence:
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build a clean LunaVLA v2 release evidence profile.")
+    parser = argparse.ArgumentParser(
+        description="Build a clean LunaVLA v2 release evidence profile."
+    )
     parser.add_argument(
         "--profile",
         required=True,
-        choices=("alpha", "language", "vision", "stable"),
+        choices=("alpha", "language", "vision", "rc", "stable"),
     )
     parser.add_argument("--expected-sha", required=True)
     return parser.parse_args(argv)
@@ -109,9 +132,7 @@ def verify_source(expected_sha: str) -> None:
     )
     if status:
         raise RuntimeError("release evidence requires a clean Git checkout")
-    remote = canonical_origin(
-        run(("git", "remote", "get-url", "origin"), capture=True)
-    )
+    remote = canonical_origin(run(("git", "remote", "get-url", "origin"), capture=True))
     if remote not in {
         "https://github.com/xiaoms22/lunavla",
         "git@github.com:xiaoms22/lunavla",
@@ -197,10 +218,7 @@ def alpha_runs(expected_sha: str) -> list[dict[str, object]]:
                 (
                     sys.executable,
                     "-c",
-                    (
-                        "import json,sys,yaml; "
-                        "print(json.dumps(yaml.safe_load(open(sys.argv[1]))))"
-                    ),
+                    ("import json,sys,yaml; print(json.dumps(yaml.safe_load(open(sys.argv[1]))))"),
                     config_path.as_posix(),
                 ),
                 capture=True,
@@ -285,8 +303,7 @@ def validate_controlled_evidence(
         and not manifest.reduced_design
         and manifest.matrix_complete,
         "source_count": verification.source_count == plan.expected_training_runs,
-        "arm_episode_count": verification.arm_episode_count
-        == plan.expected_arm_episodes,
+        "arm_episode_count": verification.arm_episode_count == plan.expected_arm_episodes,
         "exact_git_sha": verification.git_sha == expected_sha,
         "integrity": all(passed for _, passed in manifest.integrity_checks),
         "snapshot": snapshot_root.is_dir() and not snapshot_root.is_symlink(),
@@ -297,9 +314,7 @@ def validate_controlled_evidence(
             f"controlled {profile} evidence failed release checks: " + ", ".join(failed)
         )
     expected_claim = (
-        "instruction_following"
-        if profile == "language"
-        else "visual_control_contribution"
+        "instruction_following" if profile == "language" else "visual_control_contribution"
     )
     if tuple(claim.claim_id for claim in manifest.claims) != (expected_claim,):
         raise RuntimeError(f"controlled {profile} evidence has an unexpected claim contract")
@@ -312,9 +327,7 @@ def validate_controlled_evidence(
         for source in manifest.sources
     )
     source_hashes = {source.run_id: source.manifest_sha256 for source in manifest.sources}
-    if any(
-        row["manifest_sha256"] != source_hashes[str(row["run_id"])] for row in runs
-    ):
+    if any(row["manifest_sha256"] != source_hashes[str(row["run_id"])] for row in runs):
         raise RuntimeError("release run manifest hashes differ from EvidenceManifest sources")
     return ControlledEvidence(
         profile=profile,
@@ -402,8 +415,7 @@ def build_distributions() -> list[Path]:
     actual_names = {path.name for path in distributions}
     if actual_names != expected_names:
         raise RuntimeError(
-            f"release distributions do not match project version {version}: "
-            f"{sorted(actual_names)}"
+            f"release distributions do not match project version {version}: {sorted(actual_names)}"
         )
     return distributions
 
@@ -421,15 +433,12 @@ def installed_requirements() -> str:
         previous = versions.get(canonical)
         if previous is not None and previous[1] != value[1]:
             raise RuntimeError(
-                f"conflicting installed versions for {canonical}: "
-                f"{previous[1]} and {value[1]}"
+                f"conflicting installed versions for {canonical}: {previous[1]} and {value[1]}"
             )
         versions[canonical] = value
     if not versions:
         raise RuntimeError("the release environment contains no distributions")
-    return "".join(
-        f"{versions[key][0]}=={versions[key][1]}\n" for key in sorted(versions)
-    )
+    return "".join(f"{versions[key][0]}=={versions[key][1]}\n" for key in sorted(versions))
 
 
 def validated_project_version() -> str:
@@ -569,8 +578,7 @@ def write_evidence_file_checksums(
     target = RELEASE_ROOT / f"{evidence.profile}-evidence-files.SHA256SUMS"
     target.write_text(
         "".join(
-            f"{sha256_file(path)}  {path.relative_to(ROOT).as_posix()}\n"
-            for path in candidates
+            f"{sha256_file(path)}  {path.relative_to(ROOT).as_posix()}\n" for path in candidates
         ),
         encoding="utf-8",
     )
@@ -600,16 +608,10 @@ def write_evidence_candidate(
             "design_id": evidence.design.design_id,
             "design_sha256": evidence.design.sha256(),
             "design_path": metadata["design"].relative_to(RELEASE_ROOT).as_posix(),
-            "evidence_manifest_path": metadata["manifest"]
-            .relative_to(RELEASE_ROOT)
-            .as_posix(),
+            "evidence_manifest_path": metadata["manifest"].relative_to(RELEASE_ROOT).as_posix(),
             "evidence_manifest_sha256": sha256_file(metadata["manifest"]),
-            "verification_path": metadata["verification"]
-            .relative_to(RELEASE_ROOT)
-            .as_posix(),
-            "claim_summary_path": metadata["claims"]
-            .relative_to(RELEASE_ROOT)
-            .as_posix(),
+            "verification_path": metadata["verification"].relative_to(RELEASE_ROOT).as_posix(),
+            "claim_summary_path": metadata["claims"].relative_to(RELEASE_ROOT).as_posix(),
             "evidence_files_sha256_path": metadata["file_checksums"]
             .relative_to(RELEASE_ROOT)
             .as_posix(),
@@ -675,9 +677,7 @@ def write_controlled_evidence_archive(
 
 def write_checksums() -> Path:
     candidates = sorted(
-        path
-        for path in RELEASE_ROOT.rglob("*")
-        if path.is_file() and path.name != "SHA256SUMS"
+        path for path in RELEASE_ROOT.rglob("*") if path.is_file() and path.name != "SHA256SUMS"
     )
     target = RELEASE_ROOT / "SHA256SUMS"
     target.write_text(
@@ -688,6 +688,116 @@ def write_checksums() -> Path:
         encoding="utf-8",
     )
     return target
+
+
+def verify_rc_published_evidence() -> list[dict[str, object]]:
+    """Re-verify the two registered studies without treating closed claims as failures."""
+
+    language = verify_language_snapshot(ROOT / "results/v2/language-alpha2")
+    visual = verify_visual_snapshot(ROOT / "results/v2/visual-beta1")
+    rows = (
+        (
+            "language",
+            language,
+            PUBLISHED_LANGUAGE_GIT_SHA,
+            PUBLISHED_LANGUAGE_EVIDENCE_SHA256,
+            PUBLISHED_LANGUAGE_WORKFLOW_URL,
+        ),
+        (
+            "visual",
+            visual,
+            PUBLISHED_VISUAL_GIT_SHA,
+            PUBLISHED_VISUAL_EVIDENCE_SHA256,
+            PUBLISHED_VISUAL_WORKFLOW_URL,
+        ),
+    )
+    result: list[dict[str, object]] = []
+    for suite, published, git_sha, evidence_sha256, workflow_url in rows:
+        if published.git_sha != git_sha or published.evidence_manifest_sha256 != evidence_sha256:
+            raise RuntimeError(f"registered {suite} publication identity changed")
+        result.append(
+            {
+                "suite": suite,
+                "source_git_sha": git_sha,
+                "evidence_manifest_sha256": evidence_sha256,
+                "snapshot_manifest_sha256": sha256_file(published.snapshot_manifest_path),
+                "workflow_url": workflow_url,
+                "claim_allowed": False,
+                "statement": published.statement,
+            }
+        )
+    return result
+
+
+def write_rc_contract_files() -> list[dict[str, str]]:
+    """Copy the frozen machine-readable descriptors and human contract boundary."""
+
+    destination = RELEASE_ROOT / "contracts"
+    destination.mkdir()
+    records: list[dict[str, str]] = []
+    for relative in RC_CONTRACT_SOURCES:
+        source = ROOT / relative
+        if source.is_symlink() or not source.is_file():
+            raise RuntimeError(f"RC contract source must be a real file: {relative}")
+        target = destination / relative.name
+        if target.exists():
+            raise RuntimeError(f"duplicate RC contract asset name: {target.name}")
+        shutil.copyfile(source, target)
+        records.append(
+            {
+                "source_path": relative.as_posix(),
+                "release_path": target.relative_to(RELEASE_ROOT).as_posix(),
+                "sha256": sha256_file(target),
+            }
+        )
+    return records
+
+
+def write_rc_candidate(
+    *,
+    expected_sha: str,
+    published_evidence: Sequence[dict[str, object]],
+    contracts: Sequence[dict[str, str]],
+    distributions: Sequence[Path],
+) -> Path:
+    path = RELEASE_ROOT / "release-candidate.json"
+    payload = {
+        "schema_version": 3,
+        "profile": "rc",
+        "expected_sha": expected_sha,
+        "package_version": validated_project_version(),
+        "authoritative_device": "cpu",
+        "contract_freeze": True,
+        "modality_effect_claims": False,
+        "published_evidence": list(published_evidence),
+        "contracts": list(contracts),
+        "distributions": [
+            {
+                "path": item.relative_to(RELEASE_ROOT).as_posix(),
+                "sha256": sha256_file(item),
+            }
+            for item in distributions
+        ],
+    }
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def write_rc_archive() -> Path:
+    archive = RELEASE_ROOT / RC_ARCHIVE_NAME
+    with tarfile.open(archive, "w:gz", format=tarfile.PAX_FORMAT) as stream:
+        for name in (
+            "release-candidate.json",
+            "environment-requirements.txt",
+            "sbom.json",
+        ):
+            stream.add(RELEASE_ROOT / name, arcname=f"release-assets/{name}")
+        stream.add(RELEASE_ROOT / "contracts", arcname="release-assets/contracts")
+        stream.add(RELEASE_ROOT / "dist", arcname="release-assets/dist")
+    return archive
 
 
 def run_alpha(expected_sha: str) -> None:
@@ -704,6 +814,27 @@ def run_alpha(expected_sha: str) -> None:
             distributions=distributions,
         )
         write_evidence_archive()
+        write_checksums()
+    except Exception:
+        shutil.rmtree(RELEASE_ROOT, ignore_errors=True)
+        raise
+
+
+def run_rc(expected_sha: str) -> None:
+    prepare_release_root()
+    try:
+        alpha_quality_gate()
+        published_evidence = verify_rc_published_evidence()
+        distributions = build_distributions()
+        write_environment_and_sbom()
+        contracts = write_rc_contract_files()
+        write_rc_candidate(
+            expected_sha=expected_sha,
+            published_evidence=published_evidence,
+            contracts=contracts,
+            distributions=distributions,
+        )
+        write_rc_archive()
         write_checksums()
     except Exception:
         shutil.rmtree(RELEASE_ROOT, ignore_errors=True)
@@ -753,6 +884,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         run_alpha(expected_sha)
     elif args.profile in EVIDENCE_PROFILE_DESIGNS:
         run_controlled_profile(args.profile, expected_sha)
+    elif args.profile == "rc":
+        run_rc(expected_sha)
     else:
         raise RuntimeError(
             f"profile {args.profile!r} is gated until its stable release contract lands"

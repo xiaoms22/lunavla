@@ -19,7 +19,13 @@ def test_v2_dispatcher_is_manual_and_read_mostly() -> None:
     dispatch = payload["on"]["workflow_dispatch"]
     inputs = dispatch["inputs"]
     assert set(inputs) == {"source_ref", "expected_sha", "profile"}
-    assert inputs["profile"]["options"] == ["alpha", "language", "vision", "stable"]
+    assert inputs["profile"]["options"] == [
+        "alpha",
+        "language",
+        "vision",
+        "rc",
+        "stable",
+    ]
     assert payload["permissions"] == {
         "contents": "read",
         "id-token": "write",

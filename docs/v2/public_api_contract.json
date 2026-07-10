@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_stage": "v2.0.0-rc-candidate",
+  "release_stage": "v2.0.0-rc.1",
   "contracts": {
     "Observation": {
       "kind": "dataclass",

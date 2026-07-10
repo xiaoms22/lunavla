@@ -41,9 +41,19 @@ profile can still complete, while the claim remains disabled and is reported as 
 established.” Missing cells, non-canonical budgets, dirty or mixed source SHAs, hash mismatches,
 non-CPU runs, or failed reproducibility remain hard release failures.
 
-The already-verified language evidence package uses project version `2.0.0a2`. The Beta source is
-explicitly versioned `2.0.0b1`; running a controlled profile never assigns or changes a package
-version on its own.
+The already-verified language and visual evidence remain bound to their original Alpha/Beta source
+commits and package versions. The RC source is explicitly versioned `2.0.0rc1`; running a release
+profile never assigns or changes a package version on its own.
+
+## RC contract profile
+
+The `rc` profile reruns the complete quality gate, read-only verifies both registered full evidence
+snapshots, builds the `2.0.0rc1` wheel and sdist, and packages the three machine-readable golden
+descriptors together with the contract freeze, compatibility guide, model/data cards, and security
+policy. Its release candidate records every contract-file hash and the original evidence Git SHA,
+EvidenceManifest hash, workflow URL, closed claim statement, distributions, environment, and SBOM.
+`lunavla-v2-rc-evidence.tar.gz` and top-level `SHA256SUMS` are provenance-attested by the dispatcher.
+The RC profile freezes interfaces; it does not rerun or reinterpret modality performance.
 
 ## Publishing boundary
 
@@ -61,3 +71,7 @@ headless `gym_pusht/PushT-v0` smoke. Only that JSON manifest is uploaded; datase
 never release assets. The manifest must also pass its GitHub provenance-attestation verification.
 Network failure does not block pull requests, but a successful rerun on the same candidate SHA is
 mandatory before the beta prerelease. The smoke carries no PushT performance claim.
+
+Before publishing `v2.0.0-rc.1`, the same real integration smoke is rerun on the exact RC commit.
+Stable release evidence is built again only after the protected `v2` merge reaches `main`; no
+pre-merge RC artifact may substitute for that post-merge stable run.

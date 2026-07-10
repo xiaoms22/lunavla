@@ -1,4 +1,4 @@
-# LunaVLA v2 experimental model card
+# LunaVLA v2 release-candidate model card
 
 v2 bridges the v1.1 NumPy baselines and an optional teaching-scale PyTorch action-chunk Transformer through one engine. The PyTorch implementation includes learned action queries, a conditional variational latent path with KL loss, padded-target masks, and temporal ensembling. The short registry alias `act` refers only to that implementation; it does not imply reproduction of a paper, benchmark score, or robot result.
 
@@ -16,4 +16,4 @@ Transformer checkpoint schema 3 validates an exact root and complete config, exa
 
 Intended uses are interface research, tiny-batch overfit checks, controlled modality ablations, and adapter development. It is not intended for real robots, safety-critical control, production serving, or claims of general instruction following or visual reasoning.
 
-Language and image paths remain experimental until their paired multi-seed confidence intervals exclude zero. Synthetic point tasks can hide perception, contact, embodiment, and distribution-shift failures. LeRobot compatibility does not transfer evidence from an upstream dataset or environment to LunaVLA.
+The completed language and image studies did not open their predeclared contribution gates. Instruction-following and visual-control contribution therefore remain **not established**. Synthetic point tasks can hide perception, contact, embodiment, and distribution-shift failures. LeRobot compatibility does not transfer evidence from an upstream dataset or environment to LunaVLA.

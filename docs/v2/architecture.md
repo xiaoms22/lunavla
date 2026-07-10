@@ -1,4 +1,4 @@
-# v2 experimental architecture
+# v2 release-candidate architecture
 
 LunaVLA v2 uses one modality-preserving boundary for the NumPy baseline and optional PyTorch policies:
 
@@ -49,4 +49,4 @@ version, required parameter, or enum requires an explicit descriptor update.
 
 ## Stability
 
-These interfaces are an RC candidate, not the v2.0 stable guarantee. The machine-readable [`public_api_contract.json`](public_api_contract.json) records the candidate public fields and `inspect.signature` values for `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `PolicyBatch`, and `Transition`; CI rejects accidental drift. v2.0 stable will adopt or deliberately revise this descriptor only after the remaining evidence, migration, and release gates pass.
+These interfaces are frozen for `v2.0.0-rc.1`. The machine-readable [`public_api_contract.json`](public_api_contract.json) records the public fields and `inspect.signature` values for `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `PolicyBatch`, and `Transition`; CI rejects accidental drift. The complete schema and compatibility matrix is in [`contract_freeze.md`](contract_freeze.md). v2.0 stable must preserve this boundary unless an explicit versioned migration is added.
