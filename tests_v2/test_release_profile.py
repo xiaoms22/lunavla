@@ -9,6 +9,7 @@ from scripts.run_v2_release_profile import (
     SHA256_PATTERN,
     canonical_origin,
     installed_requirements,
+    sbom_command,
     sha256_file,
 )
 
@@ -49,6 +50,15 @@ def test_installed_requirements_is_sorted_and_contains_project() -> None:
     canonical = [row.split("==", maxsplit=1)[0].lower().replace("_", "-") for row in rows]
     assert canonical == sorted(canonical)
     assert any(row.lower().startswith("lunavla==") for row in rows)
+
+
+def test_sbom_command_uses_cyclonedx_7_output_contract(tmp_path: Path) -> None:
+    command = sbom_command(tmp_path / "requirements.txt", tmp_path / "sbom.json")
+    assert command[:2] == ("cyclonedx-py", "requirements")
+    assert "--output-reproducible" in command
+    assert "--output-file" in command
+    assert "--outfile" not in command
+    assert command[-1].endswith("sbom.json")
 
 
 def test_non_alpha_profiles_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
