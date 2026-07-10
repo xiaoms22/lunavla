@@ -53,6 +53,15 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def canonical_origin(remote: str) -> str:
+    """Normalize Git's equivalent HTTPS/SSH spelling without broadening ownership."""
+
+    value = remote.strip()
+    if value.endswith(".git"):
+        value = value[:-4]
+    return value.rstrip("/")
+
+
 def verify_source(expected_sha: str) -> None:
     if not SHA256_PATTERN.fullmatch(expected_sha):
         raise ValueError("--expected-sha must be a 40-character lowercase Git SHA")
@@ -65,10 +74,12 @@ def verify_source(expected_sha: str) -> None:
     )
     if status:
         raise RuntimeError("release evidence requires a clean Git checkout")
-    remote = run(("git", "remote", "get-url", "origin"), capture=True)
+    remote = canonical_origin(
+        run(("git", "remote", "get-url", "origin"), capture=True)
+    )
     if remote not in {
-        "https://github.com/xiaoms22/lunavla.git",
-        "git@github.com:xiaoms22/lunavla.git",
+        "https://github.com/xiaoms22/lunavla",
+        "git@github.com:xiaoms22/lunavla",
     }:
         raise RuntimeError(f"refusing release evidence from unexpected origin: {remote}")
 
