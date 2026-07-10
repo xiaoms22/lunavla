@@ -2,9 +2,9 @@ name: V2 CPU
 
 on:
   push:
-    branches: [v2]
+    branches: [main, v2]
   pull_request:
-    branches: [v2]
+    branches: [main, v2]
   workflow_dispatch:
 
 permissions:
