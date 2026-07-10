@@ -37,7 +37,7 @@ def _visual_mapping(*, state_only: bool = False) -> dict[str, object]:
     payload = _v2_mapping()
     payload["policy"] = {
         "type": "transformer_chunk",
-        "state_dim": 7,
+        "state_dim": 3,
         "instruction_dim": 8,
         "image_shape": None if state_only else [32, 32, 3],
         "action_dim": 2,
@@ -56,7 +56,10 @@ def _visual_mapping(*, state_only: bool = False) -> dict[str, object]:
         "type": "memory",
         "split": "train",
         "seed": 7,
-        "parameters": {"state_only": state_only},
+        "parameters": {
+            "state_only": state_only,
+            "observation_mode": "vision_required",
+        },
     }
     payload["evaluation"] = {
         "episodes": 2,
@@ -215,6 +218,50 @@ def test_visual_config_rejects_inconsistent_image_and_state_only_modes() -> None
     invalid["dataset"]["parameters"]["state_only"] = "false"
     with pytest.raises(TypeError, match="state_only must be boolean"):
         ExperimentConfig.from_mapping(invalid)
+
+
+def test_visual_observation_mode_is_strict_and_task_scoped() -> None:
+    invalid = _visual_mapping()
+    assert isinstance(invalid["dataset"], dict)
+    assert isinstance(invalid["dataset"]["parameters"], dict)
+    invalid["dataset"]["parameters"]["observation_mode"] = "unknown"
+    with pytest.raises(ValueError, match="observation_mode must be"):
+        ExperimentConfig.from_mapping(invalid)
+
+    invalid = _visual_mapping()
+    assert isinstance(invalid["dataset"], dict)
+    assert isinstance(invalid["dataset"]["parameters"], dict)
+    invalid["dataset"]["parameters"]["observation_mode"] = True
+    with pytest.raises(TypeError, match="observation_mode must be a string"):
+        ExperimentConfig.from_mapping(invalid)
+
+    invalid = _v2_mapping()
+    assert isinstance(invalid["dataset"], dict)
+    invalid["dataset"]["parameters"] = {"observation_mode": "privileged"}
+    with pytest.raises(ValueError, match="observation_mode is only valid"):
+        ExperimentConfig.from_mapping(invalid)
+
+
+@pytest.mark.parametrize(
+    ("observation_mode", "state_dim"),
+    [("privileged", 7), ("vision_required", 3)],
+)
+def test_visual_observation_mode_requires_matching_policy_state(
+    observation_mode: str,
+    state_dim: int,
+) -> None:
+    valid = _visual_mapping()
+    assert isinstance(valid["policy"], dict)
+    assert isinstance(valid["dataset"], dict)
+    assert isinstance(valid["dataset"]["parameters"], dict)
+    valid["policy"]["state_dim"] = state_dim
+    valid["dataset"]["parameters"]["observation_mode"] = observation_mode
+    resolved = ExperimentConfig.from_mapping(valid)
+    assert resolved.dataset["parameters"]["observation_mode"] == observation_mode
+
+    valid["policy"]["state_dim"] = 3 if state_dim == 7 else 7
+    with pytest.raises(ValueError, match="observation_mode=.*requires policy.state_dim"):
+        ExperimentConfig.from_mapping(valid)
 
 
 def test_task_specific_dimensions_and_transformer_heads_fail_during_parse() -> None:

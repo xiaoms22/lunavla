@@ -6,8 +6,22 @@ from model.policy_base import ActionChunk
 from .ablation import PairedAblationResult, evaluate_action_error_pairs
 from .config import ExperimentConfig
 from .contracts import DatasetSource, Observation, PolicyBatch, TaskEnv, Transition, VLAPolicy
-from .engine import Engine, EngineConfig, EvaluationResult, TrainingResult
-from .evidence import PairedInterval, paired_bootstrap_interval, wilson_interval
+from .engine import (
+    Engine,
+    EngineConfig,
+    EvaluationResult,
+    ObservationIntervention,
+    TrainingResult,
+)
+from .evidence import (
+    EvidenceManifest,
+    HierarchicalPairedInterval,
+    PairedInterval,
+    hierarchical_paired_bootstrap_interval,
+    paired_bootstrap_interval,
+    wilson_interval,
+)
+from .evidence_design import EvidenceDesign
 from .manifest import RunManifest
 from .registry import PolicyRegistry, default_policy_registry
 from .temporal import TemporalEnsembler
@@ -20,9 +34,13 @@ __all__ = [
     "DatasetSource",
     "Engine",
     "EngineConfig",
+    "EvidenceDesign",
+    "EvidenceManifest",
     "EvaluationResult",
     "ExperimentConfig",
+    "HierarchicalPairedInterval",
     "Observation",
+    "ObservationIntervention",
     "PairedAblationResult",
     "PairedInterval",
     "PolicyBatch",
@@ -36,6 +54,7 @@ __all__ = [
     "VLARecord",
     "default_policy_registry",
     "evaluate_action_error_pairs",
+    "hierarchical_paired_bootstrap_interval",
     "paired_bootstrap_interval",
     "wilson_interval",
 ]

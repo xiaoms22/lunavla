@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from lunavla.contracts import DatasetSource, Observation, TaskEnv, Transition
+from lunavla.config import ExperimentConfig
 from lunavla.language_tasks import (
     InstructionConditionedPointReachEnv,
     MASK_INSTRUCTION,
@@ -134,12 +135,116 @@ def test_pil_visual_tasks_cover_two_families_and_state_only_baseline() -> None:
     examples = build_visual_examples(seeds=(2, 7), image_size=40)
     assert {example.family for example in examples} == {"direct_reach", "waypoint_reach"}
     assert all(example.observation.image is not None for example in examples)
+    assert all(example.observation.state.shape == (3,) for example in examples)
+    assert all(example.metadata["observation_mode"] == "vision_required" for example in examples)
     baseline = make_state_only_baseline(examples)
     for visual, state_only in zip(examples, baseline):
         assert state_only.observation.image is None
         assert np.array_equal(visual.observation.state, state_only.observation.state)
         assert np.array_equal(visual.action, state_only.action)
         assert state_only.metadata["paired_with"] == visual.example_id
+
+
+def test_vision_required_geometry_is_seeded_and_absent_from_policy_state() -> None:
+    env = RenderedPointReachEnv(
+        family="waypoint_reach",
+        observation_mode="vision_required",
+        image_size=40,
+    )
+    first = env.reset(seed=5)
+    first_goal = env.spec.goal.copy()
+    first_waypoint = env.spec.waypoint.copy()
+    first_image = np.asarray(first.image).copy()
+    repeated = env.reset(seed=5)
+
+    assert first.state.shape == (3,)
+    assert first.state[2] == 0.0
+    assert first.instruction == "complete the waypoint_reach task"
+    assert repeated.instruction == first.instruction
+    assert np.array_equal(env.spec.goal, first_goal)
+    assert np.array_equal(env.spec.waypoint, first_waypoint)
+    assert np.array_equal(repeated.state, first.state)
+    assert np.array_equal(repeated.image, first_image)
+
+    second = env.reset(seed=6)
+    assert second.state.shape == (3,)
+    assert second.instruction == first.instruction
+    assert not np.array_equal(env.spec.goal, first_goal)
+    assert not np.array_equal(env.spec.waypoint, first_waypoint)
+    assert not np.array_equal(second.image, first_image)
+
+
+def test_vision_required_identical_state_can_have_different_hidden_geometry() -> None:
+    env = RenderedPointReachEnv(
+        family="waypoint_reach",
+        observation_mode="vision_required",
+        image_size=40,
+    )
+    first = env.reset(seed=5)
+    first_goal = env.spec.goal.copy()
+    first_waypoint = env.spec.waypoint.copy()
+    second = env.reset(seed=21)
+
+    assert np.array_equal(first.state, second.state)
+    assert first.instruction == second.instruction
+    assert not np.array_equal(first_goal, env.spec.goal)
+    assert not np.array_equal(first_waypoint, env.spec.waypoint)
+    assert not np.array_equal(first.image, second.image)
+
+
+def test_privileged_visual_mode_preserves_legacy_seven_value_state() -> None:
+    env = RenderedPointReachEnv(
+        family="waypoint_reach",
+        observation_mode="privileged",
+        image_size=32,
+    )
+    first = env.reset(seed=3)
+    second = env.reset(seed=99)
+
+    assert first.state.shape == (7,)
+    assert second.state.shape == (7,)
+    assert np.array_equal(first.state[2:4], env.spec.goal)
+    assert np.array_equal(first.state[4:6], env.spec.waypoint)
+    assert np.array_equal(first.state[2:6], second.state[2:6])
+
+
+def test_vision_required_image_and_state_only_envs_are_exactly_paired() -> None:
+    visual = RenderedPointReachEnv(
+        family="waypoint_reach",
+        observation_mode="vision_required",
+        image_size=32,
+    )
+    state_only = RenderedPointReachEnv(
+        family="waypoint_reach",
+        state_only=True,
+        observation_mode="vision_required",
+        image_size=32,
+    )
+    visual_observation = visual.reset(seed=17)
+    state_observation = state_only.reset(seed=17)
+
+    assert visual_observation.image is not None
+    assert state_observation.image is None
+    assert np.array_equal(visual.spec.goal, state_only.spec.goal)
+    assert np.array_equal(visual.spec.waypoint, state_only.spec.waypoint)
+    assert np.array_equal(visual_observation.state, state_observation.state)
+
+    for _ in range(4):
+        visual_action = visual.expert_action()
+        state_action = state_only.expert_action()
+        assert np.array_equal(visual_action, state_action)
+        visual_transition = visual.step(visual_action)
+        state_transition = state_only.step(state_action)
+        assert np.array_equal(
+            visual_transition.next_observation.state,
+            state_transition.next_observation.state,
+        )
+        assert visual_transition.terminated == state_transition.terminated
+
+
+def test_visual_observation_mode_is_strict() -> None:
+    with pytest.raises(ValueError, match="observation_mode"):
+        RenderedPointReachEnv(observation_mode="unknown")  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("mode", ["occlusion", "shuffle"])
@@ -170,8 +275,10 @@ def test_visual_environment_protocol_and_image_shape(family: str) -> None:
     assert observation.image.shape == (32, 32, 3)
     transition = env.step(env.expert_action())
     assert transition.next_observation.image is not None
+    assert transition.info["task_id"] == "rendered_visual_point_reach"
     assert transition.info["task_family"] == family
     assert "success" in transition.info
+    assert {"goal", "waypoint", "target"}.isdisjoint(transition.info)
 
 
 def test_rendered_visual_dataset_source_supports_visual_and_state_only_paths() -> None:
@@ -186,12 +293,28 @@ def test_rendered_visual_dataset_source_supports_visual_and_state_only_paths() -
     }
     assert all(transition.observation.image is not None for transition in visual)
     assert all(transition.observation.image is None for transition in state_only)
+    assert all(transition.observation.state.shape == (3,) for transition in visual)
+    assert all(transition.info["observation_mode"] == "vision_required" for transition in visual)
     assert len(visual) == len(state_only)
     assert all(
         np.array_equal(left.observation.state, right.observation.state)
+        and np.array_equal(left.next_observation.state, right.next_observation.state)
         and np.array_equal(left.action, right.action)
         for left, right in zip(visual, state_only)
     )
+
+
+@pytest.mark.parametrize(
+    "config_path",
+    [
+        "configs/v2/transformer_visual_cpu.yaml",
+        "configs/v2/transformer_visual_state_only_cpu.yaml",
+    ],
+)
+def test_visual_configs_select_vision_required_state_contract(config_path: str) -> None:
+    config = ExperimentConfig.load(config_path)
+    assert config.policy["state_dim"] == 3
+    assert config.dataset["parameters"]["observation_mode"] == "vision_required"
 
 
 def test_visual_suite_seeds_cover_both_task_families() -> None:

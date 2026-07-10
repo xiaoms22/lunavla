@@ -6,9 +6,10 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import os
 import platform
 import subprocess
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -18,7 +19,19 @@ from lunavla.config import ExperimentConfig
 from lunavla.contracts import Transition
 
 
-MANIFEST_SCHEMA_VERSION = 2
+MANIFEST_SCHEMA_VERSION = 3
+_READ_ONLY_MANIFEST_SCHEMA_VERSIONS = {2}
+_SHA256_HEX = frozenset("0123456789abcdef")
+
+
+def _validate_sha256(value: str, name: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in _SHA256_HEX for character in value)
+    ):
+        raise ValueError(f"{name} must be a lowercase SHA-256 hex digest")
+    return value
 
 
 def sha256_file(path: str | Path) -> str:
@@ -45,6 +58,39 @@ def _jsonable(value: Any) -> Any:
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     raise TypeError(f"manifest contains unsupported value type {type(value).__name__}")
+
+
+def _manifest_mapping(value: Mapping[str, Any], name: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise TypeError(f"{name} must be a mapping")
+    converted = _jsonable(value)
+    assert isinstance(converted, dict)
+    return converted
+
+
+def _manifest_mapping_list(
+    value: Sequence[Mapping[str, Any]],
+    name: str,
+) -> list[dict[str, Any]]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise TypeError(f"{name} must be a sequence of mappings")
+    result: list[dict[str, Any]] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, Mapping):
+            raise TypeError(f"{name}[{index}] must be a mapping")
+        result.append(_manifest_mapping(item, f"{name}[{index}]"))
+    return result
+
+
+def _sha256_json(value: Any) -> str:
+    encoded = json.dumps(
+        _jsonable(value),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def sha256_transitions(transitions: Sequence[Transition]) -> str:
@@ -76,17 +122,13 @@ def sha256_transitions(transitions: Sequence[Transition]) -> str:
                 "image_shape": None if next_image is None else list(next_image.shape),
                 "image_dtype": None if next_image is None else str(next_image.dtype),
                 "image_sha256": (
-                    None
-                    if next_image is None
-                    else hashlib.sha256(next_image.tobytes()).hexdigest()
+                    None if next_image is None else hashlib.sha256(next_image.tobytes()).hexdigest()
                 ),
             },
             "terminated": transition.terminated,
             "info": _jsonable(transition.info),
         }
-        digest.update(
-            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        )
+        digest.update(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"))
         digest.update(b"\n")
     return digest.hexdigest()
 
@@ -152,6 +194,59 @@ def _dependency_versions() -> dict[str, str]:
     return result
 
 
+def _runtime_determinism(device: str) -> dict[str, Any]:
+    python_hash_seed = os.environ.get("PYTHONHASHSEED")
+    torch_version: str = "not-installed"
+    torch_deterministic_algorithms: bool | None = None
+    cudnn_deterministic: bool | None = None
+    cudnn_benchmark: bool | None = None
+    try:
+        import torch
+
+        torch_version = str(torch.__version__)
+        torch_deterministic_algorithms = bool(torch.are_deterministic_algorithms_enabled())
+        cudnn_deterministic = bool(torch.backends.cudnn.deterministic)
+        cudnn_benchmark = bool(torch.backends.cudnn.benchmark)
+    except (ImportError, OSError):
+        pass
+
+    torch_ready = torch_version == "not-installed" or torch_deterministic_algorithms is True
+    cudnn_ready = not str(device).startswith("cuda") or (
+        cudnn_deterministic is True and cudnn_benchmark is False
+    )
+    flags_satisfied = (
+        python_hash_seed is not None and str(device) == "cpu" and torch_ready and cudnn_ready
+    )
+    return {
+        # One process can record its flags; repeatability is verified separately.
+        "status": "unverified",
+        "deterministic_flags_satisfied": flags_satisfied,
+        "device": str(device),
+        "PYTHONHASHSEED": python_hash_seed,
+        "numpy_bit_generator": np.random.PCG64.__name__,
+        "torch_version": torch_version,
+        "torch_deterministic_algorithms": torch_deterministic_algorithms,
+        "cudnn_deterministic": cudnn_deterministic,
+        "cudnn_benchmark": cudnn_benchmark,
+    }
+
+
+def _merge_recorded_mapping(
+    recorded: Mapping[str, Any],
+    supplied: Mapping[str, Any] | None,
+    name: str,
+) -> dict[str, Any]:
+    result = _manifest_mapping(recorded, name)
+    if supplied is None:
+        return result
+    additions = _manifest_mapping(supplied, name)
+    for key, value in additions.items():
+        if key in result and result[key] != value:
+            raise ValueError(f"{name}.{key} conflicts with the recorded run value")
+        result[key] = value
+    return result
+
+
 def _portable_command(root: Path, command: Iterable[str]) -> list[str]:
     resolved_root = root.resolve()
     result: list[str] = []
@@ -195,6 +290,94 @@ class RunManifest:
     pair_ids: list[str]
     paired_intervals: list[dict[str, Any]]
     metrics: dict[str, Any] = field(default_factory=dict)
+    design_id: str | None = None
+    design_sha256: str | None = None
+    condition: dict[str, Any] = field(default_factory=dict)
+    eval_fixture: dict[str, Any] = field(default_factory=dict)
+    eval_fixture_sha256: str | None = None
+    paired_data: dict[str, Any] = field(default_factory=dict)
+    paired_data_sha256: str | None = None
+    arms: list[dict[str, Any]] = field(default_factory=list)
+    pairs: list[dict[str, Any]] = field(default_factory=list)
+    runtime_determinism: dict[str, Any] = field(default_factory=lambda: {"status": "unverified"})
+
+    def __post_init__(self) -> None:
+        if isinstance(self.schema_version, bool) or self.schema_version not in {
+            MANIFEST_SCHEMA_VERSION,
+            *_READ_ONLY_MANIFEST_SCHEMA_VERSIONS,
+        }:
+            raise ValueError(f"unsupported manifest schema_version: {self.schema_version}")
+        if (self.design_id is None) != (self.design_sha256 is None):
+            raise ValueError("design_id and design_sha256 must be provided together")
+        if self.design_id is not None:
+            if not isinstance(self.design_id, str) or not self.design_id.strip():
+                raise ValueError("design_id must be a non-empty string")
+            assert self.design_sha256 is not None
+            _validate_sha256(self.design_sha256, "design_sha256")
+
+        object.__setattr__(self, "condition", _manifest_mapping(self.condition, "condition"))
+        object.__setattr__(
+            self,
+            "eval_fixture",
+            _manifest_mapping(self.eval_fixture, "eval_fixture"),
+        )
+        object.__setattr__(
+            self,
+            "paired_data",
+            _manifest_mapping(self.paired_data, "paired_data"),
+        )
+        object.__setattr__(self, "arms", _manifest_mapping_list(self.arms, "arms"))
+        object.__setattr__(self, "pairs", _manifest_mapping_list(self.pairs, "pairs"))
+        object.__setattr__(
+            self,
+            "runtime_determinism",
+            _manifest_mapping(self.runtime_determinism, "runtime_determinism"),
+        )
+        if self.schema_version == MANIFEST_SCHEMA_VERSION:
+            if self.eval_fixture_sha256 is None:
+                raise ValueError("eval_fixture_sha256 is required for schema 3")
+            if self.paired_data_sha256 is None:
+                raise ValueError("paired_data_sha256 is required for schema 3")
+            _validate_sha256(self.eval_fixture_sha256, "eval_fixture_sha256")
+            _validate_sha256(self.paired_data_sha256, "paired_data_sha256")
+            if self.eval_fixture_sha256 != _sha256_json(self.eval_fixture):
+                raise ValueError("eval_fixture_sha256 does not match eval_fixture")
+            if self.paired_data_sha256 != _sha256_json(self.paired_data):
+                raise ValueError("paired_data_sha256 does not match paired_data")
+            required_fields = {
+                "condition": {"language_ablation", "image_ablation"},
+                "eval_fixture": {
+                    "task_id",
+                    "family",
+                    "execution_mode",
+                    "eval_seeds",
+                    "max_steps",
+                },
+                "paired_data": {"pair_ids", "paired_intervals"},
+                "runtime_determinism": {
+                    "status",
+                    "device",
+                    "PYTHONHASHSEED",
+                    "numpy_bit_generator",
+                    "torch_version",
+                    "torch_deterministic_algorithms",
+                    "cudnn_deterministic",
+                    "cudnn_benchmark",
+                    "deterministic_flags_satisfied",
+                },
+            }
+            for name, required in required_fields.items():
+                value = getattr(self, name)
+                missing = sorted(required - set(value))
+                if missing:
+                    raise ValueError(f"{name} is missing required field(s): {', '.join(missing)}")
+            if self.runtime_determinism["status"] not in {"verified", "unverified"}:
+                raise ValueError("runtime_determinism.status must be verified or unverified")
+            if (
+                self.runtime_determinism["status"] == "verified"
+                and self.runtime_determinism["deterministic_flags_satisfied"] is not True
+            ):
+                raise ValueError("verified runtime_determinism requires deterministic flags")
 
     @classmethod
     def create(
@@ -209,9 +392,16 @@ class RunManifest:
         metrics: Mapping[str, Any],
         ablation: Mapping[str, Any] | None = None,
         artifact_paths: Mapping[str, Path] | None = None,
+        design_id: str | None = None,
+        design_sha256: str | None = None,
+        condition: Mapping[str, Any] | None = None,
+        eval_fixture: Mapping[str, Any] | None = None,
+        paired_data: Mapping[str, Any] | None = None,
+        arms: Sequence[Mapping[str, Any]] | None = None,
+        pairs: Sequence[Mapping[str, Any]] | None = None,
+        runtime_determinism: Mapping[str, Any] | None = None,
     ) -> "RunManifest":
-        if len(data_sha256) != 64 or any(character not in "0123456789abcdef" for character in data_sha256):
-            raise ValueError("data_sha256 must be a lowercase SHA-256 hex digest")
+        _validate_sha256(data_sha256, "data_sha256")
         eval_seeds = config.evaluation.get("seeds")
         if eval_seeds is None:
             start = int(config.evaluation["seed"])
@@ -223,6 +413,37 @@ class RunManifest:
         mode = ablation_payload.get("ablation_mode")
         interventions = {"mode": str(mode)} if mode is not None else {}
         pair_ids = [str(value) for value in ablation_payload.get("pair_ids", [])]
+        recorded_condition = {
+            "language_ablation": str(config.evaluation["language_ablation"]),
+            "image_ablation": str(config.evaluation["image_ablation"]),
+        }
+        recorded_fixture = {
+            "task_id": str(config.task["id"]),
+            "family": str(config.task["family"]),
+            "execution_mode": str(config.evaluation["execution_mode"]),
+            "eval_seeds": [int(seed) for seed in eval_seeds],
+            "max_steps": int(config.task["max_steps"]),
+        }
+        recorded_paired_data = {
+            "pair_ids": pair_ids,
+            "paired_intervals": paired_intervals,
+        }
+        recorded_runtime = _runtime_determinism(str(config.training["device"]))
+        resolved_condition = _merge_recorded_mapping(
+            recorded_condition,
+            condition,
+            "condition",
+        )
+        resolved_fixture = _merge_recorded_mapping(
+            recorded_fixture,
+            eval_fixture,
+            "eval_fixture",
+        )
+        resolved_paired_data = _merge_recorded_mapping(
+            recorded_paired_data,
+            paired_data,
+            "paired_data",
+        )
         return cls(
             schema_version=MANIFEST_SCHEMA_VERSION,
             run_id=config.project_name,
@@ -253,6 +474,23 @@ class RunManifest:
             pair_ids=pair_ids,
             paired_intervals=paired_intervals,
             metrics=_jsonable(dict(metrics)),
+            design_id=design_id,
+            design_sha256=design_sha256,
+            condition=resolved_condition,
+            eval_fixture=resolved_fixture,
+            eval_fixture_sha256=_sha256_json(resolved_fixture),
+            paired_data=resolved_paired_data,
+            paired_data_sha256=_sha256_json(resolved_paired_data),
+            arms=_manifest_mapping_list(arms or (), "arms"),
+            pairs=_manifest_mapping_list(
+                pairs if pairs is not None else tuple({"pair_id": pair_id} for pair_id in pair_ids),
+                "pairs",
+            ),
+            runtime_determinism=_merge_recorded_mapping(
+                recorded_runtime,
+                runtime_determinism,
+                "runtime_determinism",
+            ),
         )
 
     @classmethod
@@ -260,20 +498,72 @@ class RunManifest:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise TypeError("manifest root must be an object")
-        if payload.get("schema_version") != MANIFEST_SCHEMA_VERSION:
-            raise ValueError(
-                f"unsupported manifest schema_version: {payload.get('schema_version')}"
-            )
+        schema_version = payload.get("schema_version")
+        if isinstance(schema_version, bool) or schema_version not in {
+            MANIFEST_SCHEMA_VERSION,
+            *_READ_ONLY_MANIFEST_SCHEMA_VERSIONS,
+        }:
+            raise ValueError(f"unsupported manifest schema_version: {schema_version}")
+        all_fields = {item.name for item in fields(cls)}
+        schema3_fields = all_fields
+        schema2_fields = all_fields - {
+            "design_id",
+            "design_sha256",
+            "condition",
+            "eval_fixture",
+            "eval_fixture_sha256",
+            "paired_data",
+            "paired_data_sha256",
+            "arms",
+            "pairs",
+            "runtime_determinism",
+        }
+        expected = schema3_fields if schema_version == MANIFEST_SCHEMA_VERSION else schema2_fields
+        unknown = sorted(set(payload) - expected)
+        if unknown:
+            raise ValueError("unknown manifest field(s): " + ", ".join(unknown))
+        if schema_version == MANIFEST_SCHEMA_VERSION:
+            missing = sorted(expected - set(payload))
+            if missing:
+                raise ValueError("missing manifest field(s): " + ", ".join(missing))
         manifest = cls(**payload)
         resolved = ExperimentConfig.from_mapping(manifest.config)
         if resolved.sha256() != manifest.config_sha256:
             raise ValueError("manifest config_sha256 does not match its resolved config")
+        if manifest.schema_version == MANIFEST_SCHEMA_VERSION:
+            expected_condition = {
+                "language_ablation": str(resolved.evaluation["language_ablation"]),
+                "image_ablation": str(resolved.evaluation["image_ablation"]),
+            }
+            for key, expected_value in expected_condition.items():
+                if manifest.condition[key] != expected_value:
+                    raise ValueError(f"manifest condition.{key} conflicts with config")
+            expected_fixture: dict[str, Any] = {
+                "task_id": str(resolved.task["id"]),
+                "family": str(resolved.task["family"]),
+                "execution_mode": str(resolved.evaluation["execution_mode"]),
+                "eval_seeds": manifest.eval_seeds,
+                "max_steps": int(resolved.task["max_steps"]),
+            }
+            for key, expected_value in expected_fixture.items():
+                if manifest.eval_fixture[key] != expected_value:
+                    raise ValueError(f"manifest eval_fixture.{key} conflicts with config")
+            if manifest.paired_data["pair_ids"] != manifest.pair_ids:
+                raise ValueError("manifest paired_data.pair_ids conflicts with pair_ids")
+            if manifest.paired_data["paired_intervals"] != manifest.paired_intervals:
+                raise ValueError(
+                    "manifest paired_data.paired_intervals conflicts with paired_intervals"
+                )
+            if manifest.runtime_determinism["device"] != str(resolved.training["device"]):
+                raise ValueError("manifest runtime_determinism.device conflicts with config")
         return manifest
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     def write(self, path: str | Path) -> Path:
+        if self.schema_version != MANIFEST_SCHEMA_VERSION:
+            raise ValueError("schema 2 manifests are read-only and cannot be written")
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(

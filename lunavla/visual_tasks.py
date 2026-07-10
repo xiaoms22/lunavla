@@ -12,6 +12,13 @@ from .contracts import Observation, Transition
 
 VisualFamily = Literal["direct_reach", "waypoint_reach"]
 ImageAblation = Literal["occlusion", "shuffle"]
+ObservationMode = Literal["privileged", "vision_required"]
+_OBSERVATION_MODES = {"privileged", "vision_required"}
+_FAMILY_SEED_CODES: dict[VisualFamily, int] = {
+    "direct_reach": 1,
+    "waypoint_reach": 2,
+}
+_VISION_REQUIRED_START_BUCKETS = 16
 
 
 def _vector2(value: ArrayLike, *, name: str) -> NDArray[np.float32]:
@@ -48,6 +55,32 @@ VISUAL_TASKS: tuple[VisualTaskSpec, ...] = (
 
 def visual_task_specs() -> tuple[VisualTaskSpec, ...]:
     return VISUAL_TASKS
+
+
+def _observation_mode(value: str) -> ObservationMode:
+    if value not in _OBSERVATION_MODES:
+        raise ValueError(
+            "observation_mode must be 'privileged' or 'vision_required'"
+        )
+    return value  # type: ignore[return-value]
+
+
+def _seeded_visual_task_spec(family: VisualFamily, seed: int) -> VisualTaskSpec:
+    """Generate target geometry without placing it in the policy state."""
+
+    rng = np.random.default_rng(
+        np.random.SeedSequence([int(seed), _FAMILY_SEED_CODES[family], 0x4C564C41])
+    )
+    goal = rng.uniform((0.66, 0.14), (0.90, 0.88), size=2).astype(np.float32)
+    if family == "direct_reach":
+        waypoint = goal.copy()
+    else:
+        waypoint = rng.uniform((0.36, 0.36), (0.58, 0.86), size=2).astype(
+            np.float32
+        )
+        if float(np.linalg.norm(waypoint - goal)) < 0.24:
+            waypoint[1] = np.float32(0.82 if goal[1] < 0.55 else 0.30)
+    return VisualTaskSpec(family=family, goal=goal, waypoint=waypoint)
 
 
 def _pixel(point: NDArray[np.float32], size: int) -> tuple[int, int]:
@@ -149,13 +182,14 @@ def make_state_only_baseline(examples: Sequence[VisualTaskExample]) -> tuple[Vis
 
 
 class RenderedPointReachEnv:
-    """PIL-rendered point reach with a same-state state-only baseline mode."""
+    """Rendered control task with paired privileged and vision-required modes."""
 
     def __init__(
         self,
         family: VisualFamily = "direct_reach",
         *,
         state_only: bool = False,
+        observation_mode: ObservationMode = "vision_required",
         image_size: int = 64,
         action_clip: float = 0.12,
         success_distance: float = 0.06,
@@ -168,7 +202,14 @@ class RenderedPointReachEnv:
             raise ValueError("distance and action limits must be positive")
         if image_size < 24:
             raise ValueError("image_size must be at least 24")
-        self.spec = specs[family]
+        self.family = family
+        self._privileged_spec = specs[family]
+        self.observation_mode = _observation_mode(observation_mode)
+        self.spec = (
+            self._privileged_spec
+            if self.observation_mode == "privileged"
+            else _seeded_visual_task_spec(family, 0)
+        )
         self.state_only = bool(state_only)
         self.image_size = int(image_size)
         self.action_clip = float(action_clip)
@@ -179,6 +220,11 @@ class RenderedPointReachEnv:
         self._observation: Observation | None = None
 
     def _state(self) -> NDArray[np.float32]:
+        if self.observation_mode == "vision_required":
+            return np.asarray(
+                [self._position[0], self._position[1], float(self._phase)],
+                dtype=np.float32,
+            )
         return np.asarray(
             [
                 self._position[0],
@@ -221,7 +267,18 @@ class RenderedPointReachEnv:
         ).astype(np.float32)
 
     def reset(self, *, seed: int | None = None) -> Observation:
-        rng = np.random.default_rng(0 if seed is None else int(seed))
+        resolved_seed = 0 if seed is None else int(seed)
+        self.spec = (
+            self._privileged_spec
+            if self.observation_mode == "privileged"
+            else _seeded_visual_task_spec(self.family, resolved_seed)
+        )
+        start_seed = (
+            resolved_seed
+            if self.observation_mode == "privileged"
+            else resolved_seed % _VISION_REQUIRED_START_BUCKETS
+        )
+        rng = np.random.default_rng(start_seed)
         self._position = rng.uniform(0.10, 0.30, size=2).astype(np.float32)
         self._phase = 0
         self._observation = self._make_observation()
@@ -253,12 +310,14 @@ class RenderedPointReachEnv:
             next_observation=next_observation,
             terminated=success,
             info={
+                "task_id": "rendered_visual_point_reach",
                 "task_family": self.spec.family,
                 "phase": self._phase,
                 "reached_waypoint": reached_waypoint,
                 "distance": goal_distance,
                 "success": success,
                 "modality": "state_only" if self.state_only else "state_and_image",
+                "observation_mode": self.observation_mode,
             },
         )
 
@@ -270,6 +329,7 @@ class RenderedVisualTaskSuiteEnv:
         self,
         *,
         state_only: bool = False,
+        observation_mode: ObservationMode = "vision_required",
         image_size: int = 64,
         families: Sequence[VisualFamily] = ("direct_reach", "waypoint_reach"),
     ) -> None:
@@ -277,6 +337,7 @@ class RenderedVisualTaskSuiteEnv:
         if not families or any(family not in known for family in families):
             raise ValueError(f"families must be a non-empty subset of {sorted(known)}")
         self.state_only = bool(state_only)
+        self.observation_mode = _observation_mode(observation_mode)
         self.image_size = int(image_size)
         self.families = tuple(families)
         self._env: RenderedPointReachEnv | None = None
@@ -287,6 +348,7 @@ class RenderedVisualTaskSuiteEnv:
         self._env = RenderedPointReachEnv(
             family,
             state_only=self.state_only,
+            observation_mode=self.observation_mode,
             image_size=self.image_size,
         )
         return self._env.reset(seed=resolved_seed)
@@ -301,11 +363,17 @@ def build_visual_examples(
     *,
     seeds: Sequence[int] = (0, 1, 2),
     image_size: int = 64,
+    observation_mode: ObservationMode = "vision_required",
 ) -> tuple[VisualTaskExample, ...]:
+    resolved_mode = _observation_mode(observation_mode)
     examples: list[VisualTaskExample] = []
     for spec in VISUAL_TASKS:
         for seed in seeds:
-            env = RenderedPointReachEnv(spec.family, image_size=image_size)
+            env = RenderedPointReachEnv(
+                spec.family,
+                image_size=image_size,
+                observation_mode=resolved_mode,
+            )
             observation = env.reset(seed=int(seed))
             examples.append(
                 VisualTaskExample(
@@ -318,6 +386,7 @@ def build_visual_examples(
                         "task_family": spec.family,
                         "seed": int(seed),
                         "modality": "state_and_image",
+                        "observation_mode": resolved_mode,
                     },
                 )
             )
@@ -434,6 +503,7 @@ class RenderedVisualDatasetSource:
         families: Sequence[VisualFamily] = ("direct_reach", "waypoint_reach"),
         seeds: Sequence[int] = (0, 1, 2),
         state_only: bool = False,
+        observation_mode: ObservationMode = "vision_required",
         image_size: int = 64,
         max_steps: int = 16,
     ) -> None:
@@ -447,6 +517,7 @@ class RenderedVisualDatasetSource:
         self.families = tuple(families)
         self.seeds = tuple(int(seed) for seed in seeds)
         self.state_only = bool(state_only)
+        self.observation_mode = _observation_mode(observation_mode)
         self.image_size = int(image_size)
         self.max_steps = int(max_steps)
 
@@ -458,6 +529,7 @@ class RenderedVisualDatasetSource:
                 env = RenderedPointReachEnv(
                     family,
                     state_only=self.state_only,
+                    observation_mode=self.observation_mode,
                     image_size=self.image_size,
                 )
                 env.reset(seed=seed)
