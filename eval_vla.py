@@ -30,6 +30,13 @@ Array = npt.NDArray[np.generic]
 Float32Array = npt.NDArray[np.float32]
 
 
+def portable_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.name
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a LunaVLA NumPy checkpoint.")
     parser.add_argument("--checkpoint", required=True, help="Path to checkpoint.json.")
@@ -354,7 +361,7 @@ def main() -> int:
             write_json(rollout_dir / f"episode_{episode_id:03d}.json", rollout)
 
     summary = {
-        "checkpoint": str(checkpoint_path),
+        "checkpoint": portable_path(checkpoint_path),
         "policy_name": getattr(policy, "policy_name", "unknown"),
         "policy_interface": metadata.get("policy_interface", {}),
         "execution_mode": execution_mode,

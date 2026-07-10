@@ -210,6 +210,7 @@ def test_evaluation_cli_writes_clean_summary_and_rollout_directory(
     assert evaluate_main() == 0
     summary = json.loads((output_dir / "eval_summary.json").read_text(encoding="utf-8"))
     assert summary["episodes"] == 1
+    assert summary["checkpoint"] == "checkpoint.json"
     assert summary["eval_seeds"] == [31]
     assert summary["execution_mode"] == "receding_horizon"
     assert not (stale_rollouts / "old.json").exists()

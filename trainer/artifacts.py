@@ -46,6 +46,24 @@ def _dependency_versions() -> dict[str, str]:
     return versions
 
 
+def _portable_command(root: Path, command: Iterable[str]) -> list[str]:
+    portable: list[str] = []
+    resolved_root = root.resolve()
+    for index, raw in enumerate(command):
+        value = str(raw)
+        candidate = Path(value)
+        if index == 0 and candidate.name.startswith("python"):
+            portable.append("python")
+        elif candidate.is_absolute():
+            try:
+                portable.append(candidate.resolve().relative_to(resolved_root).as_posix())
+            except ValueError:
+                portable.append(candidate.name)
+        else:
+            portable.append(value)
+    return portable
+
+
 @dataclass
 class RunManifest:
     """Traceability record for a training/evaluation run."""
@@ -102,7 +120,7 @@ class RunManifest:
             policy_id=str(config.policy["type"]),
             task_id=config.task,
             checkpoint_sha256=sha256_file(checkpoint_path),
-            command=list(command),
+            command=_portable_command(root, command),
             metrics=dict(metrics),
         )
 

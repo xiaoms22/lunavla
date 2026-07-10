@@ -135,7 +135,10 @@ def test_manifest_round_trip_records_hashes_splits_and_seeds(tmp_path: Path) -> 
         data_path=data_path,
         checkpoint_path=checkpoint_path,
         splits=splits,
-        command=["python", "trainer/train_act_pusht.py"],
+        command=[
+            str(tmp_path / ".venv" / "bin" / "python"),
+            str(tmp_path / "trainer" / "train_act_pusht.py"),
+        ],
         metrics={"success_rate": 0.5},
     )
     path = tmp_path / "manifest.json"
@@ -150,6 +153,7 @@ def test_manifest_round_trip_records_hashes_splits_and_seeds(tmp_path: Path) -> 
     assert loaded.train_seeds == [7, 9]
     assert loaded.eval_seeds == [100, 101]
     assert loaded.policy_id == "numpy_linear_chunk"
+    assert loaded.command == ["python", "trainer/train_act_pusht.py"]
     assert loaded.metrics == {"success_rate": 0.5}
     split_ids = {name: set(ids) for name, ids in loaded.dataset_split.items()}
     assert split_ids["train"].isdisjoint(split_ids["validation"])
