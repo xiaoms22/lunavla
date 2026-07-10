@@ -11,6 +11,7 @@ from scripts.run_v2_release_profile import (
     installed_requirements,
     sbom_command,
     sha256_file,
+    validated_project_version,
 )
 
 
@@ -50,6 +51,20 @@ def test_installed_requirements_is_sorted_and_contains_project() -> None:
     canonical = [row.split("==", maxsplit=1)[0].lower().replace("_", "-") for row in rows]
     assert canonical == sorted(canonical)
     assert any(row.lower().startswith("lunavla==") for row in rows)
+
+
+def test_release_version_contract_matches_all_sources() -> None:
+    assert validated_project_version() == "2.0.0a1"
+
+
+def test_release_version_contract_fails_closed_on_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from scripts import run_v2_release_profile as release
+
+    monkeypatch.setattr(release.importlib.metadata, "version", lambda _: "2.0.0a0")
+    with pytest.raises(RuntimeError, match="inconsistent LunaVLA version contract"):
+        release.validated_project_version()
 
 
 def test_sbom_command_uses_cyclonedx_7_output_contract(tmp_path: Path) -> None:
