@@ -1,0 +1,28 @@
+{
+  "arms": {
+    "control": {
+      "mean_final_distance": 0.45198613467315835,
+      "mean_first_action_mse": 0.0009182075433879314,
+      "mean_reward": -8.770192781463265,
+      "mean_steps": 24.0,
+      "success_rate": 0.0
+    },
+    "occlusion": {
+      "mean_final_distance": 0.5194891889890035,
+      "mean_first_action_mse": 0.011153073709768554,
+      "mean_reward": -12.950992661217848,
+      "mean_steps": 24.0,
+      "success_rate": 0.0
+    },
+    "shuffle": {
+      "mean_final_distance": 0.4786928128451109,
+      "mean_first_action_mse": 0.0010715624897178107,
+      "mean_reward": -9.584283335755268,
+      "mean_steps": 24.0,
+      "success_rate": 0.0
+    }
+  },
+  "claim_allowed": false,
+  "final_loss": 0.0026641502045094967,
+  "observational": false
+}

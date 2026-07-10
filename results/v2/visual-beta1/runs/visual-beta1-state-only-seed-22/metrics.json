@@ -1,0 +1,14 @@
+{
+  "arms": {
+    "state_only": {
+      "mean_final_distance": 0.3356024279880027,
+      "mean_first_action_mse": 0.001304051700913078,
+      "mean_reward": -8.027942830851922,
+      "mean_steps": 23.208333333333332,
+      "success_rate": 0.041666666666666664
+    }
+  },
+  "claim_allowed": false,
+  "final_loss": 0.003299091709777713,
+  "observational": false
+}

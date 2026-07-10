@@ -1,0 +1,60 @@
+{
+  "artifacts": {
+    "checkpoint_name": "checkpoint.pt",
+    "output_dir": "outputs/v2/transformer-visual-cpu"
+  },
+  "dataset": {
+    "episode_count": 6,
+    "parameters": {
+      "observation_mode": "vision_required"
+    },
+    "seed": 42,
+    "split": "train",
+    "type": "memory"
+  },
+  "engine": "lunavla_v2",
+  "evaluation": {
+    "episodes": 20,
+    "execution_mode": "receding_horizon",
+    "image_ablation": "occlusion",
+    "language_ablation": "none",
+    "parameters": {},
+    "seed": 1000
+  },
+  "policy": {
+    "action_dim": 2,
+    "chunk_size": 4,
+    "d_model": 64,
+    "device": "cpu",
+    "dropout": 0.0,
+    "image_shape": [
+      32,
+      32,
+      3
+    ],
+    "instruction_dim": 32,
+    "latent_dim": 16,
+    "nhead": 4,
+    "num_layers": 2,
+    "state_dim": 3,
+    "temporal_ensemble_decay": 0.25,
+    "type": "transformer_chunk_cvae"
+  },
+  "project_name": "lunavla-v2-transformer-visual-cpu",
+  "schema_version": 2,
+  "task": {
+    "family": "all",
+    "id": "rendered_visual_point_reach",
+    "max_steps": 24,
+    "parameters": {},
+    "render_size": 32
+  },
+  "training": {
+    "batch_size": 16,
+    "device": "cpu",
+    "kl_weight": 0.01,
+    "learning_rate": 0.001,
+    "seed": 42,
+    "steps": 50
+  }
+}

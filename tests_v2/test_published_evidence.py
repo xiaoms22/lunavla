@@ -14,13 +14,19 @@ from lunavla.published_evidence import (
     PUBLISHED_LANGUAGE_EVIDENCE_SHA256,
     PUBLISHED_LANGUAGE_GIT_SHA,
     PUBLISHED_LANGUAGE_SNAPSHOT_SHA256,
+    PUBLISHED_VISUAL_EVIDENCE_SHA256,
+    PUBLISHED_VISUAL_GIT_SHA,
+    PUBLISHED_VISUAL_SNAPSHOT_SHA256,
+    VISUAL_CONTROL_CONTRIBUTION_DENIED,
     verify_language_snapshot,
+    verify_visual_snapshot,
 )
-from scripts.render_readme_results import render_v2_language
+from scripts.render_readme_results import render_v2_language, render_v2_visual
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT = ROOT / "results" / "v2" / "language-alpha2"
+VISUAL_SNAPSHOT = ROOT / "results" / "v2" / "visual-beta1"
 
 
 def _sha256(path: Path) -> str:
@@ -118,6 +124,51 @@ def test_v2_renderer_reports_every_wilson_arm_and_both_paired_intervals() -> Non
     assert "`a546695`" in rendered
     assert "workflow run 29106885353" in rendered
     assert PUBLISHED_LANGUAGE_EVIDENCE_SHA256 in rendered
+
+
+def test_tracked_visual_snapshot_is_read_only_verified_and_claim_closed() -> None:
+    before = {path: _sha256(path) for path in VISUAL_SNAPSHOT.rglob("*") if path.is_file()}
+    published = verify_visual_snapshot(VISUAL_SNAPSHOT)
+    after = {path: _sha256(path) for path in VISUAL_SNAPSHOT.rglob("*") if path.is_file()}
+
+    assert after == before
+    assert published.train_seed_count == 5
+    assert published.control_trials == 120
+    assert [item.scope for item in published.arm_wilson] == [
+        "control",
+        "occlusion",
+        "shuffle",
+        "state_only",
+    ]
+    assert all(item.sample_n == 120 for item in published.arm_wilson)
+    assert [item.sample_n for item in published.paired_final_distance] == [
+        120,
+        60,
+        60,
+        120,
+        60,
+        60,
+    ]
+    assert published.statement == VISUAL_CONTROL_CONTRIBUTION_DENIED
+    assert published.git_sha == PUBLISHED_VISUAL_GIT_SHA
+    assert published.evidence_manifest_sha256 == PUBLISHED_VISUAL_EVIDENCE_SHA256
+    assert _sha256(VISUAL_SNAPSHOT / "snapshot_manifest.json") == PUBLISHED_VISUAL_SNAPSHOT_SHA256
+
+
+def test_v2_visual_renderer_reports_all_claim_critical_intervals() -> None:
+    rendered = render_v2_visual(VISUAL_SNAPSHOT, ROOT / "README.md")
+
+    assert "5 image-policy and 5 state-only training runs" in rendered
+    assert "| `control` | 5 | 120 | 1.7% (0.5%–5.9%) |" in rendered
+    assert "| `occlusion` | 5 | 120 | 5.8% (2.9%–11.6%) |" in rendered
+    assert "| `state_only` | 5 | 120 | 1.7% (0.5%–5.9%) |" in rendered
+    assert "| `occlusion:all` | 120 | -0.0106 | [-0.0907, +0.0667] |" in rendered
+    assert "| `state_only:all` | 120 | +0.0121 | [-0.0193, +0.0453] |" in rendered
+    assert f"**Claim gate: {VISUAL_CONTROL_CONTRIBUTION_DENIED}**" in rendered
+    assert "must not be described as evidence that images improve control" in rendered
+    assert "`bf0e550`" in rendered
+    assert "workflow run 29110701437" in rendered
+    assert PUBLISHED_VISUAL_EVIDENCE_SHA256 in rendered
 
 
 def test_snapshot_verifier_rejects_a_changed_listed_file(tmp_path: Path) -> None:

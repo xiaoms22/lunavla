@@ -89,7 +89,41 @@ Provenance: source commit [`a546695`](https://github.com/xiaoms22/lunavla/commit
 Tracked sources: [EvidenceManifest](results/v2/language-alpha2/evidence_manifest.json) and [snapshot hash manifest](results/v2/language-alpha2/snapshot_manifest.json).
 <!-- V2_EVIDENCE_END -->
 
-This block is generated only after read-only snapshot verification. Keep it current with `python scripts/render_readme_results.py --check`; manual edits inside the v2 evidence markers are rejected by CI.
+## v2 visual evidence (claim closed)
+
+<!-- V2_VISUAL_EVIDENCE_START -->
+**Claim gate: Visual-control contribution has not yet been established.**
+
+Verification establishes a complete paired visual study and faithful aggregation. It does not establish that images improve control.
+
+| Rollout arm | Train seeds | Trials | Observed success rate (95% Wilson CI) |
+| --- | ---: | ---: | --- |
+| `control` | 5 | 120 | 1.7% (0.5%–5.9%) |
+| `occlusion` | 5 | 120 | 5.8% (2.9%–11.6%) |
+| `shuffle` | 5 | 120 | 2.5% (0.9%–7.1%) |
+| `state_only` | 5 | 120 | 1.7% (0.5%–5.9%) |
+
+The full matrix contains 5 image-policy and 5 state-only training runs, with 120 fixed seed/episode pairs per arm.
+
+Intervention-minus-control final-distance diagnostics (positive means worse):
+
+| Contrast and task family | Paired n | Estimate | Training-seed clustered bootstrap 95% CI |
+| --- | ---: | ---: | --- |
+| `occlusion:all` | 120 | -0.0106 | [-0.0907, +0.0667] |
+| `occlusion:direct_reach` | 60 | -0.0453 | [-0.1248, +0.0338] |
+| `occlusion:waypoint_reach` | 60 | +0.0240 | [-0.0834, +0.1389] |
+| `state_only:all` | 120 | +0.0121 | [-0.0193, +0.0453] |
+| `state_only:direct_reach` | 60 | +0.0035 | [-0.0384, +0.0410] |
+| `state_only:waypoint_reach` | 60 | +0.0207 | [-0.0154, +0.0589] |
+
+The predeclared claim remains closed because all claim-critical checks failed: `occlusion_all_distance_worse`, `occlusion_direct_reach_distance_worse`, `occlusion_waypoint_reach_distance_worse`, `state_only_all_distance_worse`, `state_only_direct_reach_distance_worse`, `state_only_waypoint_reach_distance_worse`. These rows must not be described as evidence that images improve control.
+
+Provenance: source commit [`bf0e550`](https://github.com/xiaoms22/lunavla/commit/bf0e550a7aa3fb0bb07354cd7cb525752c56268d); authoritative [workflow run 29110701437](https://github.com/xiaoms22/lunavla/actions/runs/29110701437); EvidenceManifest SHA-256 `d8ff8c798a6810a09a2905dbafd6f5259ac2356623ee6060d335d660db6e9056`.
+
+Tracked sources: [EvidenceManifest](results/v2/visual-beta1/evidence_manifest.json) and [snapshot hash manifest](results/v2/visual-beta1/snapshot_manifest.json).
+<!-- V2_VISUAL_EVIDENCE_END -->
+
+These blocks are generated only after read-only snapshot verification. Keep them current with `python scripts/render_readme_results.py --check`; manual edits inside the v2 evidence markers are rejected by CI.
 
 ## Verified v1.1 results
 

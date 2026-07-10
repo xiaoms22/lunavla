@@ -1,0 +1,103 @@
+{
+  "base_config_sha256": "c7fd5a318d366fe4395579fe5cdfd55c505932a7e9df0eb92de451cee49a2595",
+  "claim_allowed": false,
+  "design_id": "visual-beta1",
+  "design_sha256": "df1e8fb343449e407c8cd9c07e1c84beb7c6f5361db115864fd0ae7487a00ebd",
+  "expected_arm_episodes": 480,
+  "expected_training_runs": 10,
+  "jobs": [
+    {
+      "arm_ids": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "run_id": "visual-beta1-image-seed-11",
+      "train_seed": 11,
+      "variant": "image"
+    },
+    {
+      "arm_ids": [
+        "state_only"
+      ],
+      "run_id": "visual-beta1-state-only-seed-11",
+      "train_seed": 11,
+      "variant": "state_only"
+    },
+    {
+      "arm_ids": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "run_id": "visual-beta1-image-seed-22",
+      "train_seed": 22,
+      "variant": "image"
+    },
+    {
+      "arm_ids": [
+        "state_only"
+      ],
+      "run_id": "visual-beta1-state-only-seed-22",
+      "train_seed": 22,
+      "variant": "state_only"
+    },
+    {
+      "arm_ids": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "run_id": "visual-beta1-image-seed-33",
+      "train_seed": 33,
+      "variant": "image"
+    },
+    {
+      "arm_ids": [
+        "state_only"
+      ],
+      "run_id": "visual-beta1-state-only-seed-33",
+      "train_seed": 33,
+      "variant": "state_only"
+    },
+    {
+      "arm_ids": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "run_id": "visual-beta1-image-seed-44",
+      "train_seed": 44,
+      "variant": "image"
+    },
+    {
+      "arm_ids": [
+        "state_only"
+      ],
+      "run_id": "visual-beta1-state-only-seed-44",
+      "train_seed": 44,
+      "variant": "state_only"
+    },
+    {
+      "arm_ids": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "run_id": "visual-beta1-image-seed-55",
+      "train_seed": 55,
+      "variant": "image"
+    },
+    {
+      "arm_ids": [
+        "state_only"
+      ],
+      "run_id": "visual-beta1-state-only-seed-55",
+      "train_seed": 55,
+      "variant": "state_only"
+    }
+  ],
+  "observational": false,
+  "reduced_design": false,
+  "reproducibility_run_id": "visual-beta1-image-seed-11"
+}
