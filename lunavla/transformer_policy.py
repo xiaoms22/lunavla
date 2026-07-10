@@ -21,8 +21,9 @@ if TYPE_CHECKING:
 
 
 POLICY_ID: Final = "transformer_chunk_cvae"
-CHECKPOINT_SCHEMA_VERSION: Final = 2
+CHECKPOINT_SCHEMA_VERSION: Final = 3
 CHECKPOINT_FORMAT: Final = "lunavla.transformer_chunk_cvae"
+IMAGE_SPATIAL_ENCODING: Final = "coordconv_xy_v1"
 
 _ACT_REQUIRED_CAPABILITIES: Final = frozenset(
     {
@@ -174,6 +175,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
     policy_id: Final = POLICY_ID
     capabilities: Final = CAPABILITIES
     act_alias_supported: Final = act_alias_supported
+    _image_coordinate_grid: Tensor | None
 
     def __init__(self, config: TransformerPolicyConfig | Mapping[str, Any]) -> None:
         super().__init__()
@@ -212,10 +214,16 @@ class TransformerChunkCVAEPolicy(nn.Module):
                 image_channels = (
                     1 if len(self.config.image_shape) == 2 else self.config.image_shape[-1]
                 )
+                image_height, image_width = self.config.image_shape[:2]
+                self.register_buffer(
+                    "_image_coordinate_grid",
+                    self._coordinate_grid(image_height, image_width),
+                    persistent=False,
+                )
                 hidden_channels = max(8, self.config.d_model // 4)
                 self.image_encoder = nn.Sequential(
                     nn.Conv2d(
-                        image_channels,
+                        image_channels + 2,
                         hidden_channels,
                         kernel_size=3,
                         padding=1,
@@ -233,6 +241,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
                     nn.Flatten(start_dim=1),
                 )
             else:
+                self.register_buffer("_image_coordinate_grid", None, persistent=False)
                 self.image_encoder = None
             self.posterior_token = nn.Parameter(torch.empty(1, 1, self.config.d_model))
             self.action_queries = nn.Parameter(
@@ -300,6 +309,32 @@ class TransformerChunkCVAEPolicy(nn.Module):
         nn.init.normal_(self.posterior_token, mean=0.0, std=0.02)
         nn.init.normal_(self.action_queries, mean=0.0, std=0.02)
         nn.init.normal_(self.encoder_positions, mean=0.0, std=0.02)
+
+    @staticmethod
+    def _coordinate_grid(height: int, width: int) -> Tensor:
+        """Return fixed normalized x/y channels without adding checkpoint state."""
+
+        y_coordinates = (
+            torch.zeros(1, dtype=torch.float32)
+            if height == 1
+            else torch.linspace(-1.0, 1.0, steps=height, dtype=torch.float32)
+        )
+        x_coordinates = (
+            torch.zeros(1, dtype=torch.float32)
+            if width == 1
+            else torch.linspace(-1.0, 1.0, steps=width, dtype=torch.float32)
+        )
+        y_grid = y_coordinates.view(1, 1, height, 1).expand(1, 1, height, width)
+        x_grid = x_coordinates.view(1, 1, 1, width).expand(1, 1, height, width)
+        return torch.cat((x_grid, y_grid), dim=1).contiguous()
+
+    def _encode_images(self, images: Tensor) -> Tensor:
+        """Encode pixels with explicit coordinates so pooling preserves location."""
+
+        if self.image_encoder is None or self._image_coordinate_grid is None:
+            raise RuntimeError("image encoder is not initialized")
+        coordinate_grid = self._image_coordinate_grid.expand(images.shape[0], -1, -1, -1)
+        return self.image_encoder(torch.cat((images, coordinate_grid), dim=1))
 
     @property
     def device(self) -> str:
@@ -448,7 +483,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
         if images is not None:
             if self.image_encoder is None:
                 raise RuntimeError("image encoder is not initialized")
-            tokens.append(self.image_encoder(images))
+            tokens.append(self._encode_images(images))
         return torch.stack(tokens, dim=1)
 
     def _observation_tensors(
@@ -817,6 +852,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
         payload = {
             "schema_version": CHECKPOINT_SCHEMA_VERSION,
             "format": CHECKPOINT_FORMAT,
+            "image_spatial_encoding": IMAGE_SPATIAL_ENCODING,
             "policy_id": self.policy_id,
             "config": asdict(self.config),
             "state_dict": {
@@ -849,6 +885,11 @@ class TransformerChunkCVAEPolicy(nn.Module):
             )
         if payload.get("format") != CHECKPOINT_FORMAT:
             raise ValueError(f"unsupported checkpoint format: {payload.get('format')!r}")
+        if payload.get("image_spatial_encoding") != IMAGE_SPATIAL_ENCODING:
+            raise ValueError(
+                "unsupported checkpoint image_spatial_encoding: "
+                f"{payload.get('image_spatial_encoding')!r}"
+            )
         if payload.get("policy_id") != POLICY_ID:
             raise ValueError(f"checkpoint contains policy_id {payload.get('policy_id')!r}")
         raw_config = payload.get("config")
