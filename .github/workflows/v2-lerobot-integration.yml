@@ -12,6 +12,8 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 concurrency:
   group: v2-lerobot-integration-${{ inputs.source_sha || github.sha }}
@@ -91,7 +93,9 @@ jobs:
               for dist in metadata.distributions()
               if dist.metadata["Name"]
           }
-          forbidden = {name for name in installed if name == "triton" or name.startswith("nvidia-")}
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          forbidden = forbidden_cpu_packages(installed)
           assert not forbidden, f"CUDA-only packages installed in CPU job: {sorted(forbidden)}"
           PY
 
@@ -117,6 +121,11 @@ jobs:
           test -f "$RUNNER_TEMP/lunavla-integration/integration_manifest.json"
           test ! -e "$RUNNER_TEMP/lunavla-integration/videos"
           test ! -e "$RUNNER_TEMP/lunavla-integration/cache"
+
+      - name: Attest the exact integration manifest
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ runner.temp }}/lunavla-integration/integration_manifest.json
 
       - name: Upload integration manifest only
         uses: actions/upload-artifact@v4

@@ -44,6 +44,10 @@ LunaVLA Git SHA, dependency versions, upstream hashes, CPU device, dataset valid
 step, environment smoke, and `claim_allowed=false`. The workflow never uploads the Hugging Face
 cache, parquet, video, decoded frames, or generated renderings.
 
+The workflow also creates a GitHub build-provenance attestation whose subject is the exact manifest
+bytes. This external attestation is the integrity boundary for runtime values such as the measured
+optimizer loss; the manifest's own source SHA is not treated as a signature.
+
 For a local diagnostic checkout, install the hash-locked Linux CPU profile and keep cache/output
 paths outside the Git checkout:
 

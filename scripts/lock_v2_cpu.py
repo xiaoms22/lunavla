@@ -12,13 +12,32 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
 UV_VERSION = "0.11.26"
 PYTHON_VERSION = "3.12"
 LINUX_PLATFORM = "x86_64-manylinux_2_28"
-FORBIDDEN_PACKAGE = re.compile(r"^(?:nvidia(?:[-_].*)?|triton)==", re.MULTILINE | re.IGNORECASE)
+LOCKED_PACKAGE = re.compile(r"^([A-Za-z0-9_.-]+)==", re.MULTILINE)
+
+
+def forbidden_cpu_packages(names: Iterable[str]) -> set[str]:
+    """Return accelerator-only packages forbidden from authoritative CPU jobs."""
+
+    forbidden: set[str] = set()
+    for raw_name in names:
+        name = re.sub(r"[-_.]+", "-", raw_name).lower()
+        if (
+            name == "triton"
+            or name == "cuda"
+            or name.startswith("cuda-")
+            or name == "nvidia"
+            or name.startswith("nvidia-")
+            or "nccl" in name
+        ):
+            forbidden.add(name)
+    return forbidden
 
 
 @dataclass(frozen=True)
@@ -85,8 +104,11 @@ def _compile(spec: LockSpec, destination: Path, *, constrain: bool) -> None:
 
 def _validate_lock(path: Path) -> None:
     content = path.read_text(encoding="utf-8")
-    if FORBIDDEN_PACKAGE.search(content):
-        raise RuntimeError(f"{path.name} contains a CUDA-only dependency")
+    forbidden = forbidden_cpu_packages(LOCKED_PACKAGE.findall(content))
+    if forbidden:
+        raise RuntimeError(
+            f"{path.name} contains accelerator-only dependencies: {sorted(forbidden)}"
+        )
     expected = {
         "numpy": "2.2.6",
         "torch": "2.11.0+cpu",

@@ -83,7 +83,9 @@ jobs:
               for dist in metadata.distributions()
               if dist.metadata["Name"]
           }
-          forbidden = {name for name in installed if name == "triton" or name.startswith("nvidia-")}
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          forbidden = forbidden_cpu_packages(installed)
           assert not forbidden, f"CUDA-only packages installed in CPU job: {sorted(forbidden)}"
           PY
       - name: Run PyTorch CPU contract tests
@@ -124,7 +126,9 @@ jobs:
               for dist in metadata.distributions()
               if dist.metadata["Name"]
           }
-          forbidden = {name for name in installed if name == "triton" or name.startswith("nvidia-")}
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          forbidden = forbidden_cpu_packages(installed)
           assert not forbidden, f"CUDA-only packages installed in CPU job: {sorted(forbidden)}"
           PY
       - name: Verify the real LeRobot dataset import path

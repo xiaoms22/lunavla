@@ -10,7 +10,7 @@ import platform
 import re
 import subprocess
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Callable, Final, Mapping, Sequence, cast
@@ -19,24 +19,62 @@ import numpy as np
 from numpy.typing import NDArray
 
 from lunavla.contracts import PolicyBatch
-from lunavla.lerobot_adapter import LeRobotDatasetSource, map_lerobot_sample
+from lunavla.lerobot_adapter import (
+    LEROBOT_PUSHT_ACTION_SHAPE,
+    LEROBOT_PUSHT_EPISODES,
+    LEROBOT_PUSHT_IMAGE_SHAPE,
+    LEROBOT_PUSHT_REPO_ID,
+    LEROBOT_PUSHT_REVISION,
+    LEROBOT_PUSHT_STATE_SHAPE,
+    LEROBOT_PUSHT_VIDEO_BACKEND,
+    LeRobotDatasetSource,
+    map_lerobot_sample,
+)
+from lunavla.pusht_env_adapter import PUSHT_ENV_ID, PUSHT_OBS_TYPE
 
 
 INTEGRATION_MANIFEST_SCHEMA_VERSION: Final = 1
 INTEGRATION_ID: Final = "lerobot_pusht_v3_beta1"
-OFFICIAL_REPO_ID: Final = "lerobot/pusht"
-OFFICIAL_REVISION: Final = "b1c3ecbae7f244acc039a3dbc255a00dad1372b9"
-OFFICIAL_EPISODE: Final = 0
-OFFICIAL_VIDEO_BACKEND: Final = "pyav"
+OFFICIAL_REPO_ID: Final = LEROBOT_PUSHT_REPO_ID
+OFFICIAL_REVISION: Final = LEROBOT_PUSHT_REVISION
+OFFICIAL_EPISODE: Final = LEROBOT_PUSHT_EPISODES[0]
+OFFICIAL_VIDEO_BACKEND: Final = LEROBOT_PUSHT_VIDEO_BACKEND
 OFFICIAL_RETURN_UINT8: Final = True
 MAX_DOWNLOAD_BYTES: Final = 12 * 1024 * 1024
+EXPECTED_PLANNED_DOWNLOAD_BYTES: Final = 7_686_728
 EXPECTED_FRAME_COUNT: Final = 161
-EXPECTED_IMAGE_SHAPE: Final = (96, 96, 3)
-EXPECTED_STATE_SHAPE: Final = (2,)
-EXPECTED_ACTION_SHAPE: Final = (2,)
+EXPECTED_IMAGE_SHAPE: Final = LEROBOT_PUSHT_IMAGE_SHAPE
+EXPECTED_STATE_SHAPE: Final = LEROBOT_PUSHT_STATE_SHAPE
+EXPECTED_ACTION_SHAPE: Final = LEROBOT_PUSHT_ACTION_SHAPE
 EXPECTED_TERMINAL_FRAME_INDICES: Final = (159, 160)
-ENV_ID: Final = "gym_pusht/PushT-v0"
-ENV_OBS_TYPE: Final = "pixels_agent_pos"
+EXPECTED_NEXT_OBSERVATION_BOUNDARY: Final = (
+    "next frame while active; terminal frames self-reference without crossing episodes"
+)
+ENV_ID: Final = PUSHT_ENV_ID
+ENV_OBS_TYPE: Final = PUSHT_OBS_TYPE
+ENV_SEED: Final = 202611
+ENV_STEPS: Final = 3
+EXPECTED_LUNAVLA_VERSION: Final = "2.0.0b1"
+CLAIM_SCOPE: Final = (
+    "This smoke verifies adapter connectivity only and does not establish "
+    "PushT policy performance."
+)
+EXPECTED_POLICY_CONFIG: Final = MappingProxyType(
+    {
+        "state_dim": 2,
+        "action_dim": 2,
+        "chunk_size": 1,
+        "d_model": 16,
+        "num_encoder_layers": 1,
+        "num_decoder_layers": 1,
+        "latent_dim": 4,
+        "instruction_dim": 16,
+        "image_shape": EXPECTED_IMAGE_SHAPE,
+        "dropout": 0.0,
+        "kl_weight": 0.01,
+        "learning_rate": 3e-4,
+    }
+)
 EXPECTED_DEPENDENCY_VERSIONS: Final = MappingProxyType(
     {
         "numpy": "2.2.6",
@@ -52,6 +90,55 @@ EXPECTED_DEPENDENCY_VERSIONS: Final = MappingProxyType(
 )
 _SHA256_PATTERN: Final = re.compile(r"^[0-9a-f]{64}$")
 _GIT_SHA_PATTERN: Final = re.compile(r"^[0-9a-f]{40}$")
+
+
+def _exact_mapping(
+    value: object,
+    *,
+    name: str,
+    fields: set[str],
+) -> dict[str, object]:
+    if not isinstance(value, Mapping):
+        raise TypeError(f"{name} must be a mapping")
+    result = dict(value)
+    unknown = sorted(repr(field) for field in set(result) - fields)
+    missing = sorted(fields - set(result))
+    if unknown:
+        raise ValueError(f"unknown {name} fields: {unknown}")
+    if missing:
+        raise ValueError(f"missing {name} fields: {missing}")
+    return result
+
+
+def _require_expected(value: object, expected: object, *, name: str) -> None:
+    """Compare a JSON value without allowing booleans to masquerade as integers."""
+
+    if isinstance(expected, bool):
+        if value is not expected:
+            raise ValueError(f"{name} must equal {expected!r}")
+        return
+    if isinstance(expected, int):
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise TypeError(f"{name} must be an integer")
+        if value != expected:
+            raise ValueError(f"{name} must equal {expected!r}")
+        return
+    if isinstance(expected, float):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise TypeError(f"{name} must be numeric")
+        if not math.isfinite(float(value)) or float(value) != expected:
+            raise ValueError(f"{name} must equal {expected!r}")
+        return
+    if isinstance(expected, tuple):
+        if not isinstance(value, tuple):
+            raise TypeError(f"{name} must be a sequence")
+        if len(value) != len(expected):
+            raise ValueError(f"{name} must equal {expected!r}")
+        for index, (item, expected_item) in enumerate(zip(value, expected)):
+            _require_expected(item, expected_item, name=f"{name}[{index}]")
+        return
+    if not isinstance(value, type(expected)) or value != expected:
+        raise ValueError(f"{name} must equal {expected!r}")
 
 
 @dataclass(frozen=True)
@@ -184,13 +271,61 @@ class IntegrationManifest:
             raise ValueError("LeRobot integration smoke cannot authorize a performance claim")
         if self.deterministic is not True:
             raise ValueError("the bounded CPU integration must report deterministic=true")
-        if not isinstance(self.generated_at_utc, str) or not self.generated_at_utc.endswith("+00:00"):
-            raise ValueError("generated_at_utc must be an ISO-8601 UTC timestamp")
-        if not isinstance(self.claim_scope, str) or not self.claim_scope.strip():
-            raise ValueError("claim_scope must be a non-empty string")
-        source = dict(self.source)
-        source["sha256"] = dict(cast(Mapping[str, str], source.get("sha256", {})))
-        dataset_validation = dict(self.dataset_validation)
+        if not isinstance(self.generated_at_utc, str):
+            raise TypeError("generated_at_utc must be a string")
+        try:
+            generated_at = datetime.fromisoformat(self.generated_at_utc)
+        except ValueError as exc:
+            raise ValueError(
+                "generated_at_utc must be a valid ISO-8601 UTC timestamp"
+            ) from exc
+        if (
+            generated_at.tzinfo is None
+            or generated_at.utcoffset() != timedelta(0)
+            or not self.generated_at_utc.endswith("+00:00")
+            or generated_at.isoformat() != self.generated_at_utc
+        ):
+            raise ValueError("generated_at_utc must be a canonical ISO-8601 UTC timestamp")
+        if self.claim_scope != CLAIM_SCOPE:
+            raise ValueError("claim_scope does not match the fixed connectivity-only statement")
+
+        source = _exact_mapping(
+            self.source,
+            name="source",
+            fields={
+                "repo_id",
+                "revision",
+                "episode",
+                "video_backend",
+                "return_uint8",
+                "max_download_bytes",
+                "planned_download_bytes",
+                "sha256",
+            },
+        )
+        source["sha256"] = _exact_mapping(
+            source["sha256"],
+            name="source.sha256",
+            fields={contract.path for contract in OFFICIAL_SOURCE_FILES},
+        )
+        dataset_validation = _exact_mapping(
+            self.dataset_validation,
+            name="dataset_validation",
+            fields={
+                "frame_count",
+                "image_shape",
+                "image_dtype",
+                "state_shape",
+                "state_dtype",
+                "action_shape",
+                "action_dtype",
+                "episode_indices",
+                "frame_index_start",
+                "frame_index_end",
+                "terminal_frame_indices",
+                "next_observation_boundary",
+            },
+        )
         for name in (
             "image_shape",
             "state_shape",
@@ -201,25 +336,63 @@ class IntegrationManifest:
             sequence_value = dataset_validation.get(name)
             if isinstance(sequence_value, (list, tuple)):
                 dataset_validation[name] = tuple(sequence_value)
-        optimizer_step = dict(self.optimizer_step)
-        policy_config = dict(
-            cast(Mapping[str, object], optimizer_step.get("policy_config", {}))
+        optimizer_step = _exact_mapping(
+            self.optimizer_step,
+            name="optimizer_step",
+            fields={
+                "policy_id",
+                "device",
+                "batch_size",
+                "steps",
+                "loss",
+                "parameters_changed",
+                "policy_config",
+            },
+        )
+        policy_config = _exact_mapping(
+            optimizer_step["policy_config"],
+            name="optimizer_step.policy_config",
+            fields=set(EXPECTED_POLICY_CONFIG),
         )
         if isinstance(policy_config.get("image_shape"), (list, tuple)):
             policy_config["image_shape"] = tuple(cast(Sequence[int], policy_config["image_shape"]))
-        if policy_config:
-            optimizer_step["policy_config"] = policy_config
-        environment_smoke = dict(self.environment_smoke)
+        optimizer_step["policy_config"] = policy_config
+        environment_smoke = _exact_mapping(
+            self.environment_smoke,
+            name="environment_smoke",
+            fields={
+                "env_id",
+                "obs_type",
+                "seed",
+                "steps",
+                "pixel_shape",
+                "pixel_dtype",
+                "agent_position_shape",
+                "action_shape",
+                "action_dtype",
+                "close_completed",
+            },
+        )
         for name in ("pixel_shape", "agent_position_shape", "action_shape"):
             sequence_value = environment_smoke.get(name)
             if isinstance(sequence_value, (list, tuple)):
                 environment_smoke[name] = tuple(sequence_value)
+        dependencies = _exact_mapping(
+            self.dependencies,
+            name="dependencies",
+            fields={"lunavla", *EXPECTED_DEPENDENCY_VERSIONS},
+        )
+        artifact_policy = _exact_mapping(
+            self.artifact_policy,
+            name="artifact_policy",
+            fields={"manifest_only", "cache_uploaded", "video_uploaded"},
+        )
         object.__setattr__(self, "source", source)
         object.__setattr__(self, "dataset_validation", dataset_validation)
         object.__setattr__(self, "optimizer_step", optimizer_step)
         object.__setattr__(self, "environment_smoke", environment_smoke)
-        object.__setattr__(self, "dependencies", dict(self.dependencies))
-        object.__setattr__(self, "artifact_policy", dict(self.artifact_policy))
+        object.__setattr__(self, "dependencies", dependencies)
+        object.__setattr__(self, "artifact_policy", artifact_policy)
         expected_source = {
             "repo_id": OFFICIAL_REPO_ID,
             "revision": OFFICIAL_REVISION,
@@ -228,46 +401,45 @@ class IntegrationManifest:
             "return_uint8": OFFICIAL_RETURN_UINT8,
         }
         for name, expected in expected_source.items():
-            if source.get(name) != expected:
-                raise ValueError(f"source.{name} must equal {expected!r}")
-        if not isinstance(source.get("return_uint8"), bool):
-            raise TypeError("source.return_uint8 must be boolean")
-        if source.get("max_download_bytes") != MAX_DOWNLOAD_BYTES:
-            raise ValueError(f"source.max_download_bytes must equal {MAX_DOWNLOAD_BYTES}")
-        planned = source.get("planned_download_bytes")
-        if isinstance(planned, bool) or not isinstance(planned, int):
-            raise TypeError("source.planned_download_bytes must be an integer")
-        if planned <= 0 or planned > MAX_DOWNLOAD_BYTES:
-            raise ValueError("source.planned_download_bytes exceeds the integration limit")
+            _require_expected(source.get(name), expected, name=f"source.{name}")
+        _require_expected(
+            source.get("max_download_bytes"),
+            MAX_DOWNLOAD_BYTES,
+            name="source.max_download_bytes",
+        )
+        planned = source["planned_download_bytes"]
+        _require_expected(
+            planned,
+            EXPECTED_PLANNED_DOWNLOAD_BYTES,
+            name="source.planned_download_bytes",
+        )
         expected_hashes = {contract.path: contract.sha256 for contract in OFFICIAL_SOURCE_FILES}
         if source.get("sha256") != expected_hashes:
             raise ValueError("source.sha256 does not match the pinned upstream files")
         validation = dict(self.dataset_validation)
-        if validation.get("frame_count") != EXPECTED_FRAME_COUNT:
-            raise ValueError(f"dataset_validation.frame_count must equal {EXPECTED_FRAME_COUNT}")
-        image_shape = validation.get("image_shape")
-        if not isinstance(image_shape, (list, tuple)) or tuple(image_shape) != EXPECTED_IMAGE_SHAPE:
-            raise ValueError("dataset_validation.image_shape is not 96x96x3")
-        if validation.get("image_dtype") != "uint8":
-            raise ValueError("dataset_validation.image_dtype must be uint8")
-        if validation.get("state_dtype") != "float32":
-            raise ValueError("dataset_validation.state_dtype must be float32")
-        if validation.get("action_dtype") != "float32":
-            raise ValueError("dataset_validation.action_dtype must be float32")
         expected_dataset_values = {
+            "frame_count": EXPECTED_FRAME_COUNT,
+            "image_shape": EXPECTED_IMAGE_SHAPE,
+            "image_dtype": "uint8",
             "state_shape": EXPECTED_STATE_SHAPE,
+            "state_dtype": "float32",
             "action_shape": EXPECTED_ACTION_SHAPE,
+            "action_dtype": "float32",
             "episode_indices": (OFFICIAL_EPISODE,),
             "frame_index_start": 0,
             "frame_index_end": EXPECTED_FRAME_COUNT - 1,
             "terminal_frame_indices": EXPECTED_TERMINAL_FRAME_INDICES,
+            "next_observation_boundary": EXPECTED_NEXT_OBSERVATION_BOUNDARY,
         }
         for name, expected in expected_dataset_values.items():
-            if validation.get(name) != expected:
-                raise ValueError(f"dataset_validation.{name} must equal {expected!r}")
-        if not bool(self.optimizer_step.get("parameters_changed")):
+            _require_expected(
+                validation.get(name),
+                expected,
+                name=f"dataset_validation.{name}",
+            )
+        if optimizer_step["parameters_changed"] is not True:
             raise ValueError("optimizer_step must update at least one Transformer parameter")
-        loss = self.optimizer_step.get("loss")
+        loss = optimizer_step["loss"]
         if isinstance(loss, bool) or not isinstance(loss, (int, float)) or not math.isfinite(loss):
             raise ValueError("optimizer_step.loss must be finite")
         expected_optimizer = {
@@ -277,14 +449,24 @@ class IntegrationManifest:
             "steps": 1,
         }
         for name, expected in expected_optimizer.items():
-            if self.optimizer_step.get(name) != expected:
-                raise ValueError(f"optimizer_step.{name} must equal {expected!r}")
-        if self.environment_smoke.get("close_completed") is not True:
+            _require_expected(
+                optimizer_step.get(name),
+                expected,
+                name=f"optimizer_step.{name}",
+            )
+        for name, expected in EXPECTED_POLICY_CONFIG.items():
+            _require_expected(
+                policy_config.get(name),
+                expected,
+                name=f"optimizer_step.policy_config.{name}",
+            )
+        if environment_smoke.get("close_completed") is not True:
             raise ValueError("environment_smoke must close its resources")
         expected_environment = {
             "env_id": ENV_ID,
             "obs_type": ENV_OBS_TYPE,
-            "steps": 3,
+            "seed": ENV_SEED,
+            "steps": ENV_STEPS,
             "pixel_shape": EXPECTED_IMAGE_SHAPE,
             "pixel_dtype": "uint8",
             "agent_position_shape": EXPECTED_STATE_SHAPE,
@@ -292,20 +474,28 @@ class IntegrationManifest:
             "action_dtype": "float32",
         }
         for name, expected in expected_environment.items():
-            if self.environment_smoke.get(name) != expected:
-                raise ValueError(f"environment_smoke.{name} must equal {expected!r}")
+            _require_expected(
+                environment_smoke.get(name),
+                expected,
+                name=f"environment_smoke.{name}",
+            )
         if not re.fullmatch(r"3\.12\.[0-9]+", self.python):
             raise ValueError("the integration Python version must be 3.12.x")
-        if not isinstance(self.dependencies.get("lunavla"), str):
-            raise ValueError("dependencies must record the installed LunaVLA version")
+        if dependencies.get("lunavla") != EXPECTED_LUNAVLA_VERSION:
+            raise ValueError(
+                f"dependencies.lunavla must equal {EXPECTED_LUNAVLA_VERSION!r}"
+            )
         for name, expected in EXPECTED_DEPENDENCY_VERSIONS.items():
-            if self.dependencies.get(name) != expected:
-                raise ValueError(f"dependencies.{name} must equal {expected!r}")
-        if self.artifact_policy.get("manifest_only") is not True:
+            _require_expected(
+                dependencies.get(name),
+                expected,
+                name=f"dependencies.{name}",
+            )
+        if artifact_policy.get("manifest_only") is not True:
             raise ValueError("integration artifact policy must be manifest-only")
-        if self.artifact_policy.get("cache_uploaded") is not False:
+        if artifact_policy.get("cache_uploaded") is not False:
             raise ValueError("integration caches must not be uploaded")
-        if self.artifact_policy.get("video_uploaded") is not False:
+        if artifact_policy.get("video_uploaded") is not False:
             raise ValueError("integration videos must not be uploaded")
 
     def to_dict(self) -> dict[str, object]:
@@ -423,6 +613,11 @@ def preflight_official_download(
         raise ValueError(
             "pinned dataset exceeds the download limit: "
             f"{planned_download_bytes} > {max_download_bytes} bytes"
+        )
+    if planned_download_bytes != EXPECTED_PLANNED_DOWNLOAD_BYTES:
+        raise ValueError(
+            "pinned Hub tree size changed: "
+            f"{planned_download_bytes} != {EXPECTED_PLANNED_DOWNLOAD_BYTES} bytes"
         )
     return DownloadPreflight(
         repo_id=OFFICIAL_REPO_ID,
@@ -632,9 +827,7 @@ def validate_official_episode(
         frame_index_start=0,
         frame_index_end=EXPECTED_FRAME_COUNT - 1,
         terminal_frame_indices=EXPECTED_TERMINAL_FRAME_INDICES,
-        next_observation_boundary=(
-            "next frame while active; terminal frames self-reference without crossing episodes"
-        ),
+        next_observation_boundary=EXPECTED_NEXT_OBSERVATION_BOUNDARY,
     )
 
 
@@ -706,20 +899,7 @@ def run_transformer_optimizer_step(
         steps=1,
         loss=loss,
         parameters_changed=True,
-        policy_config={
-            "state_dim": 2,
-            "action_dim": 2,
-            "chunk_size": 1,
-            "d_model": 16,
-            "num_encoder_layers": 1,
-            "num_decoder_layers": 1,
-            "latent_dim": 4,
-            "instruction_dim": 16,
-            "image_shape": EXPECTED_IMAGE_SHAPE,
-            "dropout": 0.0,
-            "kl_weight": 0.01,
-            "learning_rate": learning_rate,
-        },
+        policy_config={**EXPECTED_POLICY_CONFIG, "learning_rate": learning_rate},
     )
 
 
@@ -737,8 +917,8 @@ def _validate_env_observation(observation: Any, *, context: str) -> None:
 def run_headless_pusht_smoke(
     *,
     env_factory: Callable[..., Any] | None = None,
-    seed: int = 202611,
-    steps: int = 3,
+    seed: int = ENV_SEED,
+    steps: int = ENV_STEPS,
 ) -> EnvironmentValidation:
     if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
         raise ValueError("environment seed must be a non-negative integer")
@@ -907,10 +1087,7 @@ def run_official_integration(
             "video_uploaded": False,
         },
         claim_allowed=False,
-        claim_scope=(
-            "This smoke verifies adapter connectivity only and does not establish "
-            "PushT policy performance."
-        ),
+        claim_scope=CLAIM_SCOPE,
     )
     manifest.write(output_path)
     return manifest

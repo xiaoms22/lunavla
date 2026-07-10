@@ -15,7 +15,7 @@ import numpy as np
 from lunavla.ablation import AblationPair, evaluate_action_error_pairs
 from lunavla.config import ExperimentConfig
 from lunavla.contracts import DatasetSource, Observation, TaskEnv, Transition, VLAPolicy
-from lunavla.engine import Engine, EngineConfig
+from lunavla.engine import Engine, EngineConfig, EvaluationResult
 from lunavla.evidence import wilson_interval
 from lunavla.manifest import RunManifest, git_source_state, sha256_transitions
 from lunavla.memory_data import PointReachTaskEnv, make_point_reach_demonstrations
@@ -217,6 +217,21 @@ def _task_env(config: ExperimentConfig) -> TaskEnv:
             success_distance=float(parameters.get("success_distance", 0.10)),
         )
     raise ValueError(f"unsupported task.id: {task_id!r}")
+
+
+def _evaluate_with_cleanup(
+    engine: Engine,
+    policy: VLAPolicy,
+    environment: TaskEnv,
+) -> EvaluationResult:
+    """Evaluate once and release optional external environment resources."""
+
+    try:
+        return engine.evaluate(policy, environment)
+    finally:
+        close = getattr(environment, "close", None)
+        if callable(close):
+            close()
 
 
 def _registry(config: ExperimentConfig) -> PolicyRegistry:
@@ -458,7 +473,7 @@ def run_experiment(
             _TupleDataset(transitions),
             policy_config=_policy_config(config),
         )
-        evaluation = engine.evaluate(training.policy, _task_env(config))
+        evaluation = _evaluate_with_cleanup(engine, training.policy, _task_env(config))
         ablation = _configured_ablation(training.policy, config)
 
         checkpoint_path = output_dir / str(config.artifacts["checkpoint_name"])

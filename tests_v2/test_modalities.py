@@ -494,6 +494,7 @@ def test_offline_lerobot_pusht_gate_rejects_shape_or_dtype_drift(
     samples[0][field] = value
     source = LeRobotDatasetSource(
         "lerobot/pusht",
+        episodes=[0, 1],
         dataset_factory=lambda *_args, **_kwargs: _FakeLeRobotDataset(samples),
     )
     with pytest.raises(error, match=message):
@@ -505,12 +506,37 @@ def test_lerobot_dataset_success_is_only_copied_when_present() -> None:
     samples[0]["next.success"] = _FakeTensor(np.asarray(True))
     source = LeRobotDatasetSource(
         "lerobot/pusht",
+        episodes=[0, 1],
         dataset_factory=lambda *_args, **_kwargs: _FakeLeRobotDataset(samples),
     )
     transitions = source.load()
     assert transitions[0].info["success"] is True
     assert transitions[0].info["success_key"] == "next.success"
     assert "success" not in transitions[1].info
+
+
+def test_lerobot_dataset_rejects_unrequested_or_missing_episode_ids() -> None:
+    samples = _fake_lerobot_samples()
+    samples[0]["episode_index"] = _FakeTensor(np.asarray(99, dtype=np.int64))
+    source = LeRobotDatasetSource(
+        "lerobot/pusht",
+        episodes=[0, 1],
+        dataset_factory=lambda *_args, **_kwargs: _FakeLeRobotDataset(samples),
+    )
+    with pytest.raises(ValueError, match="returned unrequested episode 99"):
+        source.load()
+
+    only_episode_zero = [
+        sample for sample in _fake_lerobot_samples()
+        if int(np.asarray(sample["episode_index"]).reshape(-1)[0]) == 0
+    ]
+    source = LeRobotDatasetSource(
+        "lerobot/pusht",
+        episodes=[0, 1],
+        dataset_factory=lambda *_args, **_kwargs: _FakeLeRobotDataset(only_episode_zero),
+    )
+    with pytest.raises(ValueError, match=r"missing \[1\]"):
+        source.load()
 
 
 def test_sample_mapping_supports_nested_keys_and_uint8_hwc() -> None:

@@ -10,7 +10,7 @@ from lunavla.cli import main
 from lunavla.config import ExperimentConfig
 from lunavla.manifest import RunManifest
 from lunavla.manifest import sha256_transitions
-from lunavla.run import _dataset_source, _task_env, run_experiment
+from lunavla.run import _dataset_source, _evaluate_with_cleanup, _task_env, run_experiment
 
 
 def _config() -> ExperimentConfig:
@@ -54,6 +54,31 @@ def _config() -> ExperimentConfig:
             "artifacts": {"output_dir": "outputs/v2-test"},
         }
     )
+
+
+def test_evaluation_closes_external_environment_on_success_and_failure() -> None:
+    class ClosableEnvironment:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    expected = object()
+    environment = ClosableEnvironment()
+    engine = type("SuccessfulEngine", (), {"evaluate": lambda *_args: expected})()
+    assert _evaluate_with_cleanup(engine, object(), environment) is expected  # type: ignore[arg-type]
+    assert environment.closed is True
+
+    environment = ClosableEnvironment()
+
+    def fail(*_args: object) -> object:
+        raise RuntimeError("evaluation failed")
+
+    engine = type("FailingEngine", (), {"evaluate": fail})()
+    with pytest.raises(RuntimeError, match="evaluation failed"):
+        _evaluate_with_cleanup(engine, object(), environment)  # type: ignore[arg-type]
+    assert environment.closed is True
 
 
 @pytest.mark.integration

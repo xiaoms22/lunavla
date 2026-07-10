@@ -395,6 +395,27 @@ class LeRobotDatasetSource:
             )
             for index, sample in enumerate(samples)
         ]
+        requested_episodes = set(self.episodes)
+        observed_episodes: set[int] = set()
+        for index, item in enumerate(mapped):
+            episode_index = item.metadata["episode_index"]
+            if isinstance(episode_index, bool) or not isinstance(episode_index, int):
+                raise TypeError(
+                    "LeRobotDataset samples must expose an integer episode_index; "
+                    f"sample {index} has {episode_index!r}"
+                )
+            if episode_index not in requested_episodes:
+                raise ValueError(
+                    f"LeRobotDataset returned unrequested episode {episode_index}; "
+                    f"requested {sorted(requested_episodes)}"
+                )
+            observed_episodes.add(episode_index)
+        if self.max_samples is None and observed_episodes != requested_episodes:
+            missing = sorted(requested_episodes - observed_episodes)
+            raise ValueError(
+                "LeRobotDataset did not return every requested episode; "
+                f"missing {missing}"
+            )
         if self.repo_id == LEROBOT_PUSHT_REPO_ID:
             self._validate_pusht_contract(mapped)
         transitions: list[Transition] = []

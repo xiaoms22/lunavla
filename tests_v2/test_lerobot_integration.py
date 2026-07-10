@@ -9,11 +9,16 @@ import numpy as np
 import pytest
 
 from lunavla.lerobot_integration import (
+    CLAIM_SCOPE,
     ENV_ID,
     ENV_OBS_TYPE,
     EXPECTED_FRAME_COUNT,
     EXPECTED_IMAGE_SHAPE,
     EXPECTED_DEPENDENCY_VERSIONS,
+    EXPECTED_LUNAVLA_VERSION,
+    EXPECTED_NEXT_OBSERVATION_BOUNDARY,
+    EXPECTED_PLANNED_DOWNLOAD_BYTES,
+    EXPECTED_POLICY_CONFIG,
     EXPECTED_TERMINAL_FRAME_INDICES,
     INTEGRATION_ID,
     INTEGRATION_MANIFEST_SCHEMA_VERSION,
@@ -74,7 +79,11 @@ def _hub_info(*, extra_size: int = 0) -> SimpleNamespace:
     siblings.append(
         SimpleNamespace(
             rfilename="meta/info.json",
-            size=2_261 + extra_size,
+            size=(
+                EXPECTED_PLANNED_DOWNLOAD_BYTES
+                - sum(contract.size for contract in OFFICIAL_SOURCE_FILES)
+                + extra_size
+            ),
             lfs=None,
         )
     )
@@ -104,9 +113,7 @@ def test_preflight_pins_revision_hashes_and_download_limit() -> None:
     assert api.calls == [(OFFICIAL_REPO_ID, OFFICIAL_REVISION, True)]
     assert result.resolved_revision == OFFICIAL_REVISION
     assert result.max_download_bytes == MAX_DOWNLOAD_BYTES
-    assert result.planned_download_bytes == sum(
-        contract.size for contract in OFFICIAL_SOURCE_FILES
-    ) + 2_261
+    assert result.planned_download_bytes == EXPECTED_PLANNED_DOWNLOAD_BYTES
     assert result.source_files == OFFICIAL_SOURCE_FILES
 
 
@@ -124,6 +131,10 @@ def test_preflight_rejects_revision_hash_and_size_drift() -> None:
     too_large = _hub_info(extra_size=MAX_DOWNLOAD_BYTES)
     with pytest.raises(ValueError, match="exceeds the download limit"):
         preflight_official_download(api=_FakeHubApi(too_large))
+
+    changed_tree = _hub_info(extra_size=1)
+    with pytest.raises(ValueError, match="Hub tree size changed"):
+        preflight_official_download(api=_FakeHubApi(changed_tree))
 
 
 def test_downloaded_source_hash_verification_is_fail_closed(tmp_path: Path) -> None:
@@ -269,7 +280,7 @@ def _manifest() -> IntegrationManifest:
             "video_backend": OFFICIAL_VIDEO_BACKEND,
             "return_uint8": OFFICIAL_RETURN_UINT8,
             "max_download_bytes": MAX_DOWNLOAD_BYTES,
-            "planned_download_bytes": sum(item.size for item in OFFICIAL_SOURCE_FILES),
+            "planned_download_bytes": EXPECTED_PLANNED_DOWNLOAD_BYTES,
             "sha256": {item.path: item.sha256 for item in OFFICIAL_SOURCE_FILES},
         },
         dataset_validation={
@@ -284,6 +295,7 @@ def _manifest() -> IntegrationManifest:
             "frame_index_start": 0,
             "frame_index_end": 160,
             "terminal_frame_indices": (159, 160),
+            "next_observation_boundary": EXPECTED_NEXT_OBSERVATION_BOUNDARY,
         },
         optimizer_step={
             "policy_id": "transformer_chunk_cvae",
@@ -292,10 +304,12 @@ def _manifest() -> IntegrationManifest:
             "steps": 1,
             "parameters_changed": True,
             "loss": 0.5,
+            "policy_config": dict(EXPECTED_POLICY_CONFIG),
         },
         environment_smoke={
             "env_id": ENV_ID,
             "obs_type": ENV_OBS_TYPE,
+            "seed": 202611,
             "steps": 3,
             "pixel_shape": EXPECTED_IMAGE_SHAPE,
             "pixel_dtype": "uint8",
@@ -304,7 +318,10 @@ def _manifest() -> IntegrationManifest:
             "action_dtype": "float32",
             "close_completed": True,
         },
-        dependencies={"lunavla": "2.0.0a1", **EXPECTED_DEPENDENCY_VERSIONS},
+        dependencies={
+            "lunavla": EXPECTED_LUNAVLA_VERSION,
+            **EXPECTED_DEPENDENCY_VERSIONS,
+        },
         python="3.12.13",
         device="cpu",
         deterministic=True,
@@ -314,7 +331,7 @@ def _manifest() -> IntegrationManifest:
             "video_uploaded": False,
         },
         claim_allowed=False,
-        claim_scope="Adapter connectivity only; no PushT performance claim.",
+        claim_scope=CLAIM_SCOPE,
     )
 
 
@@ -352,4 +369,60 @@ def test_manifest_rejects_unknown_fields_and_non_authoritative_source(tmp_path: 
     payload["schema_version"] = True
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="schema_version"):
+        IntegrationManifest.load(path)
+
+
+@pytest.mark.parametrize(
+    ("field_path", "replacement", "message"),
+    [
+        (("claim_scope",), "tampered claim", "claim_scope"),
+        (
+            ("source", "planned_download_bytes"),
+            EXPECTED_PLANNED_DOWNLOAD_BYTES - 1,
+            "planned_download_bytes",
+        ),
+        (
+            ("optimizer_step", "policy_config", "d_model"),
+            32,
+            "policy_config",
+        ),
+        (("environment_smoke", "seed"), 0, "environment_smoke.seed"),
+        (
+            ("dataset_validation", "next_observation_boundary"),
+            "cross episode",
+            "next_observation_boundary",
+        ),
+        (("dependencies", "lunavla"), "2.0.0a2", "dependencies.lunavla"),
+        (("generated_at_utc",), "not-a-timestamp", "generated_at_utc"),
+        (("source", "episode"), False, "source.episode"),
+        (("optimizer_step", "steps"), True, "optimizer_step.steps"),
+    ],
+)
+def test_manifest_rejects_nested_contract_tampering(
+    tmp_path: Path,
+    field_path: tuple[str, ...],
+    replacement: object,
+    message: str,
+) -> None:
+    payload = _manifest().to_dict()
+    current: dict[str, Any] = payload
+    for field in field_path[:-1]:
+        nested = current[field]
+        assert isinstance(nested, dict)
+        current = nested
+    current[field_path[-1]] = replacement
+    path = tmp_path / "integration_manifest.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises((TypeError, ValueError), match=message):
+        IntegrationManifest.load(path)
+
+
+def test_manifest_rejects_unknown_nested_fields(tmp_path: Path) -> None:
+    payload = _manifest().to_dict()
+    source = payload["source"]
+    assert isinstance(source, dict)
+    source["unexpected"] = True
+    path = tmp_path / "integration_manifest.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="unknown source fields"):
         IntegrationManifest.load(path)
