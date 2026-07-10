@@ -274,6 +274,12 @@ def test_full_matrix_derivation_matches_fixed_training_and_episode_counts() -> N
     assert visual_plan.expected_arm_episodes == 480
     assert sum(job.variant == "image" for job in visual_plan.jobs) == 5
     assert sum(job.variant == "state_only" for job in visual_plan.jobs) == 5
+    assert (
+        language_plan.expected_training_runs + visual_plan.expected_training_runs
+    ) == 15
+    assert (
+        language_plan.expected_arm_episodes + visual_plan.expected_arm_episodes
+    ) == 960
 
 
 def test_reduced_design_is_explicit_and_always_observational() -> None:
