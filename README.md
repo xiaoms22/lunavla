@@ -35,7 +35,18 @@ uv run pytest tests_v2 -m "not torch and not lerobot"
 
 Install the PyTorch CPU bridge with `uv sync --extra dev --extra v2-core`. The full `v2` extra additionally installs LeRobot's dataset profile. The versioned [`uv.lock`](uv.lock) resolves NumPy 2.2, PyTorch 2.11, torchvision 0.26, and LeRobot 0.6 under Python 3.12. Linux CI and release evidence use separate hash-locked CPU profiles so they cannot pull CUDA-only packages.
 
-The experimental public surface is `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, and the policy registry/engine. See [`docs/v2/architecture.md`](docs/v2/architecture.md), [`docs/v2/compatibility.md`](docs/v2/compatibility.md), and [`docs/v2/release_process.md`](docs/v2/release_process.md). These APIs remain subject to change until v2.0 stable.
+The experimental public surface includes `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, `EvidenceDesign`, `RunManifest`, `EvidenceManifest`, and the policy registry/engine. See [`docs/v2/architecture.md`](docs/v2/architecture.md), [`docs/v2/evidence_contract.md`](docs/v2/evidence_contract.md), [`docs/v2/compatibility.md`](docs/v2/compatibility.md), and [`docs/v2/release_process.md`](docs/v2/release_process.md). These APIs remain subject to change until v2.0 stable.
+
+The predeclared language and visual studies are executed and verified with:
+
+```bash
+uv run lunavla-v2 evidence-run configs/v2/evidence/language_alpha2.yaml
+uv run lunavla-v2 evidence-verify outputs/evidence/language-alpha2
+uv run lunavla-v2 evidence-snapshot outputs/evidence/language-alpha2 \
+  --out results/v2/language-alpha2
+```
+
+Full studies are intentionally multi-seed CPU workloads. `--allow-reduced-design` is only for CI-sized observational studies; reduced output always records `claim_allowed=false` and cannot establish a language or visual contribution.
 
 ## What is implemented
 
@@ -119,6 +130,7 @@ The full evidence bundle, SBOM, and `SHA256SUMS` are release assets rather than 
 - [`DATA_CARD.md`](DATA_CARD.md): generated-data schema, splits, and limitations.
 - [`docs/v2/MODEL_CARD.md`](docs/v2/MODEL_CARD.md): experimental Transformer and modality boundary.
 - [`docs/v2/DATA_CARD.md`](docs/v2/DATA_CARD.md): language, rendered-image, and LeRobot adapter data boundary.
+- [`docs/v2/evidence_contract.md`](docs/v2/evidence_contract.md): multi-seed design, verification, and claim gates.
 - [`ROADMAP.md`](ROADMAP.md): v1.x maintenance and the gated v2 bridge.
 - [`CHANGELOG.md`](CHANGELOG.md): user-visible changes.
 - [`docs/evaluation.md`](docs/evaluation.md): rollout metrics and interpretation.
@@ -135,7 +147,7 @@ lunavla/       experimental v2 contracts, registry, engines, and adapters
 model/         NumPy policy implementations and interfaces
 trainer/       training entry points
 scripts/       checks, experiments, and evidence tooling
-results/v1.1/  small hash-verifiable evidence snapshots
+results/       small hash-verifiable v1.1 and v2 evidence snapshots
 outputs/       local generated artifacts (not published evidence)
 ```
 

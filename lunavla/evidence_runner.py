@@ -1654,7 +1654,7 @@ def snapshot_evidence(output_root: str | Path, out: str | Path) -> Path:
     if not any(
         parts[index : index + 2] == ("results", "v2")
         for index in range(max(0, len(parts) - 1))
-    ) or destination.name == "v2":
+    ):
         raise ValueError("evidence snapshots must be written under results/v2/")
     if destination.exists():
         raise FileExistsError(f"refusing to overwrite existing snapshot: {destination}")
