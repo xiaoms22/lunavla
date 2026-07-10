@@ -1,22 +1,54 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "lunavla"
-version = "1.1.0"
-description = "CPU-first imitation-learning and vision-action teaching core"
+version = "2.0.0a0"
+description = "Experimental unified engine bridging LunaVLA's NumPy teaching core to VLA research"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = "==3.12.*"
 license = "Apache-2.0"
 dependencies = [
-  "numpy>=1.24,<2.0",
+  "numpy>=2.0,<2.3",
   "Pillow>=10.0",
   "PyYAML>=6.0",
 ]
 
+[project.optional-dependencies]
+v2-core = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+]
+v2 = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+  "lerobot[dataset]==0.6.*",
+]
+dev = [
+  "coverage[toml]>=7.6,<8",
+  "mypy>=1.11,<2",
+  "pytest>=8.3,<9",
+  "pytest-cov>=5,<7",
+  "ruff>=0.9,<1",
+  "types-PyYAML>=6.0.12",
+]
+
+[project.scripts]
+lunavla-v2 = "lunavla.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["dataset*", "lunavla*", "model*", "trainer*"]
+exclude = ["tests*", "tests_v2*"]
+
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
-testpaths = ["tests"]
+testpaths = ["tests", "tests_v2"]
 pythonpath = ["."]
 markers = [
   "integration: end-to-end tests that invoke a CLI or train a policy",
+  "torch: tests that require the v2 PyTorch profile",
+  "lerobot: tests that require the optional LeRobot adapter",
 ]
 
 [tool.coverage.run]
@@ -44,7 +76,7 @@ exclude_also = [
 ]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py312"
 line-length = 100
 extend-exclude = ["docs/archive", "outputs", "scripts"]
 
@@ -56,7 +88,7 @@ select = ["E4", "E7", "E9", "F"]
 "eval_vla.py" = ["E402"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 check_untyped_defs = true
 disallow_any_generics = true
 ignore_missing_imports = true

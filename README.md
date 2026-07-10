@@ -1,12 +1,14 @@
 # LunaVLA
 
-![Python](https://img.shields.io/badge/Python-3.10--3.12-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/v1.1-3.10--3.12-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache--2.0-blue)
-![Status](https://img.shields.io/badge/status-v1.1%20development-yellow)
+![Status](https://img.shields.io/badge/v2-experimental%20integration-orange)
 
 LunaVLA is a small, CPU-runnable imitation-learning/visuomotor-agent teaching core for people preparing to study Vision-Language-Action systems. It provides a complete state-to-action exercise: generate demonstrations, train a NumPy policy, evaluate rollouts, and inspect reproducibility evidence.
 
-The current task is `pusht_style_point_reach`: a synthetic 2D point-reach exercise inspired by the shape of a PushT learning loop. It has no images, no T-block physics, no Transformer, and no real-robot interface. LunaVLA is therefore not a PushT benchmark or a production VLA model.
+The stable v1.1 task is `pusht_style_point_reach`: a synthetic 2D point-reach exercise inspired by the shape of a PushT learning loop. v1.1 has no images, no T-block physics, no Transformer, and no real-robot interface. The v2 branch adds experimental modality fixtures and a teaching-scale Transformer, but LunaVLA is still not a PushT benchmark or a production VLA model.
+
+The signed [`v1.1.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v1.1.0) is the stable, evidence-backed teaching core. The `v2` branch is an experimental bridge: it adds a shared engine and optional PyTorch, language, visual, and LeRobot adapters without changing the meaning of the v1.1 evidence below. No modality-effect claim is made until its paired controlled interval excludes zero.
 
 ## Quick start
 
@@ -20,6 +22,20 @@ python scripts/run_cpu_smoke.py
 ```
 
 The quickstart writes local artifacts under `outputs/`, which is intentionally not a source of published claims. A completed run should include its resolved config, checkpoint, metrics, and `manifest.json`. Use `--overwrite` only when intentionally replacing a local run.
+
+## Experimental v2 profile
+
+v2 fixes Python to 3.12 and keeps heavy packages opt-in. Validate the unified contracts and run dependency-light tests with:
+
+```bash
+uv sync --extra dev
+uv run lunavla-v2 validate-config configs/v2/numpy_baseline.yaml
+uv run pytest tests_v2 -m "not torch and not lerobot"
+```
+
+Install the PyTorch CPU bridge with `uv sync --extra dev --extra v2-core`. The full `v2` extra additionally installs LeRobot's dataset profile. The versioned [`uv.lock`](uv.lock) resolves NumPy 2.2, PyTorch 2.11, torchvision 0.26, and LeRobot 0.6 under Python 3.12.
+
+The experimental public surface is `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, and the policy registry/engine. See [`docs/v2/architecture.md`](docs/v2/architecture.md) and [`docs/v2/compatibility.md`](docs/v2/compatibility.md). These APIs remain subject to change until v2.0 stable.
 
 ## What is implemented
 
@@ -101,6 +117,8 @@ The full evidence bundle, SBOM, and `SHA256SUMS` are release assets rather than 
 
 - [`MODEL_CARD.md`](MODEL_CARD.md): policy intent, interfaces, and limitations.
 - [`DATA_CARD.md`](DATA_CARD.md): generated-data schema, splits, and limitations.
+- [`docs/v2/MODEL_CARD.md`](docs/v2/MODEL_CARD.md): experimental Transformer and modality boundary.
+- [`docs/v2/DATA_CARD.md`](docs/v2/DATA_CARD.md): language, rendered-image, and LeRobot adapter data boundary.
 - [`ROADMAP.md`](ROADMAP.md): v1.x maintenance and the gated v2 bridge.
 - [`CHANGELOG.md`](CHANGELOG.md): user-visible changes.
 - [`docs/evaluation.md`](docs/evaluation.md): rollout metrics and interpretation.
@@ -112,6 +130,7 @@ The full evidence bundle, SBOM, and `SHA256SUMS` are release assets rather than 
 ```text
 configs/       versioned experiment configuration
 dataset/       synthetic and JSONL data paths
+lunavla/       experimental v2 contracts, registry, engines, and adapters
 model/         NumPy policy implementations and interfaces
 trainer/       training entry points
 scripts/       checks, experiments, and evidence tooling
@@ -126,6 +145,8 @@ Safe description:
 > LunaVLA is a CPU-runnable teaching repository for a synthetic state-to-action imitation-learning loop with action-chunk experiments and reproducibility manifests.
 
 Do not describe v1.x as a visual VLA, an ACT implementation, a real PushT result, or a real-robot deployment. Language is represented only by small deterministic features in the current core; instruction-following has not been established by counterfactual evaluation.
+
+On v2, implemented inputs and adapters are capabilities under test, not evidence that language or images improve behavior. The name `act` is reserved for the PyTorch policy only because its implementation includes action queries, CVAE/KL training, masks, and temporal ensembling; this is still a teaching-scale implementation, not a reproduction claim about any benchmark.
 
 ## License
 

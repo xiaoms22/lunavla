@@ -2,7 +2,22 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
-## Unreleased — v1.1.0
+## Unreleased — v2.0.0-alpha
+
+### Added
+
+- Added experimental `Observation`, `Transition`, `VLAPolicy`, `TaskEnv`, and `DatasetSource` contracts plus a shared policy registry and train/evaluation engine.
+- Added a v1 NumPy adapter and an optional PyTorch action-query chunk Transformer with CVAE/KL, padding masks, checkpoint round trips, and temporal ensembling.
+- Added instruction-dependent task fixtures with held-out paraphrases and mask/shuffle/counterfactual pair construction.
+- Added rendered direct-reach and waypoint-reach fixtures, state-only controls, image occlusion/shuffle pairing, and a lazy LeRobot adapter.
+- Added a strict schema-v2 configuration contract, v1.1-to-v2 migration command, versioned dependency lock, CPU gates, and an isolated manual GPU workflow.
+
+### Boundaries
+
+- v2 modality adapters are experimental inputs. They are not evidence that language or vision contributes until controlled paired confidence intervals exclude zero.
+- Public v2 APIs and checkpoint schemas are not frozen until the stable release gate.
+
+## v1.1.0 — 2026-07-10
 
 ### Changed
 

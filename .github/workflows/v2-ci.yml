@@ -1,0 +1,122 @@
+name: V2 CPU
+
+on:
+  push:
+    branches: [v2]
+  pull_request:
+    branches: [v2]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v2-cpu-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: v2-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install uv and lightweight development profile
+        run: |
+          python -m pip install --upgrade pip "uv>=0.11,<0.12"
+          uv sync --frozen --extra dev
+      - name: Verify the versioned dependency lock
+        run: uv lock --check
+      - name: Validate v1.1 and v2 configuration contracts
+        run: |
+          uv run --no-sync python scripts/validate_configs.py
+          uv run --no-sync python scripts/check_repo_quality.py
+          uv run --no-sync python scripts/render_readme_results.py --check
+      - name: Run static checks
+        run: |
+          uv run --no-sync ruff check lunavla tests_v2
+          uv run --no-sync mypy lunavla
+          uv run --no-sync python -m compileall -q lunavla
+      - name: Run dependency-light v2 tests
+        run: uv run --no-sync pytest tests_v2 -m "not torch and not lerobot"
+
+  torch-cpu:
+    name: v2-torch-cpu
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install CPU-only PyTorch test environment
+        run: |
+          python -m pip install --upgrade pip "uv>=0.11,<0.12"
+          uv sync --frozen --extra dev --extra v2-core \
+            --no-install-package torch --no-install-package torchvision
+          uv pip install torch==2.11.0 torchvision==0.26.0 \
+            --index https://download.pytorch.org/whl/cpu
+      - name: Verify pinned runtime versions
+        run: |
+          uv run --no-sync python -c \
+            "import torch, torchvision; assert torch.__version__.startswith('2.11.'); assert torchvision.__version__.startswith('0.26.')"
+      - name: Run PyTorch CPU contract tests
+        run: uv run --no-sync pytest tests_v2 -m torch
+
+  lerobot-adapter:
+    name: v2-lerobot-adapter
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the full CPU v2 dataset profile
+        run: |
+          python -m pip install --upgrade pip "uv>=0.11,<0.12"
+          uv sync --frozen --extra dev --extra v2 \
+            --no-install-package torch --no-install-package torchvision
+          uv pip install torch==2.11.0 torchvision==0.26.0 \
+            --index https://download.pytorch.org/whl/cpu
+      - name: Verify the real LeRobot dataset import path
+        run: uv run --no-sync pytest tests_v2 -m lerobot
+        env:
+          LUNAVLA_REQUIRE_LEROBOT: "1"
+
+  v11-compat:
+    name: v1.1-compat
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install the frozen v1.1 profile
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+      - name: Run the complete v1.1 suite
+        run: python -m pytest tests --cov --cov-report=term-missing
+      - name: Keep the v1.1 CPU quickstart operational
+        run: timeout 120 python scripts/run_quickstart.py
+
+  secret-scan:
+    name: v2-secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan the complete Git history
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

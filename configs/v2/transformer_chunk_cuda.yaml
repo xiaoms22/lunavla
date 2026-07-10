@@ -1,0 +1,44 @@
+schema_version: 2
+project_name: lunavla-v2-transformer-cuda
+engine: lunavla_v2
+policy:
+  type: transformer_chunk
+  state_dim: 2
+  instruction_dim: 32
+  image_shape: null
+  action_dim: 2
+  chunk_size: 8
+  d_model: 128
+  nhead: 8
+  num_layers: 3
+  latent_dim: 32
+  dropout: 0.1
+  temporal_ensemble_decay: 0.25
+  device: cuda
+task:
+  id: language_conditioned_point_reach
+  family: point_reach
+  max_steps: 40
+  parameters:
+    language_split: heldout
+dataset:
+  type: memory
+  split: train
+  seed: 42
+  episode_count: 32
+training:
+  device: cuda
+  seed: 42
+  batch_size: 64
+  steps: 1000
+  learning_rate: 0.0003
+  kl_weight: 0.01
+evaluation:
+  execution_mode: receding_horizon
+  episodes: 100
+  seed: 1000
+  language_ablation: none
+  image_ablation: none
+artifacts:
+  output_dir: outputs/v2/transformer-cuda
+  checkpoint_name: checkpoint.pt
