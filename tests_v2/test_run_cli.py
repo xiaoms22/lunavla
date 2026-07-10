@@ -10,7 +10,7 @@ from lunavla.cli import main
 from lunavla.config import ExperimentConfig
 from lunavla.manifest import RunManifest
 from lunavla.manifest import sha256_transitions
-from lunavla.run import _dataset_source, run_experiment
+from lunavla.run import _dataset_source, _task_env, run_experiment
 
 
 def _config() -> ExperimentConfig:
@@ -171,3 +171,39 @@ def test_modality_dataset_seed_changes_actual_data(config_path: str) -> None:
     first_hash = sha256_transitions(tuple(_dataset_source(first, Path.cwd()).load()))
     second_hash = sha256_transitions(tuple(_dataset_source(second, Path.cwd()).load()))
     assert first_hash != second_hash
+
+
+@pytest.mark.parametrize(
+    "config_path",
+    [
+        "configs/v2/transformer_visual_cpu.yaml",
+        "configs/v2/transformer_visual_state_only_cpu.yaml",
+    ],
+)
+def test_visual_configs_forward_observation_mode_to_data_and_env(
+    config_path: str,
+) -> None:
+    config = ExperimentConfig.load(config_path)
+    source = _dataset_source(config, Path.cwd())
+    env = _task_env(config)
+
+    assert source.observation_mode == "vision_required"  # type: ignore[attr-defined]
+    assert env.observation_mode == "vision_required"  # type: ignore[attr-defined]
+    assert source.load()[0].observation.state.shape == (3,)
+    assert env.reset(seed=19).state.shape == (3,)
+
+
+def test_privileged_observation_mode_is_forwarded_explicitly() -> None:
+    payload = ExperimentConfig.load(
+        "configs/v2/transformer_visual_cpu.yaml"
+    ).to_dict()
+    payload["policy"]["state_dim"] = 7
+    payload["dataset"]["parameters"]["observation_mode"] = "privileged"
+    config = ExperimentConfig.from_mapping(payload)
+
+    source = _dataset_source(config, Path.cwd())
+    env = _task_env(config)
+    assert source.observation_mode == "privileged"  # type: ignore[attr-defined]
+    assert env.observation_mode == "privileged"  # type: ignore[attr-defined]
+    assert source.load()[0].observation.state.shape == (7,)
+    assert env.reset(seed=19).state.shape == (7,)

@@ -74,6 +74,7 @@ _TASK_IDS = {
 }
 _DATASET_TYPES = {"memory", "mock_pusht", "generated", "jsonl", "lerobot"}
 _VISUAL_FAMILIES = {"all", "direct_reach", "waypoint_reach"}
+_VISUAL_OBSERVATION_MODES = {"privileged", "vision_required"}
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
@@ -145,10 +146,27 @@ def _validate_cross_section_contracts(
     language_ablation = str(evaluation["language_ablation"])
     image_ablation = str(evaluation["image_ablation"])
     image_shape = policy.get("image_shape")
-    raw_state_only = dataset["parameters"].get("state_only", False)
+    dataset_parameters = dataset["parameters"]
+    raw_state_only = dataset_parameters.get("state_only", False)
     if not isinstance(raw_state_only, bool):
         raise TypeError("dataset.parameters.state_only must be boolean")
     state_only = raw_state_only
+    has_observation_mode = "observation_mode" in dataset_parameters
+    raw_observation_mode = dataset_parameters.get(
+        "observation_mode", "vision_required"
+    )
+    if not isinstance(raw_observation_mode, str):
+        raise TypeError("dataset.parameters.observation_mode must be a string")
+    if raw_observation_mode not in _VISUAL_OBSERVATION_MODES:
+        raise ValueError(
+            "dataset.parameters.observation_mode must be privileged or "
+            "vision_required"
+        )
+    if has_observation_mode and task_id != "rendered_visual_point_reach":
+        raise ValueError(
+            "dataset.parameters.observation_mode is only valid for "
+            "task.id=rendered_visual_point_reach"
+        )
 
     if language_ablation != "none" and image_ablation != "none":
         raise ValueError("run one language or image ablation at a time")
@@ -231,6 +249,13 @@ def _validate_cross_section_contracts(
         raise ValueError(
             "rendered_visual_point_reach task.family must be all, direct_reach, "
             "or waypoint_reach"
+        )
+    dataset_parameters["observation_mode"] = raw_observation_mode
+    expected_state_dim = 7 if raw_observation_mode == "privileged" else 3
+    if policy["state_dim"] != expected_state_dim:
+        raise ValueError(
+            f"dataset.parameters.observation_mode={raw_observation_mode} requires "
+            f"policy.state_dim={expected_state_dim}"
         )
     render_size = int(task.get("render_size", 64))
     if render_size < 24:

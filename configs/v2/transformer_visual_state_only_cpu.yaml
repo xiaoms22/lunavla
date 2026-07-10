@@ -3,7 +3,7 @@ project_name: lunavla-v2-transformer-visual-state-only-cpu
 engine: lunavla_v2
 policy:
   type: transformer_chunk
-  state_dim: 7
+  state_dim: 3
   instruction_dim: 32
   image_shape: null
   action_dim: 2
@@ -27,6 +27,7 @@ dataset:
   episode_count: 6
   parameters:
     state_only: true
+    observation_mode: vision_required
 training:
   device: cpu
   seed: 42

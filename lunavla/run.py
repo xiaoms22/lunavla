@@ -90,7 +90,7 @@ def _language_source(config: ExperimentConfig) -> DatasetSource:
 
 
 def _visual_source(config: ExperimentConfig) -> DatasetSource:
-    from lunavla.visual_tasks import RenderedVisualDatasetSource
+    from lunavla.visual_tasks import ObservationMode, RenderedVisualDatasetSource
 
     image_shape = config.policy.get("image_shape")
     image_size = int(image_shape[0]) if image_shape else int(config.task.get("render_size", 64))
@@ -99,9 +99,14 @@ def _visual_source(config: ExperimentConfig) -> DatasetSource:
         range(first_seed, first_seed + int(config.dataset.get("episode_count", 6)))
     )
     state_only = bool(config.dataset["parameters"].get("state_only", False))
+    observation_mode = cast(
+        ObservationMode,
+        config.dataset["parameters"]["observation_mode"],
+    )
     return RenderedVisualDatasetSource(
         seeds=seeds,
         state_only=state_only,
+        observation_mode=observation_mode,
         image_size=image_size,
         max_steps=int(config.task["max_steps"]),
     )
@@ -185,15 +190,20 @@ def _task_env(config: ExperimentConfig) -> TaskEnv:
             split=str(parameters.get("language_split", "heldout")),  # type: ignore[arg-type]
         )
     if task_id == "rendered_visual_point_reach":
-        from lunavla.visual_tasks import RenderedVisualTaskSuiteEnv
+        from lunavla.visual_tasks import ObservationMode, RenderedVisualTaskSuiteEnv
 
         family = str(config.task["family"])
         families = (
             ("direct_reach", "waypoint_reach") if family == "all" else (family,)
         )
+        observation_mode = cast(
+            ObservationMode,
+            config.dataset["parameters"]["observation_mode"],
+        )
         return RenderedVisualTaskSuiteEnv(
             families=families,  # type: ignore[arg-type]
             state_only=bool(config.dataset["parameters"].get("state_only", False)),
+            observation_mode=observation_mode,
             image_size=int(config.task.get("render_size", 64)),
         )
     if task_id == "pusht_style_point_reach":
