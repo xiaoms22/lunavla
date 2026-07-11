@@ -14,6 +14,9 @@
   and training-state files.
 - Alpha 1 configs load with explicit Alpha 2 defaults for optimizer, scheduler, precision,
   gradient clipping, and disabled resume.
+- ExperimentConfig schema 3 revision 1 retains its previous resolved serialization and hash.
+  Revision 2 adds strict root-level `prompt` and `routing` sections; diagnostic execution requires
+  revision 2, an instruction-consuming policy, and receding-horizon evaluation.
 - `act_v3` is a new policy id. v2 Transformer checkpoints stay read-only and are never relabeled as
   `act_v3`; users must train a native v3 checkpoint.
 - the optional `v3-act` profile contains Torch dependencies and does not enter the v1.x or NumPy
@@ -33,5 +36,8 @@
   access, then binds optimizer/resume/inference evidence to a clean SHA. With the current config it
   intentionally refuses to proceed. The reserved distribution version `3.0.0a2` is not applied
   until the separate gate-opening PR, so v2 release tooling cannot accidentally publish v3 assets.
+- diagnostic runs use schema-4 revision-3 manifests and EvidenceManifest v2. Revision-1 and
+  revision-2 runs remain verifiable. Reduced or incomplete studies always fail closed, and the
+  Beta 1 framework does not relabel old runs as controlled evidence.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
   contracts.

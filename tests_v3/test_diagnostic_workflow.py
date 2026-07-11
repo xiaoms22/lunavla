@@ -65,3 +65,18 @@ def test_diagnostic_tampering_is_detected_and_report_requires_verified_source(
         verify_diagnostic_output(output)
     with pytest.raises(ValueError, match="hash mismatch"):
         write_diagnostic_report(output, tmp_path / "bad-report")
+
+
+def test_failed_generation_is_marked_incomplete_without_replacing_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    design, _ = _study(tmp_path, monkeypatch)
+    payload = yaml.safe_load(design.read_text())
+    payload["evaluation_seeds"] = [1000]
+    payload["output_dir"] = "bad"
+    design.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="at least two"):
+        run_diagnostic(design)
+    marker = tmp_path / ".bad.incomplete.json"
+    assert json.loads(marker.read_text())["complete"] is False
+    assert not (tmp_path / "bad").exists()

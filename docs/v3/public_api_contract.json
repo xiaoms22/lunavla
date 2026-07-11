@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_stage": "v3.0.0-alpha.2-smolvla-adapter",
+  "release_stage": "v3.0.0-beta.1-draft-diagnostics",
   "contracts": {
     "FeatureSpec": {
       "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
@@ -58,6 +58,24 @@
     },
     "NormalizationStatsV1": {
       "signature": "(feature_schema_sha256: 'str', source_split: 'str', features: 'Mapping[str, FeatureNormalizationV1]', schema_version: 'int' = 1) -> None"
+    },
+    "PromptSpecV1": {
+      "signature": "(raw_instruction: 'str', public_slots: 'Mapping[str, Any]', state_values: 'Mapping[str, tuple[float, ...]]', renderer_id: 'str', renderer_version: 'int', camera_order: 'tuple[str, ...]', assistant_target: 'str', layout_variant: 'str' = 'canonical', schema_version: 'int' = 1) -> None"
+    },
+    "StateRouteSpecV1": {
+      "signature": "(mode: 'str', state_features: 'tuple[str, ...]', schema_version: 'int' = 1) -> None"
+    },
+    "InterventionSpecV1": {
+      "signature": "(arm_id: 'str', kind: 'str', operator: 'str', phase: 'str', parameters: 'Mapping[str, Any]', schema_version: 'int' = 1) -> None"
+    },
+    "DiagnosticDesignV1": {
+      "signature": "(design_id: 'str', base_config: 'str', output_dir: 'str', train_seeds: 'tuple[int, ...]', evaluation_seeds: 'tuple[int, ...]', routes: 'tuple[StateRouteSpecV1, ...]', prompt_arms: 'tuple[InterventionSpecV1, ...]', donor_seed: 'int', analysis_seed: 'int', bootstrap_samples: 'int', counterfactual_transform_id: 'str | None', reduced_design: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "FailureRecordV1": {
+      "signature": "(layer: 'str', label: 'str', rule_id: 'str', provenance: 'str', primary_cause: 'bool | None' = None, schema_version: 'int' = 1) -> None"
+    },
+    "EvidenceManifestV2": {
+      "signature": "(design_sha256: 'str', base_config_sha256: 'str', source_manifests: 'tuple[ArtifactHashRecordV1, ...]', matrix_sha256: 'str', aggregate_sha256: 'str', per_pair_sha256: 'str', expected_pairs: 'int', observed_pairs: 'int', homogeneous: 'bool', matrix_complete: 'bool', reduced_design: 'bool', claim_allowed: 'bool', allowed_wording: 'str') -> None"
     }
   }
 }

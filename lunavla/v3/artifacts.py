@@ -506,6 +506,8 @@ class RunManifestV4R3:
         payload["camera_order"] = tuple(cameras)
         if any(not isinstance(item, str) or not item for item in payload["camera_order"]):
             raise ValueError("manifest camera_order contains an invalid feature")
+        if len(payload["camera_order"]) != len(set(payload["camera_order"])):
+            raise ValueError("manifest camera_order cannot contain duplicates")
         payload["train_seed"] = _integer(payload["train_seed"], "manifest train_seed")
         seeds = payload["evaluation_seeds"]
         if isinstance(seeds, (str, bytes, Mapping)) or not isinstance(seeds, list):
