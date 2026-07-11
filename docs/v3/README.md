@@ -1,7 +1,7 @@
-# LunaVLA v3 Alpha 1
+# LunaVLA v3 Alpha 2 contracts candidate
 
-LunaVLA v3 Alpha 1 is a contract and data-foundation release candidate. It adds an isolated v3
-namespace while preserving the frozen v2 public API and the lightweight v1.x path.
+This branch builds the policy and artifact contracts needed by the Alpha 2 strategy ladder on top
+of the merged Alpha 1 foundation. It preserves the frozen v2 public API and lightweight v1.x path.
 
 Implemented in this Alpha:
 
@@ -11,10 +11,14 @@ Implemented in this Alpha:
 - deterministic fake PushT and fake LIBERO fixtures for CPU data/engine tests;
 - dataset QA, replay, strict checkpoint envelope, RunManifest schema 4, and tamper verification;
 - `lunavla-v3` config, audit, replay, run, verify, and migration commands.
+- strict `PolicySpecV3`, sample/batch, train-step, model-source, and registry contracts;
+- train-split-only normalization statistics with stable hashes;
+- explicit optimizer, scheduler, precision, clipping, and resume configuration defaults;
+- schema-4 revision-2 checkpoint directories and manifests; revision 1 remains read-only.
 
 The fake LIBERO fixture tests data shape and lifecycle only. Alpha 1 does not download real LeRobot
-or LIBERO data, implement Diffusion/SmolVLA, or establish language, image, state-route, PushT, or
-LIBERO performance.
+or LIBERO data, implement ACT/Diffusion/SmolVLA policy bodies, or establish language, image,
+state-route, PushT, or LIBERO performance.
 
 - [Direction](v3_overview.md)
 - [Roadmap](roadmap.md)

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_stage": "v3.0.0-alpha.1",
+  "release_stage": "v3.0.0-alpha.2-contracts",
   "contracts": {
     "FeatureSpec": {
       "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
@@ -22,6 +22,27 @@
     },
     "ExperimentConfig": {
       "signature": "(**_: 'Any') -> 'None'"
+    },
+    "ModelSourceContractV1": {
+      "signature": "(repo_id: 'str', revision: 'str', file_hashes: 'Mapping[str, str]', license_status: 'str', pretrained_enabled: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "PolicySpecV3": {
+      "signature": "(policy_id: 'str', backend: 'str', model_source: 'ModelSourceContractV1', required_modalities: 'tuple[str, ...]', camera_order: 'tuple[str, ...]', state_order: 'tuple[str, ...]', history: 'int', chunk_size: 'int', horizon: 'int', execution_steps: 'int', normalization: 'Mapping[str, str]', device: 'str', deterministic: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "PolicySampleV3": {
+      "signature": "(observation_history: 'tuple[ObservationV3, ...]', history_mask: 'BoolArray', action_chunk: 'Float32Array | None', valid_mask: 'BoolArray | None', episode_id: 'str | int', step_index: 'int') -> None"
+    },
+    "PolicyBatchV3": {
+      "signature": "(samples: 'tuple[PolicySampleV3, ...]', device: 'str' = 'cpu') -> None"
+    },
+    "TrainStepResultV3": {
+      "signature": "(loss: 'float', loss_components: 'Mapping[str, float]', gradient_norm: 'float | None', learning_rate: 'float', step: 'int', finite: 'bool', timing_ms: 'Mapping[str, float]') -> None"
+    },
+    "FeatureNormalizationV1": {
+      "signature": "(feature_name: 'str', mode: 'str', sample_count: 'int', offset: 'Float32Array', scale: 'Float32Array') -> None"
+    },
+    "NormalizationStatsV1": {
+      "signature": "(feature_schema_sha256: 'str', source_split: 'str', features: 'Mapping[str, FeatureNormalizationV1]', schema_version: 'int' = 1) -> None"
     }
   }
 }

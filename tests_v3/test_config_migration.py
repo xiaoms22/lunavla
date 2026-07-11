@@ -142,3 +142,39 @@ def test_checkpoint_name_is_a_contained_non_reserved_basename(checkpoint_name: s
     payload["artifacts"]["checkpoint_name"] = checkpoint_name
     with pytest.raises(ValueError, match="checkpoint_name"):
         ExperimentConfig.from_mapping(payload)
+
+
+def test_alpha1_training_config_migrates_to_explicit_alpha2_defaults() -> None:
+    payload = yaml.safe_load(Path("configs/v3/fake_pusht_alpha.yaml").read_text())
+    config = ExperimentConfig.from_mapping(payload)
+    assert config.training["optimizer"] == {"type": "sgd", "parameters": {}}
+    assert config.training["scheduler"] == {"type": "constant", "parameters": {}}
+    assert config.training["precision"] == "float32"
+    assert config.training["gradient_clip_norm"] is None
+    assert config.training["resume"] == {
+        "enabled": False,
+        "checkpoint": None,
+        "strict": True,
+    }
+    assert config.policy["parameters"]["history"] == 1
+    assert config.policy["parameters"]["horizon"] == 1
+    assert config.policy["parameters"]["execution_steps"] == 1
+
+
+def test_alpha2_training_contract_rejects_unknown_and_conflicting_values() -> None:
+    payload = ExperimentConfig.load("configs/v3/fake_pusht_alpha.yaml").to_dict()
+    payload["training"]["optimizer"] = {"type": "sgd", "parameters": {"typo": 1}}
+    with pytest.raises(ValueError, match="optimizer.parameters.*typo"):
+        ExperimentConfig.from_mapping(payload)
+    payload = ExperimentConfig.load("configs/v3/fake_pusht_alpha.yaml").to_dict()
+    payload["training"]["resume"] = {
+        "enabled": True,
+        "checkpoint": None,
+        "strict": True,
+    }
+    with pytest.raises(ValueError, match="enabled resume requires"):
+        ExperimentConfig.from_mapping(payload)
+    payload = ExperimentConfig.load("configs/v3/fake_pusht_alpha.yaml").to_dict()
+    payload["policy"]["parameters"]["state_dim"] = 3
+    with pytest.raises(ValueError, match="state_dim conflicts"):
+        ExperimentConfig.from_mapping(payload)

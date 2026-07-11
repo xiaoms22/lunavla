@@ -7,6 +7,12 @@
 - Migration maps a flat state to `state.proprioception` and one image to `camera.primary`.
 - Unknown physical units, frames, and rates become explicit `unspecified_v2` compatibility values;
   real public task adapters may not use those placeholders.
-- v2 NumPy checkpoints remain read-only compatible. v3 uses a schema-4 envelope around the strict
-  existing checkpoint rather than fabricating tensor conversions.
-- v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 1.
+- v2 NumPy checkpoints remain read-only compatible. No v2 tensor checkpoint is relabeled as a v3
+  ACT, Diffusion, or SmolVLA checkpoint.
+- schema-4 revision-1 run artifacts remain verifiable but are not rewritten. New runs use a
+  revision-2 `checkpoint/` directory with hashes for policy, processor, normalization, dependency,
+  and training-state files.
+- Alpha 1 configs load with explicit Alpha 2 defaults for optimizer, scheduler, precision,
+  gradient clipping, and disabled resume.
+- v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
+  contracts.

@@ -26,7 +26,10 @@ _SECTION_FIELDS = {
     "task": {"id", "parameters"},
     "dataset": {"type", "split", "seed", "parameters"},
     "embodiment": {"id", "task_id", "control_rate_hz", "camera_mapping", "state_mapping", "action_mapping"},
-    "training": {"device", "seed", "batch_size", "steps", "learning_rate"},
+    "training": {
+        "device", "seed", "batch_size", "steps", "learning_rate", "optimizer",
+        "scheduler", "precision", "gradient_clip_norm", "resume",
+    },
     "evaluation": {"execution_mode", "episodes", "seed", "seeds", "max_steps"},
     "diagnostics": {"enabled"},
     "artifacts": {"output_dir", "checkpoint_name"},
@@ -37,7 +40,14 @@ _DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat"}
 _EXECUTION = {"open_loop_chunk", "receding_horizon"}
 _NUMPY_PARAMETER_FIELDS = {
     "state_dim", "instruction_dim", "action_dim", "chunk_size", "hidden_dim",
-    "state_feature", "unused_modalities",
+    "state_feature", "unused_modalities", "history", "horizon", "execution_steps",
+}
+_TRAINING_DEFAULTS: Mapping[str, Any] = {
+    "optimizer": {"type": "sgd", "parameters": {}},
+    "scheduler": {"type": "constant", "parameters": {}},
+    "precision": "float32",
+    "gradient_clip_norm": None,
+    "resume": {"enabled": False, "checkpoint": None, "strict": True},
 }
 _RESERVED_ARTIFACT_NAMES = {
     "checkpoint.v3.json",
@@ -153,6 +163,9 @@ class ExperimentConfig:
         for name, fields in _SECTION_FIELDS.items():
             section = _mapping(root[name], name)
             _reject_unknown(section, fields, name)
+            if name == "training":
+                for field_name, default in _TRAINING_DEFAULTS.items():
+                    section.setdefault(field_name, copy.deepcopy(default))
             missing_fields = sorted(fields - set(section))
             if missing_fields:
                 raise ValueError(f"missing field(s) in {name}: {', '.join(missing_fields)}")
@@ -193,6 +206,27 @@ class ExperimentConfig:
                 policy["parameters"]["hidden_dim"] = _integer(
                     policy["parameters"]["hidden_dim"], "policy.parameters.hidden_dim", positive=True
                 )
+            policy["parameters"]["history"] = _integer(
+                policy["parameters"].get("history", 1),
+                "policy.parameters.history",
+                positive=True,
+            )
+            policy["parameters"]["horizon"] = _integer(
+                policy["parameters"].get("horizon", policy["parameters"]["chunk_size"]),
+                "policy.parameters.horizon",
+                positive=True,
+            )
+            policy["parameters"]["execution_steps"] = _integer(
+                policy["parameters"].get(
+                    "execution_steps", policy["parameters"]["chunk_size"]
+                ),
+                "policy.parameters.execution_steps",
+                positive=True,
+            )
+            if policy["parameters"]["chunk_size"] > policy["parameters"]["horizon"]:
+                raise ValueError("policy.parameters.chunk_size cannot exceed horizon")
+            if policy["parameters"]["execution_steps"] > policy["parameters"]["chunk_size"]:
+                raise ValueError("policy.parameters.execution_steps cannot exceed chunk_size")
             state_feature = policy["parameters"].get("state_feature", "state.proprioception")
             if not isinstance(state_feature, str) or not state_feature:
                 raise ValueError("policy.parameters.state_feature must be a non-empty string")
@@ -259,6 +293,18 @@ class ExperimentConfig:
         if embodiment.task_id != task["id"]:
             raise ValueError("embodiment.task_id must match task.id")
         embodiment.validate_schema(feature_schema)
+        if "legacy" not in policy["parameters"]:
+            state_feature_name = policy["parameters"]["state_feature"]
+            state_features = {item.name: item for item in feature_schema.by_role("state")}
+            action_features = feature_schema.by_role("action")
+            if state_feature_name not in state_features:
+                raise ValueError("policy state_feature is not declared by FeatureSchema")
+            if state_features[state_feature_name].shape != (policy["parameters"]["state_dim"],):
+                raise ValueError("policy state_dim conflicts with FeatureSchema")
+            if len(action_features) != 1:
+                raise ValueError("runnable policies require exactly one action feature")
+            if action_features[0].shape != (policy["parameters"]["action_dim"],):
+                raise ValueError("policy action_dim conflicts with FeatureSchema")
 
         training = sections["training"]
         training["device"] = normalize_device(training["device"])
@@ -266,8 +312,64 @@ class ExperimentConfig:
         training["batch_size"] = _integer(training["batch_size"], "training.batch_size", positive=True)
         training["steps"] = _integer(training["steps"], "training.steps", positive=True)
         training["learning_rate"] = _positive_float(training["learning_rate"], "training.learning_rate")
+        optimizer = _mapping(training["optimizer"], "training.optimizer")
+        _reject_unknown(optimizer, {"type", "parameters"}, "training.optimizer")
+        if set(optimizer) != {"type", "parameters"}:
+            raise ValueError("training.optimizer requires type and parameters")
+        if optimizer["type"] not in {"sgd", "adam", "adamw"}:
+            raise ValueError("training.optimizer.type must be sgd, adam, or adamw")
+        optimizer["parameters"] = _mapping(
+            optimizer["parameters"], "training.optimizer.parameters"
+        )
+        _reject_unknown(
+            optimizer["parameters"],
+            {"momentum", "weight_decay", "betas", "eps"},
+            "training.optimizer.parameters",
+        )
+        scheduler = _mapping(training["scheduler"], "training.scheduler")
+        _reject_unknown(scheduler, {"type", "parameters"}, "training.scheduler")
+        if set(scheduler) != {"type", "parameters"}:
+            raise ValueError("training.scheduler requires type and parameters")
+        if scheduler["type"] not in {"constant", "linear", "cosine"}:
+            raise ValueError("training.scheduler.type must be constant, linear, or cosine")
+        scheduler["parameters"] = _mapping(
+            scheduler["parameters"], "training.scheduler.parameters"
+        )
+        _reject_unknown(
+            scheduler["parameters"], {"warmup_steps", "min_learning_rate"},
+            "training.scheduler.parameters",
+        )
+        if training["precision"] not in {"float32", "float16", "bfloat16"}:
+            raise ValueError("training.precision must be float32, float16, or bfloat16")
+        clip = training["gradient_clip_norm"]
+        if clip is not None:
+            clip = _positive_float(clip, "training.gradient_clip_norm")
+        resume = _mapping(training["resume"], "training.resume")
+        _reject_unknown(resume, {"enabled", "checkpoint", "strict"}, "training.resume")
+        if set(resume) != {"enabled", "checkpoint", "strict"}:
+            raise ValueError("training.resume requires enabled, checkpoint, and strict")
+        if not isinstance(resume["enabled"], bool) or not isinstance(resume["strict"], bool):
+            raise TypeError("training.resume enabled and strict must be boolean")
+        checkpoint = resume["checkpoint"]
+        if checkpoint is not None and (not isinstance(checkpoint, str) or not checkpoint.strip()):
+            raise ValueError("training.resume.checkpoint must be a non-empty string or null")
+        if resume["enabled"] and checkpoint is None:
+            raise ValueError("enabled resume requires training.resume.checkpoint")
+        if not resume["enabled"] and checkpoint is not None:
+            raise ValueError("disabled resume cannot declare training.resume.checkpoint")
+        resume["checkpoint"] = checkpoint.strip() if isinstance(checkpoint, str) else None
+        training["optimizer"] = optimizer
+        training["scheduler"] = scheduler
+        training["gradient_clip_norm"] = clip
+        training["resume"] = resume
         if policy["type"].startswith("numpy_") and training["device"] != "cpu":
             raise ValueError("NumPy policies require CPU training")
+        if policy["type"].startswith("numpy_") and optimizer["type"] != "sgd":
+            raise ValueError("NumPy compatibility policies require optimizer.type=sgd")
+        if policy["type"].startswith("numpy_") and scheduler["type"] != "constant":
+            raise ValueError("NumPy compatibility policies require a constant scheduler")
+        if policy["type"].startswith("numpy_") and training["precision"] != "float32":
+            raise ValueError("NumPy compatibility policies require float32 precision")
 
         evaluation = sections["evaluation"]
         if evaluation["execution_mode"] not in _EXECUTION:
