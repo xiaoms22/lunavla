@@ -46,6 +46,8 @@ def test_v2_migration_preserves_semantics_and_is_stable() -> None:
     assert v3.feature_schema.by_role("action")[0].shape == (2,)
     assert v3.embodiment["control_rate_hz"] is None
     assert v3.policy["parameters"]["compat_read_only"] is True
+    assert v3.contract_revision == 2
+    assert v3.routing["mode"] == "expert_only"
 
 
 @pytest.mark.parametrize("version", [True, 2.0, "2"])
