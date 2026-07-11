@@ -1,0 +1,422 @@
+name: V3 Alpha 2 Release Dispatcher
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: GPU pre-tag evidence or signed-tag finalization
+        required: true
+        default: gpu
+        type: choice
+        options: [gpu, finalize]
+      source_ref:
+        description: Reviewed branch, tag, or commit in this repository
+        required: true
+        default: v3
+        type: string
+      expected_sha:
+        description: Immutable 40-character lowercase source commit SHA
+        required: true
+        type: string
+      expected_license_review_sha256:
+        description: SHA-256 of the committed model-weight license review
+        required: true
+        type: string
+      enable_pretrained_gate:
+        description: Confirm the reviewed model-weight and GPU gate
+        required: true
+        default: false
+        type: boolean
+      gpu_run_id:
+        description: Successful GPU phase run ID, required for finalize
+        required: false
+        default: ""
+        type: string
+      tag:
+        description: Signed annotated tag, required for finalize
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: v3-alpha2-release-${{ inputs.phase }}-${{ inputs.expected_sha }}
+  cancel-in-progress: false
+
+jobs:
+  gpu-gate:
+    name: v3-smolvla-gpu-gate
+    if: ${{ inputs.phase == 'gpu' && inputs.enable_pretrained_gate }}
+    runs-on: [self-hosted, linux, x64, gpu, lunavla-v3]
+    environment: v3-smolvla-license-review
+    timeout-minutes: 60
+    env:
+      SOURCE_REF: ${{ inputs.source_ref }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      EXPECTED_LICENSE_SHA256: ${{ inputs.expected_license_review_sha256 }}
+      RUNNER_LABELS: self-hosted,linux,x64,gpu,lunavla-v3
+      HF_HOME: ${{ runner.temp }}/lunavla-hf-cache
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Validate immutable GPU request
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_LICENSE_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$SOURCE_REF" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$ ]]
+          [[ "$SOURCE_REF" != refs/pull && "$SOURCE_REF" != refs/pull/* ]]
+          [[ "$SOURCE_REF" != *..* && "$SOURCE_REF" != *//* && "$SOURCE_REF" != */ ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify source and default-branch dispatcher identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          test -f .github/workflows/v3-alpha2-release-dispatch.yml
+          git fetch --depth=1 origin main
+          git show origin/main:.github/workflows/v3-alpha2-release-dispatch.yml \
+            > "$RUNNER_TEMP/main-v3-alpha2-release-dispatch.yml"
+          cmp --silent .github/workflows/v3-alpha2-release-dispatch.yml \
+            "$RUNNER_TEMP/main-v3-alpha2-release-dispatch.yml"
+          test "$(shasum -a 256 docs/v3/release/smolvla-license-review.json | cut -d' ' -f1)" \
+            = "$EXPECTED_LICENSE_SHA256"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the hash-locked CUDA 12.8 profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v3-smolvla-gpu-cu128.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cu128
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Fetch and verify public model-weight license evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_url="$(python - <<'PY'
+          import json
+          print(json.load(open('docs/v3/release/smolvla-license-review.json'))['evidence_url'])
+          PY
+          )"
+          case "$evidence_url" in
+            https://huggingface.co/lerobot/smolvla_base/*) ;;
+            *) echo "license evidence is not an official model-repository URL" >&2; exit 1 ;;
+          esac
+          curl --fail --silent --show-error --location \
+            "$evidence_url" --output "$RUNNER_TEMP/model-weight-license-evidence"
+          uv run --no-sync python scripts/run_v3_alpha2_release.py validate-license \
+            docs/v3/release/smolvla-license-review.json \
+            --expected-sha256 "$EXPECTED_LICENSE_SHA256" \
+            --evidence "$RUNNER_TEMP/model-weight-license-evidence" \
+            --config configs/v3/smolvla_pretrained_gpu.yaml \
+            --enable-pretrained-gate
+      - name: Download only the reviewed immutable model files
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$HF_HOME" "$RUNNER_TEMP/reviewed-smolvla-snapshot"
+          uv run --no-sync python - <<'PY'
+          import shutil
+          import yaml
+          from pathlib import Path
+          from huggingface_hub import snapshot_download
+
+          config = yaml.safe_load(Path('configs/v3/smolvla_pretrained_gpu.yaml').read_text())
+          params = config['policy']['parameters']
+          files = sorted(params['file_hashes'])
+          source = Path(snapshot_download(
+              repo_id=params['repo_id'],
+              revision=params['revision'],
+              cache_dir=Path(__import__('os').environ['HF_HOME']),
+              allow_patterns=files,
+          ))
+          destination = Path(__import__('os').environ['RUNNER_TEMP']) / 'reviewed-smolvla-snapshot'
+          for name in files:
+              target = destination / name
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(source / name, target)
+          PY
+      - name: Run optimizer, resume, and inference smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l | tr -d ' ')" = 1
+          evidence_dir="$RUNNER_TEMP/v3-alpha2-gpu-evidence"
+          install -d -m 0700 "$evidence_dir"
+          uv run --no-sync python scripts/run_v3_alpha2_release.py gpu-smoke \
+            --config configs/v3/smolvla_pretrained_gpu.yaml \
+            --review docs/v3/release/smolvla-license-review.json \
+            --evidence "$RUNNER_TEMP/model-weight-license-evidence" \
+            --expected-license-sha256 "$EXPECTED_LICENSE_SHA256" \
+            --expected-git-sha "$EXPECTED_SHA" \
+            --snapshot-dir "$RUNNER_TEMP/reviewed-smolvla-snapshot" \
+            --out "$evidence_dir/gpu-validation-manifest.json" \
+            --enable-pretrained-gate
+          test "$(find "$evidence_dir" -type f | wc -l | tr -d ' ')" = 1
+      - name: Attest the exact GPU validation manifest
+        id: attest-gpu
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ runner.temp }}/v3-alpha2-gpu-evidence/gpu-validation-manifest.json
+      - name: Preserve the GPU attestation bundle
+        env:
+          BUNDLE_PATH: ${{ steps.attest-gpu.outputs.bundle-path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$BUNDLE_PATH"
+          cp -- "$BUNDLE_PATH" \
+            "$RUNNER_TEMP/v3-alpha2-gpu-evidence/gpu-attestation-bundle.jsonl"
+          test "$(find "$RUNNER_TEMP/v3-alpha2-gpu-evidence" -type f | wc -l | tr -d ' ')" = 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v3-alpha2-gpu-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/v3-alpha2-gpu-evidence/
+          if-no-files-found: error
+          retention-days: 30
+
+  pretag-candidate:
+    name: v3-alpha2-pretag-candidate
+    if: ${{ inputs.phase == 'gpu' && inputs.enable_pretrained_gate }}
+    needs: gpu-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOURCE_REF: ${{ inputs.source_ref }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify immutable candidate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - uses: actions/download-artifact@v4
+        with:
+          name: v3-alpha2-gpu-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/gpu-inputs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the hash-locked release CPU profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v3-release-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Require all protected v3 CPU checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$RUNNER_TEMP/release-assets"
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/commits/${EXPECTED_SHA}/check-runs?per_page=100" \
+            > "$RUNNER_TEMP/release-assets/required-checks.json"
+          python - <<'PY'
+          import json, os
+          payload = json.load(open(os.environ['RUNNER_TEMP'] + '/release-assets/required-checks.json'))
+          required = {
+              'v3-contracts', 'v3-data', 'v3-engine-cpu', 'v3-v2-compat',
+              'v3-secret-scan', 'CodeQL Python', 'v3-diffusion-cpu',
+              'v3-smolvla-adapter',
+          }
+          success = {
+              row['name'] for row in payload['check_runs']
+              if row.get('status') == 'completed' and row.get('conclusion') == 'success'
+          }
+          missing = sorted(required - success)
+          assert not missing, f'required v3 checks are not green: {missing}'
+          PY
+      - name: Build small Alpha 2 candidate assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/release-assets"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          cp -- "$RUNNER_TEMP/gpu-inputs/gpu-validation-manifest.json" "$root/"
+          cp -- "$RUNNER_TEMP/gpu-inputs/gpu-attestation-bundle.jsonl" "$root/"
+          python -m build --outdir "$root/dist"
+          python -m pip freeze --all > "$root/environment-requirements.txt"
+          cyclonedx-py requirements "$root/environment-requirements.txt" \
+            --output-reproducible --outfile "$root/sbom.json"
+          uv venv "$RUNNER_TEMP/wheel-smoke" --python 3.12
+          uv pip install --python "$RUNNER_TEMP/wheel-smoke/bin/python" "$root"/dist/*.whl
+          "$RUNNER_TEMP/wheel-smoke/bin/lunavla-v3" --help >/dev/null
+          "$RUNNER_TEMP/wheel-smoke/bin/lunavla-v3" validate-config \
+            configs/v3/act_fake_libero_cpu.yaml >/dev/null
+          "$RUNNER_TEMP/wheel-smoke/bin/lunavla-v3" validate-config \
+            configs/v3/diffusion_fake_libero_cpu.yaml >/dev/null
+          "$RUNNER_TEMP/wheel-smoke/bin/lunavla-v3" validate-config \
+            configs/v3/smolvla_conformance_cpu.yaml >/dev/null
+          python scripts/run_v3_alpha2_release.py verify-gpu \
+            "$root/gpu-validation-manifest.json"
+          python - <<'PY'
+          from scripts.run_v3_alpha2_release import write_evidence_bundle
+          import os
+          write_evidence_bundle(os.environ['RUNNER_TEMP'] + '/release-assets')
+          PY
+          python scripts/run_v3_alpha2_release.py build-candidate \
+            --expected-git-sha "$EXPECTED_SHA" \
+            --gpu-manifest "$root/gpu-validation-manifest.json" \
+            --gpu-attestation "$root/gpu-attestation-bundle.jsonl" \
+            --required-checks "$root/required-checks.json" \
+            --asset-root "$root" \
+            --out "$root/release-candidate.json"
+          python scripts/run_v3_alpha2_release.py verify-candidate \
+            "$root/release-candidate.json" --asset-root "$root"
+          (
+            cd "$root"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 shasum -a 256 \
+              | sed 's#  \./#  #' > SHA256SUMS
+          )
+      - name: Attest pre-tag distributions and evidence
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            ${{ runner.temp }}/release-assets/dist/*
+            ${{ runner.temp }}/release-assets/gpu-validation-manifest.json
+            ${{ runner.temp }}/release-assets/lunavla-v3-alpha2-evidence.tar.gz
+            ${{ runner.temp }}/release-assets/release-candidate.json
+            ${{ runner.temp }}/release-assets/sbom.json
+            ${{ runner.temp }}/release-assets/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lunavla-v3-alpha2-candidate-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/release-assets/
+          if-no-files-found: error
+          retention-days: 30
+
+  finalize:
+    name: v3-alpha2-finalize-signed-release
+    if: ${{ inputs.phase == 'finalize' && inputs.enable_pretrained_gate }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      GPU_RUN_ID: ${{ inputs.gpu_run_id }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Validate finalization request
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GPU_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          test "$RELEASE_TAG" = v3.0.0-alpha.2
+          test "${{ inputs.source_ref }}" = "$RELEASE_TAG"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify signed annotated GitHub tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
+          tag_object="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq .object.sha)"
+          test -n "$tag_object"
+          gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object}" \
+            > "$RUNNER_TEMP/tag-verification.json"
+          python - <<'PY'
+          import json, os
+          payload = json.load(open(os.environ['RUNNER_TEMP'] + '/tag-verification.json'))
+          assert payload['tag'] == os.environ['RELEASE_TAG']
+          assert payload['object']['sha'] == os.environ['EXPECTED_SHA']
+          assert payload['verification']['verified'] is True
+          assert payload['verification']['reason'] == 'valid'
+          PY
+          git config gpg.format ssh
+          git config gpg.ssh.allowedSignersFile docs/v3/release/allowed_signers
+          git verify-tag "$RELEASE_TAG"
+      - uses: actions/download-artifact@v4
+        with:
+          name: lunavla-v3-alpha2-candidate-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/release-assets
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.gpu_run_id }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install release verifier and reproduce distributions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v3-release-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+          python scripts/run_v3_alpha2_release.py verify-candidate \
+            "$RUNNER_TEMP/release-assets/release-candidate.json" \
+            --asset-root "$RUNNER_TEMP/release-assets"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          python -m build --outdir "$RUNNER_TEMP/reproduced-dist"
+          for artifact in "$RUNNER_TEMP"/release-assets/dist/*; do
+            cmp --silent "$artifact" "$RUNNER_TEMP/reproduced-dist/$(basename "$artifact")"
+          done
+          python scripts/run_v3_alpha2_release.py finalize-release \
+            "$RUNNER_TEMP/release-assets/release-candidate.json" \
+            --asset-root "$RUNNER_TEMP/release-assets" \
+            --tag "$RELEASE_TAG" \
+            --expected-git-sha "$EXPECTED_SHA"
+      - name: Attest finalized release assets
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            ${{ runner.temp }}/release-assets/dist/*
+            ${{ runner.temp }}/release-assets/lunavla-v3-alpha2-evidence.tar.gz
+            ${{ runner.temp }}/release-assets/release-candidate.json
+            ${{ runner.temp }}/release-assets/sbom.json
+            ${{ runner.temp }}/release-assets/SHA256SUMS
+      - name: Create draft prerelease only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "release already exists for $RELEASE_TAG" >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            --draft --prerelease \
+            --title "LunaVLA v3.0.0-alpha.2 — unified policy ladder" \
+            --notes "Interface and training-chain prerelease. No policy, modality, task-performance, or robot-deployment claim." \
+            "$RUNNER_TEMP/release-assets/dist/"* \
+            "$RUNNER_TEMP/release-assets/gpu-validation-manifest.json" \
+            "$RUNNER_TEMP/release-assets/gpu-attestation-bundle.jsonl" \
+            "$RUNNER_TEMP/release-assets/environment-requirements.txt" \
+            "$RUNNER_TEMP/release-assets/sbom.json" \
+            "$RUNNER_TEMP/release-assets/lunavla-v3-alpha2-evidence.tar.gz" \
+            "$RUNNER_TEMP/release-assets/release-candidate.json" \
+            "$RUNNER_TEMP/release-assets/SHA256SUMS"
