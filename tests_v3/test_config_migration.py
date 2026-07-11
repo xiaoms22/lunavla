@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
+import yaml
 
 from lunavla.config import ExperimentConfig as ExperimentConfigV2
-from lunavla.v3 import ExperimentConfig, migrate_v2_mapping
+from lunavla.contracts import Observation
+from lunavla.v3 import (
+    ExperimentConfig,
+    migrate_v2_mapping,
+    observation_from_v2,
+    observation_to_v2,
+)
 
 
 def _v2() -> dict[str, Any]:
@@ -78,4 +87,27 @@ def test_v3_rejects_shape_unit_and_cross_section_errors() -> None:
     payload = migrate_v2_mapping(_v2())
     payload["embodiment"]["task_id"] = "fake_libero"
     with pytest.raises(ValueError, match="must match task.id"):
+        ExperimentConfig.from_mapping(payload)
+
+
+def test_all_tracked_v2_configs_migrate() -> None:
+    for path in sorted(Path("configs/v2").glob("*.yaml")):
+        ExperimentConfig.from_mapping(migrate_v2_mapping(yaml.safe_load(path.read_text())))
+
+
+def test_v2_observation_round_trip_is_explicit() -> None:
+    original = Observation(np.asarray([1.0, 2.0]), instruction="move")
+    migrated = observation_from_v2(original, episode_id="ep", step_index=0, timestamp_s=0.0)
+    assert observation_to_v2(migrated) == original
+
+
+def test_unknown_nested_parameters_fail() -> None:
+    payload = migrate_v2_mapping(_v2())
+    payload["dataset"] = {
+        "type": "fake_pusht",
+        "split": "train",
+        "seed": 1,
+        "parameters": {"typo": 1},
+    }
+    with pytest.raises(ValueError, match="dataset.parameters.*typo"):
         ExperimentConfig.from_mapping(payload)
