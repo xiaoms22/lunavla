@@ -9,6 +9,11 @@ import yaml
 
 from .artifacts import verify_run_directory
 from .config import ExperimentConfig
+from .diagnostic_workflow import (
+    run_diagnostic,
+    verify_diagnostic_output,
+    write_diagnostic_report,
+)
 from .engine import dataset_for_config, run_alpha
 from .migration import migrate_v2_mapping
 
@@ -33,6 +38,14 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--overwrite", action="store_true")
     verify = subparsers.add_parser("verify-run")
     verify.add_argument("run_dir")
+    diagnostic_run = subparsers.add_parser("diagnostic-run")
+    diagnostic_run.add_argument("design")
+    diagnostic_run.add_argument("--overwrite", action="store_true")
+    diagnostic_verify = subparsers.add_parser("diagnostic-verify")
+    diagnostic_verify.add_argument("output_root")
+    diagnostic_report = subparsers.add_parser("diagnostic-report")
+    diagnostic_report.add_argument("output_root")
+    diagnostic_report.add_argument("--out", required=True)
     return parser
 
 
@@ -68,6 +81,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.command == "verify-run":
         manifest = verify_run_directory(arguments.run_dir)
         print(json.dumps({"valid": True, "git_sha": manifest["git_sha"]}, sort_keys=True))
+        return 0
+    if arguments.command == "diagnostic-run":
+        output = run_diagnostic(arguments.design, overwrite=arguments.overwrite)
+        print(json.dumps({"output_dir": str(output), "claim_allowed": False}, sort_keys=True))
+        return 0
+    if arguments.command == "diagnostic-verify":
+        evidence = verify_diagnostic_output(arguments.output_root)
+        print(json.dumps({"valid": True, "claim_allowed": evidence["claim_allowed"]}, sort_keys=True))
+        return 0
+    if arguments.command == "diagnostic-report":
+        output = write_diagnostic_report(arguments.output_root, arguments.out)
+        print(json.dumps({"report_dir": str(output)}, sort_keys=True))
         return 0
     raise AssertionError("unreachable command")
 
