@@ -9,7 +9,14 @@ from typing import Any
 import numpy as np
 import pytest
 
-from lunavla.v3 import ExperimentConfig, audit_episodes, split_episode_ids, verify_run_directory
+from lunavla.v3 import (
+    CheckpointEnvelopeV4,
+    ExperimentConfig,
+    RunManifestV4,
+    audit_episodes,
+    split_episode_ids,
+    verify_run_directory,
+)
 from lunavla.v3.data import episode_sha256
 from lunavla.v3.engine import EngineV3, dataset_for_config, run_alpha
 from lunavla.v3.fake_tasks import FakePointEnvV3, fake_feature_schema, make_fake_episodes
@@ -135,6 +142,33 @@ def test_output_directory_requires_explicit_overwrite(tmp_path: Path) -> None:
     run_alpha(config)
     with pytest.raises(FileExistsError, match="already exists"):
         run_alpha(config)
+
+
+def test_overwrite_replaces_the_complete_run_generation(tmp_path: Path) -> None:
+    config = ExperimentConfig.from_mapping(_mapping(tmp_path))
+    result = run_alpha(config)
+    stale = result.output_dir / "stale-checkpoint.json"
+    stale.write_text("stale", encoding="utf-8")
+    result = run_alpha(config, overwrite=True)
+    assert not stale.exists()
+    assert verify_run_directory(result.output_dir)["contract_revision"] == 1
+
+
+def test_versioned_artifact_contracts_are_strict() -> None:
+    envelope = CheckpointEnvelopeV4(
+        "numpy_linear_chunk", "policy.json", "a" * 64, "b" * 64, "c" * 64
+    ).to_dict()
+    envelope["checkpoint_file"] = "../escape.json"
+    with pytest.raises(ValueError, match="relative basename"):
+        CheckpointEnvelopeV4.from_mapping(envelope)
+
+    manifest = RunManifestV4(
+        "a" * 40, False, "b" * 64, "c" * 64, "d" * 64, "e" * 64,
+        "f" * 64, "numpy_linear_chunk", "fake_pusht", 1, (2,), True,
+    ).to_dict()
+    manifest["unknown"] = True
+    with pytest.raises(ValueError, match="unknown field"):
+        RunManifestV4.from_mapping(manifest)
 
 
 def test_environment_closes_when_prediction_fails(tmp_path: Path) -> None:

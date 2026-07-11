@@ -80,7 +80,10 @@ def migrate_v2_mapping(source: Mapping[str, Any]) -> dict[str, Any]:
         "schema_version": 3,
         "project_name": v2.project_name,
         "engine": "lunavla_v3",
-        "policy": {"type": policy.pop("type"), "parameters": {"legacy": policy}},
+        "policy": {
+            "type": policy.pop("type"),
+            "parameters": {"legacy": policy, "compat_read_only": True},
+        },
         "task": {"id": task.pop("id"), "parameters": {"legacy": task}},
         "dataset": {
             "type": "v2_compat",
