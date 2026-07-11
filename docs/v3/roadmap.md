@@ -20,9 +20,11 @@
    package version `3.0.0a2` is reserved for the future gate-opening PR and no weight is accessed.
 7. **Beta 1 — implemented in an unmerged Draft PR:** canonical prompt parity, declared state
    routes, same-split donors, step-wise paired interventions, five-layer failure records,
-   revision-3 run manifests, EvidenceManifest v2, and verified static reports. The reduced fixture
-   proves only framework integrity and cannot open a scientific claim. It remains unmerged until
-   the Alpha 2 license/GPU release gate is satisfied and the Alpha 2 tag is created from `v3`.
+   revision-3 run manifests, EvidenceManifest v2, and verified static reports. The CPU gate runs a
+   40-pair NumPy route/prompt matrix and an independent four-pair ACT image-shuffle smoke with
+   synthetic thumbnails. These reduced fixtures prove only framework integrity and cannot open a
+   scientific claim. The work remains unmerged until the Alpha 2 license/GPU release gate is
+   satisfied and the Alpha 2 tag is created from `v3`.
 8. **Beta 2 — planned:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as
    a diagnostic subset rather than a full benchmark.
 9. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,

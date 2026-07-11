@@ -90,7 +90,7 @@
       "signature": "(layer: 'str', label: 'str', rule_id: 'str', provenance: 'str', primary_cause: 'bool | None' = None, schema_version: 'int' = 1) -> None"
     },
     "EvidenceManifestV2": {
-      "signature": "(design_sha256: 'str', base_config_sha256: 'str', source_manifests: 'tuple[ArtifactHashRecordV1, ...]', matrix_sha256: 'str', aggregate_sha256: 'str', per_pair_sha256: 'str', expected_pairs: 'int', observed_pairs: 'int', homogeneous: 'bool', matrix_complete: 'bool', reduced_design: 'bool', claim_allowed: 'bool', allowed_wording: 'str') -> None"
+      "signature": "(design_sha256: 'str', base_config_sha256: 'str', base_config_file_sha256: 'str', cell_contract_sha256: 'str', source_manifests: 'tuple[ArtifactHashRecordV1, ...]', matrix_sha256: 'str', aggregate_sha256: 'str', per_pair_sha256: 'str', thumbnail_manifest_sha256: 'str | None', expected_pairs: 'int', observed_pairs: 'int', homogeneous: 'bool', matrix_complete: 'bool', reduced_design: 'bool', claim_allowed: 'bool', framework_statement_allowed: 'bool', release_eligible: 'bool', gate_reasons: 'tuple[str, ...]', allowed_wording: 'str | None') -> None"
     }
   }
 }

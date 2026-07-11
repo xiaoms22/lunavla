@@ -359,6 +359,8 @@ class FailureRecordV1:
             raise ValueError(f"unsupported failure provenance {self.provenance!r}")
         if self.primary_cause is not None and not isinstance(self.primary_cause, bool):
             raise TypeError("primary_cause must be boolean or null")
+        if self.provenance == "automatic" and self.primary_cause is not None:
+            raise ValueError("automatic failure records cannot assign primary_cause")
         object.__setattr__(self, "label", label)
         object.__setattr__(self, "rule_id", rule_id)
 
