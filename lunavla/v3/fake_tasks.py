@@ -23,9 +23,22 @@ def _image(state: Float32Array, goal: Float32Array, size: int = 16) -> UInt8Arra
 
 def _observation(
     *, task_id: str, episode_id: str, step: int, state: Float32Array, goal: Float32Array,
+    instruction_variant: str = "constant_v1",
 ) -> ObservationV3:
     images = {"camera.primary": _image(state, goal)} if task_id == "fake_libero" else {}
-    instruction = "move the red point to the green target" if task_id == "fake_libero" else None
+    instruction = None
+    if task_id == "fake_libero":
+        if instruction_variant == "constant_v1":
+            instruction = "move the red point to the green target"
+        elif instruction_variant == "region_instruction_v1":
+            vertical = "lower" if float(goal[1]) < 0.75 else "upper"
+            horizontal = "left" if float(goal[0]) < 0.75 else "right"
+            instruction = (
+                "move the red point to the green target in the "
+                f"{vertical}-{horizontal} region"
+            )
+        else:
+            raise ValueError("unsupported fake_libero instruction variant")
     return ObservationV3(
         images=images,
         state={"state.proprioception": np.concatenate([state[:2], goal]).astype(np.float32)},
@@ -39,6 +52,7 @@ def _observation(
 
 def make_fake_episodes(
     *, task_id: str, seed: int, episode_count: int, steps: int,
+    instruction_variant: str = "constant_v1",
 ) -> tuple[EpisodeRecordV3, ...]:
     if task_id not in {"fake_pusht", "fake_libero"}:
         raise ValueError("task_id must be fake_pusht or fake_libero")
@@ -54,13 +68,14 @@ def make_fake_episodes(
         for step in range(steps):
             observation = _observation(
                 task_id=task_id, episode_id=episode_id, step=step, state=state, goal=goal
+                , instruction_variant=instruction_variant
             )
             action = np.clip(goal - state, -0.1, 0.1).astype(np.float32)
             next_state = np.clip(state + action, 0, 1).astype(np.float32)
             terminated = step == steps - 1
             next_observation = _observation(
                 task_id=task_id, episode_id=episode_id, step=step + 1,
-                state=next_state, goal=goal,
+                state=next_state, goal=goal, instruction_variant=instruction_variant,
             )
             distance = float(np.linalg.norm(next_state - goal))
             transitions.append(
@@ -78,6 +93,7 @@ def make_fake_episodes(
 class FakePointEnvV3:
     task_id: str
     max_steps: int
+    instruction_variant: str = "constant_v1"
     closed: bool = False
     _state: Float32Array = field(init=False, repr=False)
     _goal: Float32Array = field(init=False, repr=False)
@@ -103,7 +119,7 @@ class FakePointEnvV3:
         self._episode_id = f"eval-{actual_seed}"
         return _observation(
             task_id=self.task_id, episode_id=self._episode_id, step=0,
-            state=self._state, goal=self._goal,
+            state=self._state, goal=self._goal, instruction_variant=self.instruction_variant,
         )
 
     def step(self, action: npt.NDArray[np.generic]) -> TransitionV3:
@@ -111,7 +127,7 @@ class FakePointEnvV3:
             raise RuntimeError("environment is closed")
         observation = _observation(
             task_id=self.task_id, episode_id=self._episode_id, step=self._step,
-            state=self._state, goal=self._goal,
+            state=self._state, goal=self._goal, instruction_variant=self.instruction_variant,
         )
         action_value = np.asarray(action, dtype=np.float32)
         if action_value.shape != (2,) or not np.all(np.isfinite(action_value)):
@@ -123,7 +139,7 @@ class FakePointEnvV3:
         truncated = self._step >= self.max_steps and not terminated
         next_observation = _observation(
             task_id=self.task_id, episode_id=self._episode_id, step=self._step,
-            state=self._state, goal=self._goal,
+            state=self._state, goal=self._goal, instruction_variant=self.instruction_variant,
         )
         return TransitionV3(
             observation, action_value, -distance, next_observation, terminated, truncated,

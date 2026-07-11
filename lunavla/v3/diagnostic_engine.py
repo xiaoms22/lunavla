@@ -42,6 +42,10 @@ class DiagnosticRouterV1:
         route: StateRouteSpecV1 | None = None,
         intervention: InterventionSpecV1 | None = None,
         donor_instructions: Mapping[str, tuple[str, str]] | None = None,
+        donor_images: Mapping[
+            tuple[str, int], tuple[str, Mapping[str, npt.NDArray[np.generic]]]
+        ]
+        | None = None,
         counterfactual_transform_id: str | None = None,
     ) -> None:
         if config.contract_revision != 2 or not config.diagnostics["enabled"]:
@@ -54,9 +58,10 @@ class DiagnosticRouterV1:
         self.intervention = intervention or InterventionSpecV1(
             "control", "prompt", "control", "rollout", {}
         )
-        if self.intervention.kind != "prompt":
-            raise ValueError("Beta 1 router accepts prompt interventions only")
+        if self.intervention.kind not in {"prompt", "image"}:
+            raise ValueError("Beta 1 router accepts prompt or image interventions only")
         self.donor_instructions = MappingProxyType(dict(donor_instructions or {}))
+        self.donor_images = MappingProxyType(dict(donor_images or {}))
         self.counterfactual_transform_id = counterfactual_transform_id
         declared_states = tuple(item.name for item in config.feature_schema.by_role("state"))
         if self.route.state_features != tuple(config.routing["state_features"]):
@@ -70,16 +75,16 @@ class DiagnosticRouterV1:
             raise ValueError("prompt diagnostics require a non-empty observation instruction")
         donor_id: str | None = None
         operator = self.intervention.operator
-        if operator == "mask":
+        if self.intervention.kind == "prompt" and operator == "mask":
             instruction = str(self.config.prompt["neutral_token"])
-        elif operator == "shuffle":
+        elif self.intervention.kind == "prompt" and operator == "shuffle":
             key = typed_episode_key(observation.episode_id)
             if key not in self.donor_instructions:
                 raise ValueError("shuffle intervention is missing a same-split donor")
             donor_id, instruction = self.donor_instructions[key]
             if donor_id == key:
                 raise ValueError("shuffle donor cannot reference the recipient episode")
-        elif operator == "counterfactual":
+        elif self.intervention.kind == "prompt" and operator == "counterfactual":
             if self.counterfactual_transform_id != "fake_target_swap_v1":
                 raise ValueError("counterfactual intervention requires fake_target_swap_v1")
             instruction = instruction.replace("green target", "blue counterfactual target")
@@ -112,7 +117,8 @@ class DiagnosticRouterV1:
                 )
         layout = (
             "assistant_before_cameras_v1"
-            if self.intervention.operator == "layout_drift"
+            if self.intervention.kind == "prompt"
+            and self.intervention.operator == "layout_drift"
             else "canonical"
         )
         prompt = PromptSpecV1(
@@ -128,6 +134,18 @@ class DiagnosticRouterV1:
         selected_images = {
             name: observation.images[name] for name in self.config.prompt["camera_order"]
         }
+        if self.intervention.kind == "image" and self.intervention.operator == "shuffle":
+            image_key = (typed_episode_key(observation.episode_id), observation.step_index)
+            if image_key not in self.donor_images:
+                raise ValueError("image shuffle is missing a same-split donor step")
+            donor_id, donor_values = self.donor_images[image_key]
+            if donor_id == image_key[0]:
+                raise ValueError("image shuffle donor cannot reference the recipient episode")
+            if tuple(donor_values) != tuple(selected_images):
+                raise ValueError("image donor camera order does not match the policy view")
+            selected_images = {
+                name: np.array(donor_values[name], copy=True) for name in donor_values
+            }
         metadata = {
             "diagnostic": {
                 "route": self.route.mode,

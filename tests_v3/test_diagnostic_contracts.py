@@ -6,6 +6,8 @@ import pytest
 
 from lunavla.v3 import (
     DiagnosticDesignV1,
+    DonorBankV1,
+    DonorRecordV1,
     ExperimentConfig,
     FailureRecordV1,
     InterventionSpecV1,
@@ -54,6 +56,22 @@ def test_prompt_render_is_byte_stable_unicode_and_tamper_evident() -> None:
         PromptSpecV1.from_mapping(tampered)
 
 
+def test_nested_prompt_and_intervention_values_are_deeply_immutable() -> None:
+    slots = {"nested": {"values": [1, 2]}}
+    prompt = PromptSpecV1(
+        "move", slots, {}, "lunavla.canonical_json", 1, (), "action_chunk"
+    )
+    before = prompt.sha256()
+    slots["nested"]["values"].append(3)
+    assert prompt.sha256() == before
+    with pytest.raises(AttributeError):
+        prompt.public_slots["nested"]["values"].append(4)
+    parameters = {"nested": {"values": [1]}}
+    arm = InterventionSpecV1("control", "prompt", "control", "rollout", parameters)
+    parameters["nested"]["values"].append(2)
+    assert arm.to_dict()["parameters"] == {"nested": {"values": [1]}}
+
+
 def test_observation_preserves_prompt_bytes_including_terminal_lf() -> None:
     from lunavla.v3 import ObservationV3
 
@@ -90,7 +108,7 @@ def test_route_intervention_and_design_contracts_are_strict() -> None:
         train_seeds=(11,),
         evaluation_seeds=(1000, 1001),
         routes=routes,
-        prompt_arms=(_arm("control"), _arm("mask"), _arm("shuffle")),
+        interventions=(_arm("control"), _arm("mask"), _arm("shuffle")),
         donor_seed=42,
         analysis_seed=202701,
         bootstrap_samples=100,
@@ -119,9 +137,27 @@ def test_failure_taxonomy_requires_evidence_provenance() -> None:
         FailureRecordV1("state", "leak", "sentinel_v1", "guessed")
 
 
+def test_donor_contract_rejects_self_cross_split_duplicate_and_equal_content() -> None:
+    one = "1" * 64
+    two = "2" * 64
+    record = DonorRecordV1("string:a", "string:b", "evaluation", None, one, two)
+    bank = DonorBankV1("instruction", "evaluation", 42, (record,))
+    assert DonorBankV1.from_mapping(bank.to_dict()).sha256() == bank.sha256()
+    with pytest.raises(ValueError, match="recipient"):
+        DonorRecordV1("same", "same", "evaluation", None, one, two)
+    with pytest.raises(ValueError, match="differ"):
+        DonorRecordV1("a", "b", "evaluation", None, one, one)
+    cross = DonorRecordV1("a", "b", "test", None, one, two)
+    with pytest.raises(ValueError, match="cross"):
+        DonorBankV1("instruction", "evaluation", 42, (cross,))
+    with pytest.raises(ValueError, match="duplicate"):
+        DonorBankV1("instruction", "evaluation", 42, (record, record))
+
+
 def test_config_revision_one_hash_is_stable_and_revision_two_is_strict() -> None:
     legacy = ExperimentConfig.load("configs/v3/fake_pusht_alpha.yaml")
     legacy_hash = legacy.sha256()
+    assert legacy_hash == "e18c22b5984ac80b26b321c66694fea6ba8e5eb4016d3b0859b9e1cd14c7c5bb"
     assert legacy.contract_revision == 1
     assert ExperimentConfig.from_mapping(legacy.to_dict()).sha256() == legacy_hash
 
@@ -129,6 +165,10 @@ def test_config_revision_one_hash_is_stable_and_revision_two_is_strict() -> None
     payload["contract_revision"] = 2
     payload["policy"]["parameters"]["instruction_dim"] = 8
     payload["diagnostics"]["enabled"] = True
+    payload["dataset"]["type"] = "fake_libero"
+    payload["task"]["id"] = "fake_libero"
+    payload["embodiment"]["task_id"] = "fake_libero"
+    payload["dataset"]["parameters"]["instruction_variant"] = "region_instruction_v1"
     payload["prompt"] = {
         "enabled": True,
         "renderer_id": "lunavla.canonical_json",

@@ -555,6 +555,7 @@ def dataset_for_config(config: ExperimentConfig) -> DatasetBundle:
     episodes = make_fake_episodes(
         task_id=config.task["id"], seed=config.dataset["seed"],
         episode_count=episode_count, steps=steps,
+        instruction_variant=str(parameters.get("instruction_variant", "constant_v1")),
     )
     split = split_episode_ids(episodes, seed=config.dataset["seed"])
     audit = audit_episodes(episodes, feature_schema=config.feature_schema, split=split)
@@ -667,7 +668,12 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
     task_id = config.task["id"]
     restored_policy = engine.restore_policy(checkpoint_root)
     metrics = engine.evaluate(
-        restored_policy, FakePointEnvV3(task_id, config.evaluation["max_steps"])
+        restored_policy,
+        FakePointEnvV3(
+            task_id,
+            config.evaluation["max_steps"],
+            str(config.dataset["parameters"].get("instruction_variant", "constant_v1")),
+        ),
     )
     metrics = {**metrics, "final_loss": losses[-1], "claim_allowed": False}
     audit_path = bundle.audit.save(output / "data_audit.json")
