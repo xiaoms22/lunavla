@@ -9,9 +9,16 @@ from lunavla.v3 import (
     EmbodimentSpec,
     EpisodeRecordV3,
     ExperimentConfig,
+    FeatureNormalizationV1,
     FeatureSchema,
     FeatureSpec,
+    ModelSourceContractV1,
+    NormalizationStatsV1,
     ObservationV3,
+    PolicyBatchV3,
+    PolicySampleV3,
+    PolicySpecV3,
+    TrainStepResultV3,
     TransitionV3,
 )
 
@@ -27,13 +34,20 @@ PUBLIC_TYPES = {
     "TransitionV3": TransitionV3,
     "EpisodeRecordV3": EpisodeRecordV3,
     "ExperimentConfig": ExperimentConfig,
+    "ModelSourceContractV1": ModelSourceContractV1,
+    "PolicySpecV3": PolicySpecV3,
+    "PolicySampleV3": PolicySampleV3,
+    "PolicyBatchV3": PolicyBatchV3,
+    "TrainStepResultV3": TrainStepResultV3,
+    "FeatureNormalizationV1": FeatureNormalizationV1,
+    "NormalizationStatsV1": NormalizationStatsV1,
 }
 
 
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-alpha.1",
+        "release_stage": "v3.0.0-alpha.2-contracts",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()

@@ -10,13 +10,17 @@ import numpy as np
 import pytest
 
 from lunavla.v3 import (
+    ArtifactHashRecordV1,
     CheckpointEnvelopeV4,
+    CheckpointEnvelopeV4R2,
     ExperimentConfig,
     RunManifestV4,
+    RunManifestV4R2,
     audit_episodes,
     split_episode_ids,
     verify_run_directory,
 )
+from lunavla.v3.artifacts import sha256_file
 from lunavla.v3.data import episode_sha256
 from lunavla.v3.engine import EngineV3, dataset_for_config, run_alpha
 from lunavla.v3.fake_tasks import FakePointEnvV3, fake_feature_schema, make_fake_episodes
@@ -117,9 +121,23 @@ def test_alpha_run_is_deterministic_and_verifiable(tmp_path: Path, task_id: str)
     first = run_alpha(config)
     first_hashes = {
         name: (first.output_dir / name).read_bytes()
-        for name in ("policy.json", "checkpoint.v3.json", "metrics.json", "data_audit.json")
+        for name in (
+            "checkpoint/policy/policy.json",
+            "checkpoint/checkpoint.v3.json",
+            "checkpoint/training_state.json",
+            "policy_spec.json",
+            "normalization.json",
+            "dependency_lock.json",
+            "model_source.json",
+            "metrics.json",
+            "data_audit.json",
+        )
     }
     assert verify_run_directory(first.output_dir)["claim_allowed"] is False
+    manifest = RunManifestV4R2.from_mapping(
+        json.loads((first.output_dir / "manifest.json").read_text())
+    )
+    assert manifest.policy_id == config.policy["type"]
     second = run_alpha(config, overwrite=True)
     for name, value in first_hashes.items():
         assert (second.output_dir / name).read_bytes() == value
@@ -137,6 +155,27 @@ def test_verify_run_detects_tampering(tmp_path: Path) -> None:
         verify_run_directory(result.output_dir)
 
 
+def test_verify_run_detects_nested_checkpoint_tampering(tmp_path: Path) -> None:
+    config = ExperimentConfig.from_mapping(_mapping(tmp_path))
+    result = run_alpha(config)
+    processor = result.output_dir / "checkpoint/processors/processor.json"
+    processor.write_text("{}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="checkpoint/processors/processor.json"):
+        verify_run_directory(result.output_dir)
+
+
+def test_checkpoint_directory_restores_in_a_fresh_engine(tmp_path: Path) -> None:
+    config = ExperimentConfig.from_mapping(_mapping(tmp_path))
+    result = run_alpha(config)
+    fresh = EngineV3(config)
+    restored = fresh.restore_policy(result.output_dir / "checkpoint")
+    metrics = fresh.evaluate(
+        restored, FakePointEnvV3("fake_pusht", config.evaluation["max_steps"])
+    )
+    for name, value in metrics.items():
+        assert value == result.metrics[name]
+
+
 def test_output_directory_requires_explicit_overwrite(tmp_path: Path) -> None:
     config = ExperimentConfig.from_mapping(_mapping(tmp_path))
     run_alpha(config)
@@ -151,7 +190,7 @@ def test_overwrite_replaces_the_complete_run_generation(tmp_path: Path) -> None:
     stale.write_text("stale", encoding="utf-8")
     result = run_alpha(config, overwrite=True)
     assert not stale.exists()
-    assert verify_run_directory(result.output_dir)["contract_revision"] == 1
+    assert verify_run_directory(result.output_dir)["contract_revision"] == 2
 
 
 def test_versioned_artifact_contracts_are_strict() -> None:
@@ -170,6 +209,52 @@ def test_versioned_artifact_contracts_are_strict() -> None:
     with pytest.raises(ValueError, match="unknown field"):
         RunManifestV4.from_mapping(manifest)
 
+    revision2 = CheckpointEnvelopeV4R2(
+        "numpy_linear_chunk",
+        "a" * 64,
+        "b" * 64,
+        "c" * 64,
+        "d" * 64,
+        "e" * 64,
+        (ArtifactHashRecordV1("policy/policy.json", "f" * 64),),
+    ).to_dict()
+    revision2["files"][0]["path"] = "../escape.json"
+    with pytest.raises(ValueError, match="contained relative path"):
+        CheckpointEnvelopeV4R2.from_mapping(revision2)
+
+
+def test_revision1_run_artifacts_remain_read_only_compatible(tmp_path: Path) -> None:
+    root = tmp_path / "revision1"
+    root.mkdir()
+    for name in ("resolved_config.json", "data_audit.json", "metrics.json"):
+        (root / name).write_text("{}\n", encoding="utf-8")
+    checkpoint = root / "policy.json"
+    checkpoint.write_text('{"policy_id":"numpy_linear_chunk"}\n', encoding="utf-8")
+    envelope = CheckpointEnvelopeV4(
+        "numpy_linear_chunk",
+        checkpoint.name,
+        sha256_file(checkpoint),
+        sha256_file(root / "resolved_config.json"),
+        "a" * 64,
+    )
+    envelope_path = envelope.save(root / "checkpoint.v3.json")
+    manifest = RunManifestV4(
+        "a" * 40,
+        False,
+        sha256_file(root / "resolved_config.json"),
+        "a" * 64,
+        sha256_file(root / "data_audit.json"),
+        sha256_file(envelope_path),
+        sha256_file(root / "metrics.json"),
+        "numpy_linear_chunk",
+        "fake_pusht",
+        1,
+        (2,),
+        True,
+    )
+    manifest.save(root / "manifest.json")
+    assert verify_run_directory(root)["contract_revision"] == 1
+
 
 def test_environment_closes_when_prediction_fails(tmp_path: Path) -> None:
     config = ExperimentConfig.from_mapping(_mapping(tmp_path))
@@ -177,6 +262,11 @@ def test_environment_closes_when_prediction_fails(tmp_path: Path) -> None:
     env = FakePointEnvV3("fake_pusht", 4)
 
     class BrokenPolicy:
+        spec = engine._policy_spec()
+
+        def reset(self, seed: int) -> None:
+            del seed
+
         def predict_chunk(self, observation: object) -> np.ndarray:
             del observation
             raise RuntimeError("prediction failed")

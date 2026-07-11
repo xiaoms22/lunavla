@@ -15,7 +15,31 @@ from .contracts import (
     TransitionV3,
 )
 from .migration import migrate_v2_mapping, observation_from_v2, observation_to_v2
-from .artifacts import CheckpointEnvelopeV4, RunManifestV4, verify_run_directory
+from .normalization import (
+    FeatureNormalizationV1,
+    NormalizationStatsV1,
+    fit_normalization_stats,
+)
+from .policy import (
+    ModelSourceContractV1,
+    PolicyBatchV3,
+    PolicySampleV3,
+    PolicySpecV3,
+    TrainStepResultV3,
+    VLAPolicyV3,
+)
+from .registry import PolicyRegistryV3
+from .artifacts import (
+    ArtifactHashRecordV1,
+    CheckpointEnvelopeV4,
+    CheckpointEnvelopeV4R2,
+    RunManifestV4,
+    RunManifestV4R2,
+    checkpoint_envelope_from_mapping,
+    run_manifest_from_mapping,
+    verify_checkpoint_directory,
+    verify_run_directory,
+)
 from .data import (
     DataAuditManifest,
     DatasetBundle,
@@ -28,7 +52,9 @@ from .engine import EngineV3, run_alpha
 
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
+    "ArtifactHashRecordV1",
     "CheckpointEnvelopeV4",
+    "CheckpointEnvelopeV4R2",
     "DataAuditManifest",
     "DatasetBundle",
     "DatasetSourceV3",
@@ -39,16 +65,30 @@ __all__ = [
     "ExperimentConfig",
     "FeatureSchema",
     "FeatureSpec",
+    "FeatureNormalizationV1",
     "InMemoryDatasetSourceV3",
     "ObservationV3",
+    "ModelSourceContractV1",
+    "NormalizationStatsV1",
+    "PolicyBatchV3",
+    "PolicyRegistryV3",
+    "PolicySampleV3",
+    "PolicySpecV3",
     "RunManifestV4",
+    "RunManifestV4R2",
     "TaskEnvV3",
     "TransitionV3",
+    "TrainStepResultV3",
+    "VLAPolicyV3",
     "audit_episodes",
+    "checkpoint_envelope_from_mapping",
+    "fit_normalization_stats",
     "migrate_v2_mapping",
     "observation_from_v2",
     "observation_to_v2",
     "run_alpha",
+    "run_manifest_from_mapping",
     "split_episode_ids",
     "verify_run_directory",
+    "verify_checkpoint_directory",
 ]
