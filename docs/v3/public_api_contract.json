@@ -77,6 +77,15 @@
     "DonorBankV1": {
       "signature": "(modality: 'str', split: 'str', donor_seed: 'int', records: 'tuple[DonorRecordV1, ...]', schema_version: 'int' = 1) -> None"
     },
+    "PromptParityRecordV1": {
+      "signature": "(sample_id: 'str', phase: 'str', prompt_sha256: 'str', camera_order: 'tuple[str, ...]', assistant_target: 'str', expert_state_keys: 'tuple[str, ...]', prompt_state_keys: 'tuple[str, ...]', feature_schema_sha256: 'str', schema_version: 'int' = 1) -> None"
+    },
+    "PromptParityManifestV1": {
+      "signature": "(records: 'tuple[PromptParityRecordV1, ...]', schema_version: 'int' = 1) -> None"
+    },
+    "DiagnosticTraceRowV1": {
+      "signature": "(pair_id: 'str', train_seed: 'int', evaluation_seed: 'int', episode_id: 'str', route: 'str', arm: 'str', intervention_kind: 'str', step_id: 'int', canonical_prompt_sha256: 'str', effective_prompt_sha256: 'str', expert_state_keys: 'tuple[str, ...]', prompt_state_keys: 'tuple[str, ...]', camera_order: 'tuple[str, ...]', donor_id: 'str | None', donor_content_sha256: 'str | None', transform_id: 'str | None', action_chunk_sha256: 'str', reward: 'float', terminated: 'bool', truncated: 'bool', success: 'bool', failures: 'tuple[FailureRecordV1, ...]', error_stage: 'str | None', error_origin: 'str | None', schema_version: 'int' = 1) -> None"
+    },
     "FailureRecordV1": {
       "signature": "(layer: 'str', label: 'str', rule_id: 'str', provenance: 'str', primary_cause: 'bool | None' = None, schema_version: 'int' = 1) -> None"
     },

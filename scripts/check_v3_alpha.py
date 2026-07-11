@@ -8,6 +8,7 @@ from typing import Any
 from lunavla.v3.artifacts import sha256_file
 from lunavla.v3 import (
     DiagnosticDesignV1,
+    DiagnosticTraceRowV1,
     DonorBankV1,
     DonorRecordV1,
     EmbodimentSpec,
@@ -29,6 +30,8 @@ from lunavla.v3 import (
     PolicyBatchV3,
     PolicySampleV3,
     PolicySpecV3,
+    PromptParityManifestV1,
+    PromptParityRecordV1,
     PromptSpecV1,
     StateRouteSpecV1,
     InterventionSpecV1,
@@ -72,6 +75,9 @@ PUBLIC_TYPES = {
     "DiagnosticDesignV1": DiagnosticDesignV1,
     "DonorRecordV1": DonorRecordV1,
     "DonorBankV1": DonorBankV1,
+    "PromptParityRecordV1": PromptParityRecordV1,
+    "PromptParityManifestV1": PromptParityManifestV1,
+    "DiagnosticTraceRowV1": DiagnosticTraceRowV1,
     "FailureRecordV1": FailureRecordV1,
     "EvidenceManifestV2": EvidenceManifestV2,
 }
