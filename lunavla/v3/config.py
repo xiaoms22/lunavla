@@ -698,8 +698,12 @@ class ExperimentConfig:
             raise ValueError("lerobot_smolvla conformance config requires empty scheduler parameters")
         if policy["type"] == "lerobot_smolvla" and training["precision"] != "float32":
             raise ValueError("lerobot_smolvla conformance config requires float32")
-        if policy["type"] == "lerobot_smolvla" and training["device"] != "cpu":
-            raise ValueError("lerobot_smolvla conformance config is CPU-only")
+        if (
+            policy["type"] == "lerobot_smolvla"
+            and policy["parameters"]["pretrained_enabled"]
+            and not training["device"].startswith("cuda")
+        ):
+            raise ValueError("enabled lerobot_smolvla weights require CUDA training")
         if (
             policy["type"] == "act_v3"
             and policy["parameters"].get("temporal_ensemble_decay") is not None
