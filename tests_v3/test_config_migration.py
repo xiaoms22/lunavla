@@ -178,3 +178,24 @@ def test_alpha2_training_contract_rejects_unknown_and_conflicting_values() -> No
     payload["policy"]["parameters"]["state_dim"] = 3
     with pytest.raises(ValueError, match="state_dim conflicts"):
         ExperimentConfig.from_mapping(payload)
+
+
+def test_act_v3_config_is_strict_and_requires_receding_temporal_execution() -> None:
+    config = ExperimentConfig.load("configs/v3/act_fake_libero_cpu.yaml")
+    assert ExperimentConfig.from_mapping(config.to_dict()).sha256() == config.sha256()
+    payload = config.to_dict()
+    payload["evaluation"]["execution_mode"] = "open_loop_chunk"
+    with pytest.raises(ValueError, match="temporal ensembling requires receding_horizon"):
+        ExperimentConfig.from_mapping(payload)
+    payload = config.to_dict()
+    payload["policy"]["parameters"]["state_dim"] = 4
+    with pytest.raises(ValueError, match="unknown field.*state_dim"):
+        ExperimentConfig.from_mapping(payload)
+    payload = config.to_dict()
+    payload["training"]["optimizer"]["type"] = "sgd"
+    with pytest.raises(ValueError, match="act_v3 requires optimizer"):
+        ExperimentConfig.from_mapping(payload)
+    payload = config.to_dict()
+    payload["features"]["items"][0]["shape"] = [16, 16, 1]
+    with pytest.raises(ValueError, match="HWC RGB"):
+        ExperimentConfig.from_mapping(payload)

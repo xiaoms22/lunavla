@@ -1,0 +1,105 @@
+schema_version: 3
+project_name: lunavla-v3-act-fake-libero-cpu
+engine: lunavla_v3
+policy:
+  type: act_v3
+  parameters:
+    state_feature: state.proprioception
+    camera_feature: camera.primary
+    instruction_dim: 8
+    history: 1
+    chunk_size: 4
+    horizon: 4
+    execution_steps: 1
+    d_model: 64
+    nhead: 4
+    num_encoder_layers: 2
+    num_decoder_layers: 2
+    dim_feedforward: 128
+    latent_dim: 16
+    dropout: 0.0
+    kl_weight: 0.01
+    sample_latent_during_training: true
+    temporal_ensemble_decay: 0.01
+task:
+  id: fake_libero
+  parameters: {}
+dataset:
+  type: fake_libero
+  split: train
+  seed: 42
+  parameters:
+    episode_count: 6
+    steps_per_episode: 5
+embodiment:
+  id: lunavla_fake_libero
+  task_id: fake_libero
+  control_rate_hz: 10.0
+  camera_mapping:
+    image: camera.primary
+  state_mapping:
+    state: state.proprioception
+  action_mapping:
+    action: action.primary
+features:
+  schema_version: 1
+  items:
+    - name: camera.primary
+      role: image
+      dtype: uint8
+      shape: [16, 16, 3]
+      unit: pixel
+      frame: sim_camera
+      rate_hz: 10.0
+      normalization: none
+      source_key: image
+      required_by: [act_v3]
+    - name: state.proprioception
+      role: state
+      dtype: float32
+      shape: [4]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: none
+      source_key: state
+      required_by: [act_v3]
+    - name: action.primary
+      role: action
+      dtype: float32
+      shape: [2]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: none
+      source_key: action
+      required_by: [act_v3]
+training:
+  device: cpu
+  seed: 11
+  batch_size: 4
+  steps: 2
+  learning_rate: 0.0003
+  optimizer:
+    type: adam
+    parameters: {}
+  scheduler:
+    type: constant
+    parameters: {}
+  precision: float32
+  gradient_clip_norm: 10.0
+  resume:
+    enabled: false
+    checkpoint: null
+    strict: true
+evaluation:
+  execution_mode: receding_horizon
+  episodes: 2
+  seed: 1000
+  seeds: [1000, 1001]
+  max_steps: 6
+diagnostics:
+  enabled: false
+artifacts:
+  output_dir: outputs/v3/act-fake-libero-cpu
+  checkpoint_name: act_v3.pt

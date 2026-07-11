@@ -36,3 +36,4 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert 'torch.__version__ == "2.11.0+cpu"' in workflow
     assert 'torchvision.__version__ == "0.26.0+cpu"' in workflow
     assert "forbidden_cpu_packages(installed)" in workflow
+    assert "validate-config configs/v3/act_fake_libero_cpu.yaml" in workflow

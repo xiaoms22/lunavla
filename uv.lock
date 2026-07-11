@@ -989,6 +989,10 @@ v2-integration = [
     { name = "torch" },
     { name = "torchvision" },
 ]
+v3-act = [
+    { name = "torch" },
+    { name = "torchvision" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1008,13 +1012,15 @@ requires-dist = [
     { name = "torch", marker = "extra == 'v2'", specifier = "==2.11.*" },
     { name = "torch", marker = "extra == 'v2-core'", specifier = "==2.11.*" },
     { name = "torch", marker = "extra == 'v2-integration'", specifier = "==2.11.*" },
+    { name = "torch", marker = "extra == 'v3-act'", specifier = "==2.11.*" },
     { name = "torchvision", marker = "extra == 'v2'", specifier = "==0.26.*" },
     { name = "torchvision", marker = "extra == 'v2-core'", specifier = "==0.26.*" },
     { name = "torchvision", marker = "extra == 'v2-integration'", specifier = "==0.26.*" },
+    { name = "torchvision", marker = "extra == 'v3-act'", specifier = "==0.26.*" },
     { name = "twine", marker = "extra == 'release'", specifier = ">=6,<7" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.12" },
 ]
-provides-extras = ["v2-core", "v2", "v2-integration", "dev", "release"]
+provides-extras = ["v2-core", "v3-act", "v2", "v2-integration", "dev", "release"]
 
 [[package]]
 name = "lxml"

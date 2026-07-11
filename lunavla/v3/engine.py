@@ -169,6 +169,15 @@ class EngineV3:
         self.training_state: Mapping[str, Any] = {}
 
     def _policy_spec(self) -> PolicySpecV3:
+        if self.config.policy["type"] == "act_v3":
+            try:
+                from .act_policy import act_policy_spec
+            except ModuleNotFoundError as exc:
+                if exc.name == "torch":
+                    raise RuntimeError("act_v3 requires the v3-act dependency profile") from exc
+                raise
+
+            return act_policy_spec(self.config)
         parameters = dict(self.config.policy["parameters"])
         raw = dict(parameters.get("legacy", parameters))
         state_feature = str(raw.get("state_feature", "state.proprioception"))
@@ -251,9 +260,19 @@ class EngineV3:
 
     def _compat_registry(self) -> PolicyRegistryV3:
         registry = PolicyRegistryV3()
-        registry.register(
-            self.config.policy["type"], self._create_bridge, self._restore_bridge
-        )
+        if self.config.policy["type"] == "act_v3":
+            try:
+                from .act_policy import register_act_policy
+            except ModuleNotFoundError as exc:
+                if exc.name == "torch":
+                    raise RuntimeError("act_v3 requires the v3-act dependency profile") from exc
+                raise
+
+            register_act_policy(registry)
+        else:
+            registry.register(
+                self.config.policy["type"], self._create_bridge, self._restore_bridge
+            )
         return registry
 
     @staticmethod
@@ -311,7 +330,7 @@ class EngineV3:
                 )
         return tuple(samples)
 
-    def train(self, dataset: InMemoryDatasetSourceV3) -> tuple[V2PolicyBridge, tuple[float, ...]]:
+    def train(self, dataset: InMemoryDatasetSourceV3) -> tuple[VLAPolicyV3, tuple[float, ...]]:
         episodes = tuple(dataset.load())
         normalization = fit_normalization_stats(episodes, self.config.feature_schema)
         spec = self._policy_spec()
@@ -338,17 +357,16 @@ class EngineV3:
         self.train_results = tuple(results)
         training_payload = self.config.to_dict()["training"]
         self.training_state = {
-            "format": "numpy_v2_compat_json",
+            "format": "lunavla_v3_engine_sampling_json",
+            "policy_id": spec.policy_id,
             "step": self.config.training["steps"],
             "optimizer": training_payload["optimizer"],
             "scheduler": training_payload["scheduler"],
             "numpy_rng_state": rng.bit_generator.state,
         }
-        if not isinstance(policy, V2PolicyBridge):
-            raise TypeError("Alpha compatibility train path expected V2PolicyBridge")
         return policy, tuple(item.loss for item in results)
 
-    def restore_policy(self, checkpoint: str | Path) -> V2PolicyBridge:
+    def restore_policy(self, checkpoint: str | Path) -> VLAPolicyV3:
         checkpoint_path = Path(checkpoint)
         expected_spec = self._policy_spec()
         spec = self.policy_spec or expected_spec
@@ -382,8 +400,6 @@ class EngineV3:
         policy = self.registry.restore(
             checkpoint_path, self.config, spec, normalization
         )
-        if not isinstance(policy, V2PolicyBridge):
-            raise TypeError("Alpha compatibility restore path expected V2PolicyBridge")
         return policy
 
     def evaluate(self, policy: VLAPolicyV3, env: TaskEnvV3) -> dict[str, Any]:
@@ -513,7 +529,12 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
     )
     processor = _write_json(
         processors_root / "processor.json",
-        {"schema_version": 1, "type": "v2_policy_bridge", "state_order": list(engine.policy_spec.state_order)},
+        {
+            "schema_version": 1,
+            "type": engine.policy_spec.backend,
+            "state_order": list(engine.policy_spec.state_order),
+            "camera_order": list(engine.policy_spec.camera_order),
+        },
     )
     training_state = _write_json(
         checkpoint_root / "training_state.json", dict(engine.training_state)
@@ -527,7 +548,7 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
         training_state,
     )
     envelope = CheckpointEnvelopeV4R2(
-        policy_id=policy.policy_id,
+        policy_id=engine.policy_spec.policy_id,
         policy_spec_sha256=sha256_file(policy_spec_path),
         normalization_sha256=sha256_file(normalization_path),
         config_sha256=config_file_sha256,
@@ -563,7 +584,7 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
         dependency_lock_sha256=sha256_file(dependency_lock_path),
         model_source_sha256=sha256_file(model_source_path),
         runtime_sha256=sha256_file(runtime_path),
-        policy_id=policy.policy_id,
+        policy_id=engine.policy_spec.policy_id,
         task_id=task_id,
         device=engine.policy_spec.device,
         train_seed=config.training["seed"],
