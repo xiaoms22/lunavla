@@ -60,7 +60,6 @@ jobs:
       EXPECTED_SHA: ${{ inputs.expected_sha }}
       EXPECTED_LICENSE_SHA256: ${{ inputs.expected_license_review_sha256 }}
       RUNNER_LABELS: self-hosted,linux,x64,gpu,lunavla-v3
-      HF_HOME: ${{ runner.temp }}/lunavla-hf-cache
       PYTHONUNBUFFERED: "1"
     steps:
       - name: Validate immutable GPU request
@@ -91,6 +90,7 @@ jobs:
             "$RUNNER_TEMP/main-v3-alpha2-release-dispatch.yml"
           test "$(shasum -a 256 docs/v3/release/smolvla-license-review.json | cut -d' ' -f1)" \
             = "$EXPECTED_LICENSE_SHA256"
+          echo "HF_HOME=$RUNNER_TEMP/lunavla-hf-cache" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
