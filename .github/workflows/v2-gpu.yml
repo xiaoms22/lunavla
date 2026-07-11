@@ -53,7 +53,7 @@ jobs:
           uv run --no-sync lunavla-v2 verify-run "$(dirname "${manifests[0]}")"
       - name: Upload run artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: v2-gpu-${{ github.sha }}
           path: outputs/
