@@ -432,6 +432,12 @@ class EpisodeRecordV3:
                 raise ValueError("next_observation episode_id does not match episode")
             if transition.next_observation.step_index != index + 1:
                 raise ValueError("next_observation timestep must be current timestep plus one")
+            if transition.next_observation.timestamp_s < transition.observation.timestamp_s:
+                raise ValueError("next_observation timestamp cannot precede observation")
+            if index and transitions[index - 1].next_observation != transition.observation:
+                raise ValueError(
+                    "each transition observation must equal the previous next_observation"
+                )
             if index < len(transitions) - 1 and (transition.terminated or transition.truncated):
                 raise ValueError("only the final transition may end an episode")
         if not (transitions[-1].terminated or transitions[-1].truncated):

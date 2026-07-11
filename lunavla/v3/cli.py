@@ -50,13 +50,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if arguments.command == "data-audit":
         config = ExperimentConfig.load(arguments.config)
-        _, audit = dataset_for_config(config)
-        audit.save(arguments.out)
+        dataset_for_config(config).audit.save(arguments.out)
         return 0
     if arguments.command == "replay":
         config = ExperimentConfig.load(arguments.config)
-        source, _ = dataset_for_config(config)
-        episodes = source.load()
+        episodes = dataset_for_config(config).episodes
         if arguments.episode < 0 or arguments.episode >= len(episodes):
             raise IndexError("episode index is out of range")
         target = Path(arguments.out)

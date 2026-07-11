@@ -119,10 +119,23 @@ def split_episode_ids(
 
 
 @dataclass(frozen=True)
+class EpisodeHashRecord:
+    episode_id: str | int
+    sha256: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "episode_id": self.episode_id,
+            "episode_id_type": "integer" if isinstance(self.episode_id, int) else "string",
+            "sha256": self.sha256,
+        }
+
+
+@dataclass(frozen=True)
 class DataAuditManifest:
     schema_version: int
     feature_schema_sha256: str
-    episode_sha256: Mapping[str, str]
+    episode_hashes: tuple[EpisodeHashRecord, ...]
     split: Mapping[str, tuple[str | int, ...]]
     episode_count: int
     transition_count: int
@@ -130,8 +143,9 @@ class DataAuditManifest:
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": self.schema_version,
+            "contract_revision": 2,
             "feature_schema_sha256": self.feature_schema_sha256,
-            "episode_sha256": dict(self.episode_sha256),
+            "episode_hashes": [item.to_dict() for item in self.episode_hashes],
             "split": {name: list(values) for name, values in self.split.items()},
             "episode_count": self.episode_count,
             "transition_count": self.transition_count,
@@ -171,7 +185,7 @@ def audit_episodes(
         raise ValueError("episode IDs overlap across splits")
     if set(all_split_ids) != set(identifiers):
         raise ValueError("split episode IDs must exactly match the dataset")
-    hashes: dict[str, str] = {}
+    hashes: list[EpisodeHashRecord] = []
     transitions = 0
     for episode in records:
         for transition in episode.transitions:
@@ -180,14 +194,47 @@ def audit_episodes(
             feature_schema.validate_action(transition.action)
             if transition.next_observation.timestamp_s < transition.observation.timestamp_s:
                 raise ValueError("observation timestamps must be monotonic")
-        key = str(episode.episode_id)
-        hashes[key] = episode_sha256(episode)
+        hashes.append(EpisodeHashRecord(episode.episode_id, episode_sha256(episode)))
         transitions += len(episode.transitions)
     return DataAuditManifest(
         schema_version=1,
         feature_schema_sha256=feature_schema.sha256(),
-        episode_sha256=MappingProxyType(hashes),
+        episode_hashes=tuple(hashes),
         split=MappingProxyType({name: tuple(split[name]) for name in ("train", "validation", "test")}),
         episode_count=len(records),
         transition_count=transitions,
     )
+
+
+@dataclass(frozen=True)
+class DatasetBundle:
+    episodes: tuple[EpisodeRecordV3, ...]
+    split: Mapping[str, tuple[str | int, ...]]
+    audit: DataAuditManifest
+
+    def __post_init__(self) -> None:
+        episodes = tuple(self.episodes)
+        if not episodes:
+            raise ValueError("dataset bundle cannot be empty")
+        by_id = {episode.episode_id: episode for episode in episodes}
+        if len(by_id) != len(episodes):
+            raise ValueError("dataset bundle episode IDs must be unique")
+        normalized: dict[str, tuple[str | int, ...]] = {}
+        for name in ("train", "validation", "test"):
+            identifiers = tuple(self.split.get(name, ()))
+            if not identifiers:
+                raise ValueError(f"dataset split {name} cannot be empty")
+            if any(identifier not in by_id for identifier in identifiers):
+                raise ValueError(f"dataset split {name} contains an unknown episode ID")
+            normalized[name] = identifiers
+        object.__setattr__(self, "episodes", episodes)
+        object.__setattr__(self, "split", MappingProxyType(normalized))
+
+    def select(self, name: str) -> tuple[EpisodeRecordV3, ...]:
+        if name not in self.split:
+            raise ValueError("split must be train, validation, or test")
+        by_id = {episode.episode_id: episode for episode in self.episodes}
+        return tuple(by_id[identifier] for identifier in self.split[name])
+
+    def source(self, name: str) -> InMemoryDatasetSourceV3:
+        return InMemoryDatasetSourceV3(self.select(name))
