@@ -54,7 +54,13 @@
       "signature": "(arm_id: 'str', kind: 'str', operator: 'str', phase: 'str', parameters: 'Mapping[str, Any]', schema_version: 'int' = 1) -> None"
     },
     "DiagnosticDesignV1": {
-      "signature": "(design_id: 'str', base_config: 'str', output_dir: 'str', train_seeds: 'tuple[int, ...]', evaluation_seeds: 'tuple[int, ...]', routes: 'tuple[StateRouteSpecV1, ...]', prompt_arms: 'tuple[InterventionSpecV1, ...]', donor_seed: 'int', analysis_seed: 'int', bootstrap_samples: 'int', counterfactual_transform_id: 'str | None', reduced_design: 'bool', schema_version: 'int' = 1) -> None"
+      "signature": "(design_id: 'str', base_config: 'str', output_dir: 'str', train_seeds: 'tuple[int, ...]', evaluation_seeds: 'tuple[int, ...]', routes: 'tuple[StateRouteSpecV1, ...]', interventions: 'tuple[InterventionSpecV1, ...]', donor_seed: 'int', analysis_seed: 'int', bootstrap_samples: 'int', counterfactual_transform_id: 'str | None', reduced_design: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "DonorRecordV1": {
+      "signature": "(recipient_id: 'str', donor_id: 'str', split: 'str', step_index: 'int | None', recipient_content_sha256: 'str', donor_content_sha256: 'str', schema_version: 'int' = 1) -> None"
+    },
+    "DonorBankV1": {
+      "signature": "(modality: 'str', split: 'str', donor_seed: 'int', records: 'tuple[DonorRecordV1, ...]', schema_version: 'int' = 1) -> None"
     },
     "FailureRecordV1": {
       "signature": "(layer: 'str', label: 'str', rule_id: 'str', provenance: 'str', primary_cause: 'bool | None' = None, schema_version: 'int' = 1) -> None"

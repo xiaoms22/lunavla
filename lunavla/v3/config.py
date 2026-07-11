@@ -520,7 +520,9 @@ class ExperimentConfig:
                 raise ValueError("v2_compat dataset requires dataset.parameters.legacy")
         else:
             _reject_unknown(
-                dataset["parameters"], {"episode_count", "steps_per_episode"}, "dataset.parameters"
+                dataset["parameters"],
+                {"episode_count", "steps_per_episode", "instruction_variant"},
+                "dataset.parameters",
             )
             for name in ("episode_count", "steps_per_episode"):
                 if name in dataset["parameters"]:
@@ -529,6 +531,12 @@ class ExperimentConfig:
                     )
             if dataset["parameters"].get("episode_count", 6) < 3:
                 raise ValueError("fake datasets require at least three episodes")
+            instruction_variant = dataset["parameters"].get("instruction_variant")
+            if instruction_variant is not None:
+                if dataset["type"] != "fake_libero":
+                    raise ValueError("instruction_variant is supported only by fake_libero")
+                if instruction_variant != "region_instruction_v1":
+                    raise ValueError("unsupported fake_libero instruction_variant")
 
         task_id = task["id"]
         dataset_type = dataset["type"]
@@ -850,6 +858,10 @@ class ExperimentConfig:
                 raise ValueError("prompt/state diagnostics require receding_horizon")
             if policy["type"] == "lerobot_smolvla" and policy_parameters.get("conformance_only") is True:
                 raise ValueError("conformance-only SmolVLA cannot run diagnostic training")
+            if dataset["parameters"].get("instruction_variant") != "region_instruction_v1":
+                raise ValueError(
+                    "diagnostics require fake_libero instruction_variant=region_instruction_v1"
+                )
         artifacts = sections["artifacts"]
         if not isinstance(artifacts["output_dir"], str) or not artifacts["output_dir"].strip():
             raise ValueError("artifacts.output_dir must be a non-empty string")

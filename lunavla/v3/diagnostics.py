@@ -23,7 +23,7 @@ _PROMPT_OPERATORS = {
 _SUPPORTED_OPERATORS = {
     "prompt": _PROMPT_OPERATORS,
     "state": _ROUTES,
-    "image": {"control"},
+    "image": {"control", "shuffle"},
     "data": {"control"},
     "execution": {"receding_horizon"},
 }
@@ -73,6 +73,22 @@ def _json_value(value: object, name: str) -> Any:
         raise ValueError(f"{name} must contain finite JSON values") from exc
 
 
+def _freeze_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({str(key): _freeze_json(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze_json(item) for item in value)
+    return copy.deepcopy(value)
+
+
+def _thaw_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _thaw_json(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_json(item) for item in value]
+    return copy.deepcopy(value)
+
+
 def _stable_hash(value: Mapping[str, Any]) -> str:
     encoded = json.dumps(
         value,
@@ -86,7 +102,7 @@ def _stable_hash(value: Mapping[str, Any]) -> str:
 
 def _relative_path(value: object, name: str) -> str:
     path = Path(_string(value, name))
-    if path.is_absolute() or ".." in path.parts:
+    if path.is_absolute() or ".." in path.parts or path == Path("."):
         raise ValueError(f"{name} must be a contained relative path")
     return path.as_posix()
 
@@ -108,7 +124,7 @@ def _render_prompt(
         state[name] = values
     fields: list[tuple[str, Any]] = [
         ("instruction", instruction),
-        ("public_slots", {key: public_slots[key] for key in sorted(public_slots)}),
+        ("public_slots", {key: _thaw_json(public_slots[key]) for key in sorted(public_slots)}),
         ("state", state),
         ("cameras", list(camera_order)),
         ("assistant_target", assistant_target),
@@ -172,7 +188,7 @@ class PromptSpecV1:
             layout_variant=self.layout_variant,
         )
         object.__setattr__(self, "raw_instruction", instruction)
-        object.__setattr__(self, "public_slots", MappingProxyType(slots))
+        object.__setattr__(self, "public_slots", _freeze_json(slots))
         object.__setattr__(self, "state_values", MappingProxyType(state))
         object.__setattr__(self, "renderer_id", renderer_id)
         object.__setattr__(self, "renderer_version", renderer_version)
@@ -198,7 +214,7 @@ class PromptSpecV1:
         return {
             "schema_version": self.schema_version,
             "raw_instruction": self.raw_instruction,
-            "public_slots": dict(self.public_slots),
+            "public_slots": _thaw_json(self.public_slots),
             "state_values": {key: list(value) for key, value in self.state_values.items()},
             "renderer_id": self.renderer_id,
             "renderer_version": self.renderer_version,
@@ -303,7 +319,7 @@ class InterventionSpecV1:
         parameters = _json_value(dict(self.parameters), "intervention parameters")
         object.__setattr__(self, "arm_id", arm)
         object.__setattr__(self, "operator", operator)
-        object.__setattr__(self, "parameters", MappingProxyType(parameters))
+        object.__setattr__(self, "parameters", _freeze_json(parameters))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -312,7 +328,7 @@ class InterventionSpecV1:
             "kind": self.kind,
             "operator": self.operator,
             "phase": self.phase,
-            "parameters": dict(self.parameters),
+            "parameters": _thaw_json(self.parameters),
         }
 
     @classmethod
@@ -371,6 +387,122 @@ class FailureRecordV1:
 
 
 @dataclass(frozen=True)
+class DonorRecordV1:
+    recipient_id: str
+    donor_id: str
+    split: str
+    step_index: int | None
+    recipient_content_sha256: str
+    donor_content_sha256: str
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if isinstance(self.schema_version, bool) or self.schema_version != 1:
+            raise ValueError("DonorRecordV1 schema_version must be integer 1")
+        recipient = _string(self.recipient_id, "recipient_id")
+        donor = _string(self.donor_id, "donor_id")
+        if recipient == donor:
+            raise ValueError("donor cannot reference the recipient episode")
+        split = _string(self.split, "split")
+        if split not in {"train", "validation", "test", "evaluation"}:
+            raise ValueError("unsupported donor split")
+        step = self.step_index
+        if step is not None:
+            step = _integer(step, "step_index")
+        for name in ("recipient_content_sha256", "donor_content_sha256"):
+            value = getattr(self, name)
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(item not in "0123456789abcdef" for item in value)
+            ):
+                raise ValueError(f"{name} must be a lowercase SHA-256")
+        if self.recipient_content_sha256 == self.donor_content_sha256:
+            raise ValueError("donor content must differ from recipient content")
+        object.__setattr__(self, "recipient_id", recipient)
+        object.__setattr__(self, "donor_id", donor)
+        object.__setattr__(self, "split", split)
+        object.__setattr__(self, "step_index", step)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "recipient_id": self.recipient_id,
+            "donor_id": self.donor_id,
+            "split": self.split,
+            "step_index": self.step_index,
+            "recipient_content_sha256": self.recipient_content_sha256,
+            "donor_content_sha256": self.donor_content_sha256,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "DonorRecordV1":
+        return cls(
+            **_exact(
+                value,
+                {
+                    "schema_version", "recipient_id", "donor_id", "split", "step_index",
+                    "recipient_content_sha256", "donor_content_sha256",
+                },
+                "DonorRecordV1",
+            )
+        )
+
+
+@dataclass(frozen=True)
+class DonorBankV1:
+    modality: str
+    split: str
+    donor_seed: int
+    records: tuple[DonorRecordV1, ...]
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if isinstance(self.schema_version, bool) or self.schema_version != 1:
+            raise ValueError("DonorBankV1 schema_version must be integer 1")
+        if self.modality not in {"instruction", "image"}:
+            raise ValueError("donor modality must be instruction or image")
+        split = _string(self.split, "donor bank split")
+        records = tuple(self.records)
+        if not records or any(not isinstance(item, DonorRecordV1) for item in records):
+            raise ValueError("donor bank requires DonorRecordV1 records")
+        if any(item.split != split for item in records):
+            raise ValueError("donor records cannot cross splits")
+        keys = [(item.recipient_id, item.step_index) for item in records]
+        if len(keys) != len(set(keys)):
+            raise ValueError("donor bank contains duplicate recipient/step records")
+        if self.modality == "instruction" and any(item.step_index is not None for item in records):
+            raise ValueError("instruction donor records cannot declare step_index")
+        if self.modality == "image" and any(item.step_index is None for item in records):
+            raise ValueError("image donor records require step_index")
+        object.__setattr__(self, "split", split)
+        object.__setattr__(self, "donor_seed", _integer(self.donor_seed, "donor_seed"))
+        object.__setattr__(self, "records", records)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "modality": self.modality,
+            "split": self.split,
+            "donor_seed": self.donor_seed,
+            "records": [item.to_dict() for item in self.records],
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "DonorBankV1":
+        payload = _exact(
+            value,
+            {"schema_version", "modality", "split", "donor_seed", "records"},
+            "DonorBankV1",
+        )
+        payload["records"] = tuple(DonorRecordV1.from_mapping(item) for item in payload["records"])
+        return cls(**payload)
+
+    def sha256(self) -> str:
+        return _stable_hash(self.to_dict())
+
+
+@dataclass(frozen=True)
 class DiagnosticDesignV1:
     design_id: str
     base_config: str
@@ -378,7 +510,7 @@ class DiagnosticDesignV1:
     train_seeds: tuple[int, ...]
     evaluation_seeds: tuple[int, ...]
     routes: tuple[StateRouteSpecV1, ...]
-    prompt_arms: tuple[InterventionSpecV1, ...]
+    interventions: tuple[InterventionSpecV1, ...]
     donor_seed: int
     analysis_seed: int
     bootstrap_samples: int
@@ -399,19 +531,22 @@ class DiagnosticDesignV1:
         if not evaluation_seeds or len(evaluation_seeds) != len(set(evaluation_seeds)):
             raise ValueError("evaluation_seeds must be non-empty and unique")
         routes = tuple(self.routes)
-        arms = tuple(self.prompt_arms)
+        arms = tuple(self.interventions)
         if not routes or any(not isinstance(item, StateRouteSpecV1) for item in routes):
             raise ValueError("routes must contain StateRouteSpecV1 records")
         if len({item.mode for item in routes}) != len(routes):
             raise ValueError("diagnostic routes cannot contain duplicates")
         if not arms or any(not isinstance(item, InterventionSpecV1) for item in arms):
-            raise ValueError("prompt_arms must contain InterventionSpecV1 records")
-        if any(item.kind != "prompt" or item.phase != "rollout" for item in arms):
-            raise ValueError("Beta 1 prompt arms must be rollout prompt interventions")
+            raise ValueError("interventions must contain InterventionSpecV1 records")
+        if any(item.phase != "rollout" for item in arms):
+            raise ValueError("Beta 1 interventions must use rollout phase")
+        kinds = {item.kind for item in arms}
+        if len(kinds) != 1 or not kinds <= {"prompt", "image"}:
+            raise ValueError("a diagnostic design must contain one prompt or image suite")
         if len({item.arm_id for item in arms}) != len(arms):
-            raise ValueError("prompt arm IDs cannot contain duplicates")
+            raise ValueError("intervention arm IDs cannot contain duplicates")
         if "control" not in {item.operator for item in arms}:
-            raise ValueError("prompt_arms must include control")
+            raise ValueError("interventions must include control")
         counterfactual = self.counterfactual_transform_id
         if any(item.operator == "counterfactual" for item in arms):
             counterfactual = _string(counterfactual, "counterfactual_transform_id")
@@ -425,7 +560,7 @@ class DiagnosticDesignV1:
         object.__setattr__(self, "train_seeds", train_seeds)
         object.__setattr__(self, "evaluation_seeds", evaluation_seeds)
         object.__setattr__(self, "routes", routes)
-        object.__setattr__(self, "prompt_arms", arms)
+        object.__setattr__(self, "interventions", arms)
         object.__setattr__(self, "donor_seed", _integer(self.donor_seed, "donor_seed"))
         object.__setattr__(self, "analysis_seed", _integer(self.analysis_seed, "analysis_seed"))
         object.__setattr__(self, "bootstrap_samples", _integer(self.bootstrap_samples, "bootstrap_samples", positive=True))
@@ -440,7 +575,7 @@ class DiagnosticDesignV1:
             "train_seeds": list(self.train_seeds),
             "evaluation_seeds": list(self.evaluation_seeds),
             "routes": [item.to_dict() for item in self.routes],
-            "prompt_arms": [item.to_dict() for item in self.prompt_arms],
+            "interventions": [item.to_dict() for item in self.interventions],
             "donor_seed": self.donor_seed,
             "analysis_seed": self.analysis_seed,
             "bootstrap_samples": self.bootstrap_samples,
@@ -454,14 +589,14 @@ class DiagnosticDesignV1:
             value,
             {
                 "schema_version", "design_id", "base_config", "output_dir",
-                "train_seeds", "evaluation_seeds", "routes", "prompt_arms",
+                "train_seeds", "evaluation_seeds", "routes", "interventions",
                 "donor_seed", "analysis_seed", "bootstrap_samples",
                 "counterfactual_transform_id", "reduced_design",
             },
             "DiagnosticDesignV1",
         )
         payload["routes"] = tuple(StateRouteSpecV1.from_mapping(item) for item in payload["routes"])
-        payload["prompt_arms"] = tuple(InterventionSpecV1.from_mapping(item) for item in payload["prompt_arms"])
+        payload["interventions"] = tuple(InterventionSpecV1.from_mapping(item) for item in payload["interventions"])
         return cls(**payload)
 
     def sha256(self) -> str:
