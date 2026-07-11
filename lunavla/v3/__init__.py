@@ -3,7 +3,13 @@
 The v3 namespace is deliberately separate from the frozen top-level v2 API.
 """
 
-from .config import CONFIG_SCHEMA_VERSION, ExperimentConfig
+from .config import CONFIG_CONTRACT_REVISION, CONFIG_SCHEMA_VERSION, ExperimentConfig
+from .diagnostics import (
+    DiagnosticDesignV1,
+    InterventionSpecV1,
+    PromptSpecV1,
+    StateRouteSpecV1,
+)
 from .contracts import (
     DatasetSourceV3,
     EmbodimentSpec,
@@ -52,12 +58,14 @@ from .engine import EngineV3, run_alpha
 
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
+    "CONFIG_CONTRACT_REVISION",
     "ArtifactHashRecordV1",
     "CheckpointEnvelopeV4",
     "CheckpointEnvelopeV4R2",
     "DataAuditManifest",
     "DatasetBundle",
     "DatasetSourceV3",
+    "DiagnosticDesignV1",
     "EmbodimentSpec",
     "EngineV3",
     "EpisodeRecordV3",
@@ -67,6 +75,7 @@ __all__ = [
     "FeatureSpec",
     "FeatureNormalizationV1",
     "InMemoryDatasetSourceV3",
+    "InterventionSpecV1",
     "ObservationV3",
     "ModelSourceContractV1",
     "NormalizationStatsV1",
@@ -74,8 +83,10 @@ __all__ = [
     "PolicyRegistryV3",
     "PolicySampleV3",
     "PolicySpecV3",
+    "PromptSpecV1",
     "RunManifestV4",
     "RunManifestV4R2",
+    "StateRouteSpecV1",
     "TaskEnvV3",
     "TransitionV3",
     "TrainStepResultV3",

@@ -78,6 +78,7 @@ def migrate_v2_mapping(source: Mapping[str, Any]) -> dict[str, Any]:
         evaluation_seeds = list(range(evaluation_seed, evaluation_seed + evaluation_episodes))
     migrated: dict[str, Any] = {
         "schema_version": 3,
+        "contract_revision": 2,
         "project_name": v2.project_name,
         "engine": "lunavla_v3",
         "policy": {
@@ -115,6 +116,19 @@ def migrate_v2_mapping(source: Mapping[str, Any]) -> dict[str, Any]:
             "max_steps": int(v2.task.get("max_steps", 40)),
         },
         "diagnostics": {"enabled": False},
+        "prompt": {
+            "enabled": False,
+            "renderer_id": "lunavla.canonical_json",
+            "renderer_version": 1,
+            "assistant_target": "action_chunk",
+            "neutral_token": "[MASKED]",
+            "camera_order": list(camera_mapping.values()),
+            "public_slots": {},
+        },
+        "routing": {
+            "mode": "expert_only",
+            "state_features": ["state.proprioception"],
+        },
         "artifacts": {
             "output_dir": artifacts["output_dir"],
             "checkpoint_name": artifacts.get("checkpoint_name", "checkpoint.json"),
