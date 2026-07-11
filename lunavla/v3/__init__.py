@@ -6,6 +6,8 @@ The v3 namespace is deliberately separate from the frozen top-level v2 API.
 from .config import CONFIG_CONTRACT_REVISION, CONFIG_SCHEMA_VERSION, ExperimentConfig
 from .diagnostics import (
     DiagnosticDesignV1,
+    DonorBankV1,
+    DonorRecordV1,
     FailureRecordV1,
     InterventionSpecV1,
     PromptSpecV1,
@@ -93,6 +95,8 @@ __all__ = [
     "DatasetSourceV3",
     "DiagnosticDesignV1",
     "DiagnosticRouterV1",
+    "DonorBankV1",
+    "DonorRecordV1",
     "EmbodimentSpec",
     "EvidenceManifestV2",
     "EngineV3",

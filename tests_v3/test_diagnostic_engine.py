@@ -82,7 +82,10 @@ def test_diagnostic_engine_trains_and_evaluates_sanitized_views() -> None:
     assert len(losses) == config.training["steps"]
     assert engine.diagnostic_router is not None
     metrics = engine.evaluate(
-        policy, FakePointEnvV3("fake_libero", config.evaluation["max_steps"])
+        policy,
+        FakePointEnvV3(
+            "fake_libero", config.evaluation["max_steps"], "region_instruction_v1"
+        ),
     )
     assert metrics["episodes"] == 2
 
@@ -95,6 +98,7 @@ def test_act_v3_uses_the_same_diagnostic_route_and_renderer() -> None:
     payload["evaluation"]["episodes"] = 1
     payload["evaluation"]["seeds"] = [1000]
     payload["diagnostics"]["enabled"] = True
+    payload["dataset"]["parameters"]["instruction_variant"] = "region_instruction_v1"
     payload["prompt"] = {
         "enabled": True,
         "renderer_id": "lunavla.canonical_json",
@@ -119,5 +123,7 @@ def test_act_v3_uses_the_same_diagnostic_route_and_renderer() -> None:
     )
     assert tuple(routed.observation.images) == ("camera.primary",)
     assert routed.observation.instruction == routed.prompt_spec.rendered_text
-    metrics = engine.evaluate(policy, FakePointEnvV3("fake_libero", 2))
+    metrics = engine.evaluate(
+        policy, FakePointEnvV3("fake_libero", 2, "region_instruction_v1")
+    )
     assert metrics["episodes"] == 1

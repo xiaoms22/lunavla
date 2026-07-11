@@ -23,7 +23,12 @@ from .artifacts import (
 )
 from .config import ExperimentConfig
 from .diagnostic_engine import DiagnosticRouterV1, RoutedObservationV1, typed_episode_key
-from .diagnostics import DiagnosticDesignV1, StateRouteSpecV1
+from .diagnostics import (
+    DiagnosticDesignV1,
+    DonorBankV1,
+    DonorRecordV1,
+    StateRouteSpecV1,
+)
 from .engine import EngineV3, _execute_alpha
 from .fake_tasks import FakePointEnvV3
 from .normalization import NormalizationStatsV1
@@ -83,12 +88,15 @@ def _resolve_base_config(design_path: Path, design: DiagnosticDesignV1) -> Path:
     raise FileNotFoundError(f"diagnostic base config does not exist: {design.base_config}")
 
 
-def _donor_bank(
-    config: ExperimentConfig, seeds: Sequence[int], *, donor_seed: int
-) -> dict[str, Any]:
+def _instruction_entries(
+    config: ExperimentConfig, seeds: Sequence[int]
+) -> list[tuple[str, str]]:
     entries: list[tuple[str, str]] = []
+    variant = str(config.dataset["parameters"].get("instruction_variant", "constant_v1"))
     for seed in seeds:
-        env = FakePointEnvV3(str(config.task["id"]), int(config.evaluation["max_steps"]))
+        env = FakePointEnvV3(
+            str(config.task["id"]), int(config.evaluation["max_steps"]), variant
+        )
         try:
             observation = env.reset(seed=seed)
         finally:
@@ -96,29 +104,100 @@ def _donor_bank(
         if observation.instruction is None:
             raise ValueError("shuffle donor bank requires instruction-bearing observations")
         entries.append((typed_episode_key(observation.episode_id), observation.instruction))
+    return entries
+
+
+def _derangement(
+    entries: Sequence[tuple[str, str]], *, donor_seed: int
+) -> dict[str, tuple[str, str]]:
     if len(entries) < 2:
         raise ValueError("shuffle donor bank requires at least two evaluation episodes")
     rng = np.random.default_rng(donor_seed)
-    shift = int(rng.integers(1, len(entries)))
-    records = []
-    for index, (recipient, _) in enumerate(entries):
-        donor_key, donor_instruction = entries[(index + shift) % len(entries)]
-        records.append(
-            {
-                "recipient": recipient,
-                "donor": donor_key,
-                "instruction": donor_instruction,
-                "split": "evaluation",
+    indices = np.arange(len(entries))
+    for _ in range(100):
+        candidate = rng.permutation(indices)
+        if all(
+            int(candidate[index]) != index
+            and entries[int(candidate[index])][1] != entries[index][1]
+            for index in range(len(entries))
+        ):
+            return {
+                entries[index][0]: entries[int(candidate[index])]
+                for index in range(len(entries))
             }
+    raise ValueError("donor bank cannot form a content-distinct derangement")
+
+
+def _instruction_donor_bank(
+    config: ExperimentConfig, seeds: Sequence[int], *, donor_seed: int
+) -> tuple[DonorBankV1, dict[str, tuple[str, str]]]:
+    entries = _instruction_entries(config, seeds)
+    mapping = _derangement(entries, donor_seed=donor_seed)
+    records = tuple(
+        DonorRecordV1(
+            recipient,
+            donor,
+            "evaluation",
+            None,
+            hashlib.sha256(instruction.encode("utf-8")).hexdigest(),
+            hashlib.sha256(donor_instruction.encode("utf-8")).hexdigest(),
         )
-    return {"schema_version": 1, "donor_seed": donor_seed, "records": records}
+        for recipient, instruction in entries
+        for donor, donor_instruction in (mapping[recipient],)
+    )
+    return DonorBankV1("instruction", "evaluation", donor_seed, records), mapping
 
 
-def _donor_mapping(bank: Mapping[str, Any]) -> dict[str, tuple[str, str]]:
-    return {
-        str(item["recipient"]): (str(item["donor"]), str(item["instruction"]))
-        for item in bank["records"]
-    }
+def _image_donor_bank(
+    config: ExperimentConfig,
+    seeds: Sequence[int],
+    instruction_mapping: Mapping[str, tuple[str, str]],
+    *,
+    donor_seed: int,
+) -> tuple[
+    DonorBankV1,
+    dict[tuple[str, int], tuple[str, Mapping[str, np.ndarray[Any, Any]]]],
+]:
+    cameras = tuple(config.prompt["camera_order"])
+    if not cameras:
+        cameras = tuple(item.name for item in config.feature_schema.by_role("image"))
+    if not cameras:
+        raise ValueError("image donor bank requires image features")
+    variant = str(config.dataset["parameters"].get("instruction_variant", "constant_v1"))
+    trajectories: dict[str, list[Mapping[str, np.ndarray[Any, Any]]]] = {}
+    for seed in seeds:
+        env = FakePointEnvV3(
+            str(config.task["id"]), int(config.evaluation["max_steps"]), variant
+        )
+        try:
+            observation = env.reset(seed=seed)
+            key = typed_episode_key(observation.episode_id)
+            values: list[Mapping[str, np.ndarray[Any, Any]]] = []
+            for _ in range(int(config.evaluation["max_steps"])):
+                values.append({name: np.array(observation.images[name], copy=True) for name in cameras})
+                transition = env.step(np.zeros(2, dtype=np.float32))
+                observation = transition.next_observation
+            trajectories[key] = values
+        finally:
+            env.close()
+    runtime: dict[tuple[str, int], tuple[str, Mapping[str, np.ndarray[Any, Any]]]] = {}
+    records: list[DonorRecordV1] = []
+    for recipient, (donor, _) in instruction_mapping.items():
+        for step, recipient_images in enumerate(trajectories[recipient]):
+            donor_images = trajectories[donor][step]
+            recipient_hash = hashlib.sha256(
+                b"".join(np.asarray(recipient_images[name]).tobytes(order="C") for name in cameras)
+            ).hexdigest()
+            donor_hash = hashlib.sha256(
+                b"".join(np.asarray(donor_images[name]).tobytes(order="C") for name in cameras)
+            ).hexdigest()
+            records.append(
+                DonorRecordV1(
+                    recipient, donor, "evaluation", step, recipient_hash, donor_hash
+                )
+            )
+            runtime[(recipient, step)] = (donor, donor_images)
+    return DonorBankV1("image", "evaluation", donor_seed, tuple(records)), runtime
 
 
 @dataclass(frozen=True)
@@ -252,7 +331,11 @@ def _diagnostic_cell(
     config: ExperimentConfig,
     design: DiagnosticDesignV1,
     route: StateRouteSpecV1,
-    donor_bank: Mapping[str, Any],
+    donor_banks: Mapping[str, DonorBankV1],
+    donor_instructions: Mapping[str, tuple[str, str]],
+    donor_images: Mapping[
+        tuple[str, int], tuple[str, Mapping[str, np.ndarray[Any, Any]]]
+    ],
     output: Path,
 ) -> tuple[RunManifestV4R3, list[dict[str, Any]], list[dict[str, Any]]]:
     result = _execute_alpha(config, output)
@@ -267,7 +350,6 @@ def _diagnostic_cell(
     engine = EngineV3(config)
     engine.normalization = normalization
     policy = engine.restore_policy(output / "checkpoint")
-    donor_mapping = _donor_mapping(donor_bank)
     traces: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
     pairs = [
@@ -280,19 +362,28 @@ def _diagnostic_cell(
             "route": route.mode,
             "arm": arm.arm_id,
         }
-        for arm in design.prompt_arms
+        for arm in design.interventions
         for seed in design.evaluation_seeds
     ]
     pair_lookup = {
         (item["evaluation_seed"], item["arm"]): item["pair_id"] for item in pairs
     }
-    for arm in design.prompt_arms:
+    for arm in design.interventions:
         router = DiagnosticRouterV1(
             config,
             normalization,
             route=route,
             intervention=arm,
-            donor_instructions=donor_mapping if arm.operator == "shuffle" else None,
+            donor_instructions=(
+                donor_instructions
+                if arm.kind == "prompt" and arm.operator == "shuffle"
+                else None
+            ),
+            donor_images=(
+                donor_images
+                if arm.kind == "image" and arm.operator == "shuffle"
+                else None
+            ),
             counterfactual_transform_id=design.counterfactual_transform_id,
         )
         control_router = DiagnosticRouterV1(config, normalization, route=route)
@@ -341,7 +432,11 @@ def _diagnostic_cell(
 
         arm_metrics = engine.evaluate(
             policy,
-            FakePointEnvV3(str(config.task["id"]), int(config.evaluation["max_steps"])),
+            FakePointEnvV3(
+                str(config.task["id"]),
+                int(config.evaluation["max_steps"]),
+                str(config.dataset["parameters"].get("instruction_variant", "constant_v1")),
+            ),
             trace_callback=trace,
         )
         metrics.append({"route": route.mode, "arm": arm.arm_id, **arm_metrics})
@@ -365,9 +460,12 @@ def _diagnostic_cell(
     pair_path = _write_json(output / "pairs.json", {"schema_version": 1, "pairs": pairs})
     interventions_path = _write_json(
         output / "interventions.json",
-        {"schema_version": 1, "items": [item.to_dict() for item in design.prompt_arms]},
+        {"schema_version": 1, "items": [item.to_dict() for item in design.interventions]},
     )
-    donor_path = _write_json(output / "donor_bank.json", donor_bank)
+    donor_path = _write_json(
+        output / "donor_bank.json",
+        {name: bank.to_dict() for name, bank in sorted(donor_banks.items())},
+    )
     trace_path = _write_trace(output / "trace.jsonl", traces)
     consumption_path = _write_json(
         output / "input_consumption.json",
@@ -420,7 +518,16 @@ def _execute_diagnostic(
     base = ExperimentConfig.load(base_path)
     if base.contract_revision != 2 or not base.diagnostics["enabled"]:
         raise ValueError("diagnostic design requires an enabled revision 2 base config")
-    donor_bank = _donor_bank(base, design.evaluation_seeds, donor_seed=design.donor_seed)
+    instruction_bank, donor_instructions = _instruction_donor_bank(
+        base, design.evaluation_seeds, donor_seed=design.donor_seed
+    )
+    image_bank, donor_images = _image_donor_bank(
+        base,
+        design.evaluation_seeds,
+        donor_instructions,
+        donor_seed=design.donor_seed,
+    )
+    donor_banks = {"instruction": instruction_bank, "image": image_bank}
     output.mkdir(parents=True, exist_ok=False)
     _write_json(output / "resolved_design.json", design.to_dict())
     source_records: list[ArtifactHashRecordV1] = []
@@ -445,7 +552,9 @@ def _execute_diagnostic(
                 config=config,
                 design=design,
                 route=route,
-                donor_bank=donor_bank,
+                donor_banks=donor_banks,
+                donor_instructions=donor_instructions,
+                donor_images=donor_images,
                 output=cell,
             )
             source_manifests.append(manifest)
@@ -463,7 +572,7 @@ def _execute_diagnostic(
     expected = (
         len(design.train_seeds)
         * len(design.routes)
-        * len(design.prompt_arms)
+        * len(design.interventions)
         * len(design.evaluation_seeds)
     )
     matrix_complete = len(pair_ids) == expected and len(pair_ids) == len(set(pair_ids))
