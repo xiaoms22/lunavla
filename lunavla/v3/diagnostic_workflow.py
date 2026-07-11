@@ -22,11 +22,20 @@ from .artifacts import (
     verify_run_directory,
 )
 from .config import ExperimentConfig
-from .diagnostic_engine import DiagnosticRouterV1, RoutedObservationV1, typed_episode_key
+from .diagnostic_engine import (
+    DiagnosticExecutionError,
+    DiagnosticRouterV1,
+    RoutedObservationV1,
+    typed_episode_key,
+)
 from .diagnostics import (
+    DiagnosticTraceRowV1,
     DiagnosticDesignV1,
     DonorBankV1,
     DonorRecordV1,
+    FailureRecordV1,
+    PromptParityManifestV1,
+    PromptParityRecordV1,
     StateRouteSpecV1,
 )
 from .engine import EngineV3, _execute_alpha
@@ -326,6 +335,41 @@ def _write_trace(path: Path, rows: Sequence[Mapping[str, Any]]) -> Path:
     return path
 
 
+def _parity_manifest(
+    config: ExperimentConfig,
+    normalization: NormalizationStatsV1,
+    route: StateRouteSpecV1,
+    seeds: Sequence[int],
+) -> PromptParityManifestV1:
+    router = DiagnosticRouterV1(config, normalization, route=route)
+    variant = str(config.dataset["parameters"].get("instruction_variant", "constant_v1"))
+    records: list[PromptParityRecordV1] = []
+    for seed in seeds:
+        env = FakePointEnvV3(
+            str(config.task["id"]), int(config.evaluation["max_steps"]), variant
+        )
+        try:
+            observation = env.reset(seed=seed)
+        finally:
+            env.close()
+        sample_id = typed_episode_key(observation.episode_id)
+        for phase in ("train", "eval", "deploy"):
+            routed = router.route_observation(observation, phase=phase)
+            records.append(
+                PromptParityRecordV1(
+                    sample_id=sample_id,
+                    phase=phase,
+                    prompt_sha256=routed.prompt_spec.rendered_sha256,
+                    camera_order=tuple(config.prompt["camera_order"]),
+                    assistant_target=str(config.prompt["assistant_target"]),
+                    expert_state_keys=routed.expert_state_keys,
+                    prompt_state_keys=routed.prompt_state_keys,
+                    feature_schema_sha256=config.feature_schema.sha256(),
+                )
+            )
+    return PromptParityManifestV1(tuple(records))
+
+
 def _diagnostic_cell(
     *,
     config: ExperimentConfig,
@@ -347,6 +391,7 @@ def _diagnostic_cell(
     normalization = NormalizationStatsV1.from_mapping(
         json.loads((output / "normalization.json").read_text(encoding="utf-8"))
     )
+    parity = _parity_manifest(config, normalization, route, design.evaluation_seeds)
     engine = EngineV3(config)
     engine.normalization = normalization
     policy = engine.restore_policy(output / "checkpoint")
@@ -367,6 +412,11 @@ def _diagnostic_cell(
     ]
     pair_lookup = {
         (item["evaluation_seed"], item["arm"]): item["pair_id"] for item in pairs
+    }
+    donor_hashes = {
+        (bank.modality, item.recipient_id, item.step_index): item.donor_content_sha256
+        for bank in donor_banks.values()
+        for item in bank.records
     }
     for arm in design.interventions:
         router = DiagnosticRouterV1(
@@ -396,39 +446,63 @@ def _diagnostic_cell(
             transition: Any,
             step: int,
         ) -> None:
-            canonical = control_router.route_observation(transition.observation)
-            traces.append(
-                {
-                    "schema_version": 1,
-                    "pair_id": pair_lookup[(seed, arm.arm_id)],
-                    "train_seed": int(config.training["seed"]),
-                    "evaluation_seed": seed,
-                    "episode_id": typed_episode_key(transition.observation.episode_id),
-                    "route": route.mode,
-                    "arm": arm.arm_id,
-                    "step_id": step,
-                    "canonical_prompt_sha256": canonical.prompt_spec.rendered_sha256,
-                    "effective_prompt_sha256": routed.prompt_spec.rendered_sha256,
-                    "expert_state_keys": list(routed.expert_state_keys),
-                    "prompt_state_keys": list(routed.prompt_state_keys),
-                    "camera_order": list(config.prompt["camera_order"]),
-                    "donor_id": routed.donor_id,
-                    "transform_id": (
-                        design.counterfactual_transform_id
-                        if arm.operator == "counterfactual"
-                        else None
-                    ),
-                    "action_chunk_sha256": hashlib.sha256(
-                        np.asarray(action, dtype=np.float32).tobytes(order="C")
-                    ).hexdigest(),
-                    "reward": transition.reward,
-                    "terminated": transition.terminated,
-                    "truncated": transition.truncated,
-                    "success": bool(transition.info.get("success", False)),
-                    "failure_labels": [],
-                    "error_stage": None,
-                }
+            canonical = control_router.route_observation(
+                transition.observation, phase="eval"
             )
+            episode_id = typed_episode_key(transition.observation.episode_id)
+            donor_hash = (
+                donor_hashes.get(
+                    (
+                        arm.kind,
+                        episode_id,
+                        transition.observation.step_index if arm.kind == "image" else None,
+                    )
+                )
+                if routed.donor_id is not None
+                else None
+            )
+            failures = (
+                (
+                    FailureRecordV1(
+                        "execution", "timeout", "max_steps_v1", "automatic", None
+                    ),
+                )
+                if transition.truncated
+                else ()
+            )
+            row = DiagnosticTraceRowV1(
+                pair_id=str(pair_lookup[(seed, arm.arm_id)]),
+                train_seed=int(config.training["seed"]),
+                evaluation_seed=seed,
+                episode_id=episode_id,
+                route=route.mode,
+                arm=arm.arm_id,
+                intervention_kind=arm.kind,
+                step_id=step,
+                canonical_prompt_sha256=canonical.prompt_spec.rendered_sha256,
+                effective_prompt_sha256=routed.prompt_spec.rendered_sha256,
+                expert_state_keys=routed.expert_state_keys,
+                prompt_state_keys=routed.prompt_state_keys,
+                camera_order=tuple(config.prompt["camera_order"]),
+                donor_id=routed.donor_id,
+                donor_content_sha256=donor_hash,
+                transform_id=(
+                    design.counterfactual_transform_id
+                    if arm.operator == "counterfactual"
+                    else None
+                ),
+                action_chunk_sha256=hashlib.sha256(
+                    np.asarray(action, dtype=np.float32).tobytes(order="C")
+                ).hexdigest(),
+                reward=transition.reward,
+                terminated=transition.terminated,
+                truncated=transition.truncated,
+                success=bool(transition.info.get("success", False)),
+                failures=failures,
+                error_stage=None,
+                error_origin=None,
+            )
+            traces.append(row.to_dict())
 
         arm_metrics = engine.evaluate(
             policy,
@@ -466,6 +540,7 @@ def _diagnostic_cell(
         output / "donor_bank.json",
         {name: bank.to_dict() for name, bank in sorted(donor_banks.items())},
     )
+    parity_path = _write_json(output / "parity.json", parity.to_dict())
     trace_path = _write_trace(output / "trace.jsonl", traces)
     consumption_path = _write_json(
         output / "input_consumption.json",
@@ -500,10 +575,11 @@ def _diagnostic_cell(
         pair_set_sha256=sha256_file(pair_path),
         intervention_set_sha256=sha256_file(interventions_path),
         donor_bank_sha256=sha256_file(donor_path),
+        parity_manifest_sha256=sha256_file(parity_path),
         failure_trace_sha256=sha256_file(trace_path),
         input_consumption_sha256=sha256_file(consumption_path),
         camera_order=tuple(config.prompt["camera_order"]),
-        parity_verified=True,
+        parity_verified=parity.verified,
         complete=True,
     )
     manifest.save(output / "manifest.json")
@@ -656,6 +732,12 @@ def run_diagnostic(design_file: str | Path, *, overwrite: bool = False) -> Path:
                 "schema_version": 1,
                 "complete": False,
                 "error_type": type(exc).__name__,
+                "error_stage": (
+                    exc.stage if isinstance(exc, DiagnosticExecutionError) else None
+                ),
+                "error_origin": (
+                    exc.origin if isinstance(exc, DiagnosticExecutionError) else None
+                ),
             },
         )
         if staging.exists():

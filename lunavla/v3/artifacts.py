@@ -449,6 +449,7 @@ class RunManifestV4R3:
     pair_set_sha256: str
     intervention_set_sha256: str
     donor_bank_sha256: str
+    parity_manifest_sha256: str
     failure_trace_sha256: str
     input_consumption_sha256: str
     policy_id: str
@@ -494,7 +495,8 @@ class RunManifestV4R3:
             "normalization_sha256", "dependency_lock_sha256", "model_source_sha256",
             "runtime_sha256", "prompt_contract_sha256", "route_contract_sha256",
             "diagnostic_design_sha256", "pair_set_sha256", "intervention_set_sha256",
-            "donor_bank_sha256", "failure_trace_sha256", "input_consumption_sha256",
+            "donor_bank_sha256", "parity_manifest_sha256", "failure_trace_sha256",
+            "input_consumption_sha256",
         ):
             payload[name] = _sha256(payload[name], name)
         for name in ("policy_id", "task_id", "device"):
@@ -606,6 +608,7 @@ def verify_run_directory(path: str | Path) -> dict[str, Any]:
                     "pairs.json": manifest.pair_set_sha256,
                     "interventions.json": manifest.intervention_set_sha256,
                     "donor_bank.json": manifest.donor_bank_sha256,
+                    "parity.json": manifest.parity_manifest_sha256,
                     "trace.jsonl": manifest.failure_trace_sha256,
                     "input_consumption.json": manifest.input_consumption_sha256,
                 }
@@ -617,6 +620,14 @@ def verify_run_directory(path: str | Path) -> dict[str, Any]:
         actual = sha256_file(_contained_file(root, name))
         if actual != expected:
             raise ValueError(f"artifact hash mismatch: {name}")
+    if isinstance(manifest, RunManifestV4R3):
+        from .diagnostics import PromptParityManifestV1
+
+        parity = PromptParityManifestV1.from_mapping(
+            json.loads(_contained_file(root, "parity.json").read_text(encoding="utf-8"))
+        )
+        if manifest.parity_verified != parity.verified:
+            raise ValueError("manifest parity_verified does not match parity records")
     if sha256_file(envelope_path) != manifest.checkpoint_envelope_sha256:
         raise ValueError("artifact hash mismatch: checkpoint envelope")
     envelope = checkpoint_envelope_from_mapping(
