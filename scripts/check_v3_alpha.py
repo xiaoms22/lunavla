@@ -13,6 +13,9 @@ from lunavla.v3 import (
     FeatureSchema,
     FeatureSpec,
     ModelSourceContractV1,
+    Alpha2ReleaseCandidateV1,
+    GpuValidationManifestV1,
+    LicenseReviewV1,
     NormalizationStatsV1,
     ObservationV3,
     PolicyBatchV3,
@@ -28,6 +31,9 @@ CONTRACT = ROOT / "docs/v3/public_api_contract.json"
 LOCK_ALIAS = ROOT / "requirements-v3-core-cpu.lock"
 DIFFUSION_LOCK = ROOT / "requirements-v3-diffusion-cpu.lock"
 SMOLVLA_LOCK = ROOT / "requirements-v3-smolvla-cpu.lock"
+SMOLVLA_GPU_LOCK = ROOT / "requirements-v3-smolvla-gpu-cu128.lock"
+RELEASE_LOCK = ROOT / "requirements-v3-release-cpu.lock"
+RELEASE_DISPATCHER = ROOT / ".github/workflows/v3-alpha2-release-dispatch.yml"
 PUBLIC_TYPES = {
     "FeatureSpec": FeatureSpec,
     "FeatureSchema": FeatureSchema,
@@ -37,6 +43,9 @@ PUBLIC_TYPES = {
     "EpisodeRecordV3": EpisodeRecordV3,
     "ExperimentConfig": ExperimentConfig,
     "ModelSourceContractV1": ModelSourceContractV1,
+    "LicenseReviewV1": LicenseReviewV1,
+    "GpuValidationManifestV1": GpuValidationManifestV1,
+    "Alpha2ReleaseCandidateV1": Alpha2ReleaseCandidateV1,
     "PolicySpecV3": PolicySpecV3,
     "PolicySampleV3": PolicySampleV3,
     "PolicyBatchV3": PolicyBatchV3,
@@ -97,6 +106,34 @@ def main() -> int:
         raise SystemExit(f"v3 SmolVLA CPU lock is stale; missing {missing}")
     if any(item in smolvla_lock for item in forbidden):
         raise SystemExit("v3 SmolVLA CPU lock contains an accelerator-only package")
+    gpu_lock = SMOLVLA_GPU_LOCK.read_text(encoding="utf-8").lower()
+    gpu_required = {
+        "accelerate==1.14.0",
+        "lerobot==0.6.0",
+        "torch==2.11.0+cu128",
+        "torchvision==0.26.0+cu128",
+        "transformers==5.5.4",
+        "nvidia-cuda-runtime-cu12==12.8.90",
+        "triton==3.6.0",
+    }
+    missing = sorted(item for item in gpu_required if item not in gpu_lock)
+    if missing:
+        raise SystemExit(f"v3 SmolVLA GPU lock is stale; missing {missing}")
+    release_lock = RELEASE_LOCK.read_text(encoding="utf-8").lower()
+    release_required = {
+        "build==1.5.1",
+        "cyclonedx-bom==7",
+        "torch==2.11.0+cpu",
+        "torchvision==0.26.0+cpu",
+        "twine==6.2.0",
+    }
+    missing = sorted(item for item in release_required if item not in release_lock)
+    if missing:
+        raise SystemExit(f"v3 release CPU lock is stale; missing {missing}")
+    if any(item in release_lock for item in forbidden):
+        raise SystemExit("v3 release CPU lock contains an accelerator-only package")
+    if "workflow_dispatch:" not in RELEASE_DISPATCHER.read_text(encoding="utf-8"):
+        raise SystemExit("v3 Alpha 2 release dispatcher is missing its manual entrypoint")
     print("v3 alpha contracts, configs, and CPU lock are valid")
     return 0
 
