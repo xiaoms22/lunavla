@@ -54,7 +54,7 @@ ENV_ID: Final = PUSHT_ENV_ID
 ENV_OBS_TYPE: Final = PUSHT_OBS_TYPE
 ENV_SEED: Final = 202611
 ENV_STEPS: Final = 3
-EXPECTED_LUNAVLA_VERSION: Final = "2.0.0rc1"
+EXPECTED_LUNAVLA_VERSION: Final = "2.0.0"
 CLAIM_SCOPE: Final = (
     "This smoke verifies adapter connectivity only and does not establish "
     "PushT policy performance."

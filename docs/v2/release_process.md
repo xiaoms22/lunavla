@@ -61,12 +61,39 @@ release-side asset. The dispatcher provenance-attests the distributions, RC evid
 multi-path attestation action.
 The RC profile freezes interfaces; it does not rerun or reinterpret modality performance.
 
+## Stable post-merge profile
+
+The `stable` profile accepts only `source_ref=main`, requires its immutable SHA to equal the fetched
+`origin/main` tip, and requires source, installed metadata, and public API version `2.0.0`. The
+dispatcher first runs the pinned real LeRobot integration in a separate CPU job at that same SHA.
+It attests the strict `integration_manifest.json`, then transfers both the manifest and GitHub
+attestation bundle to the evidence job. The release script cryptographically verifies the bundle
+with the exact repository, signer workflow, `refs/heads/main` source ref, source digest, and
+GitHub-hosted runner policy; the manifest/bundle/verification hashes and identities all enter the
+candidate.
+
+Language and visual studies are rerun from their exact canonical seeds, arms, budgets, and
+bootstrap settings. Execution-only designs redirect output to ignored
+`outputs/stable-release/...` and `results/v2/stable-release/...` paths. The registered
+`results/v2/language-alpha2` and `results/v2/visual-beta1` trees are hashed before and after the
+run and cannot be reused or overwritten. The stable matrix must contain exactly 15 training runs
+and 960 arm-episodes. Each current `EvidenceManifest` claim decision and permitted statement is
+copied verbatim into the stable candidate, whether its interval opens or closes the claim.
+
+The final `lunavla-v2-stable-evidence.tar.gz` combines both complete evidence trees, review
+snapshots, frozen contracts, integration provenance, distributions, environment, SBOM, and an
+internal file checksum manifest. `release-candidate.json` binds the archive, package version
+`2.0.0`, expected tag `v2.0.0`, integration identity, distributions, and claim decisions. A final
+`SHA256SUMS` must exactly cover every release-side file. The dispatcher provenance-attests the
+distributions, combined archive, candidate, environment lock snapshot, SBOM, and checksum manifest.
+
 ## Publishing boundary
 
 Evidence completion does not itself create a tag or release. A maintainer verifies the workflow
 and provenance URLs, confirms the package version/tag mapping, creates a GitHub-verified signed
 tag, uploads the exact checked assets to a draft prerelease, and only then publishes it. LunaVLA
-does not upload v2 artifacts to PyPI in this release train.
+does not upload v2 artifacts to PyPI in this release train. Stable remains CPU Linux authoritative;
+neither the release workflow nor candidate depends on a GPU.
 
 ## Beta integration gate
 
