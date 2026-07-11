@@ -15,7 +15,7 @@ from lunavla.registry import default_policy_registry
 from .artifacts import CheckpointEnvelopeV4, RunManifestV4, sha256_file
 from .config import ExperimentConfig
 from .contracts import EpisodeRecordV3, ObservationV3, TaskEnvV3
-from .data import DataAuditManifest, InMemoryDatasetSourceV3, audit_episodes, split_episode_ids
+from .data import DatasetBundle, InMemoryDatasetSourceV3, audit_episodes, split_episode_ids
 from .fake_tasks import FakePointEnvV3, make_fake_episodes
 
 
@@ -182,7 +182,7 @@ class EngineV3:
         }
 
 
-def dataset_for_config(config: ExperimentConfig) -> tuple[InMemoryDatasetSourceV3, DataAuditManifest]:
+def dataset_for_config(config: ExperimentConfig) -> DatasetBundle:
     if config.task["id"] not in {"fake_pusht", "fake_libero"}:
         raise ValueError("Alpha data source supports fake_pusht and fake_libero only")
     parameters = dict(config.dataset["parameters"])
@@ -192,10 +192,9 @@ def dataset_for_config(config: ExperimentConfig) -> tuple[InMemoryDatasetSourceV
         task_id=config.task["id"], seed=config.dataset["seed"],
         episode_count=episode_count, steps=steps,
     )
-    source = InMemoryDatasetSourceV3(episodes)
     split = split_episode_ids(episodes, seed=config.dataset["seed"])
     audit = audit_episodes(episodes, feature_schema=config.feature_schema, split=split)
-    return source, audit
+    return DatasetBundle(tuple(episodes), split, audit)
 
 
 def run_alpha(config: ExperimentConfig, *, overwrite: bool = False) -> AlphaRunResult:
@@ -209,9 +208,9 @@ def run_alpha(config: ExperimentConfig, *, overwrite: bool = False) -> AlphaRunR
             if child.is_file():
                 child.unlink()
     rollouts.mkdir(exist_ok=True)
-    source, audit = dataset_for_config(config)
+    bundle = dataset_for_config(config)
     engine = EngineV3(config)
-    policy, losses = engine.train(source)
+    policy, losses = engine.train(bundle.source("train"))
     config_path = _write_json(output / "resolved_config.json", config.to_dict())
     config_file_sha256 = sha256_file(config_path)
     checkpoint_name = config.artifacts["checkpoint_name"]
@@ -229,7 +228,7 @@ def run_alpha(config: ExperimentConfig, *, overwrite: bool = False) -> AlphaRunR
         restored_policy, FakePointEnvV3(task_id, config.evaluation["max_steps"])
     )
     metrics = {**metrics, "final_loss": losses[-1], "claim_allowed": False}
-    audit_path = audit.save(output / "data_audit.json")
+    audit_path = bundle.audit.save(output / "data_audit.json")
     metrics_path = _write_json(output / "metrics.json", metrics)
     git_sha, dirty = _git_identity()
     manifest = RunManifestV4(

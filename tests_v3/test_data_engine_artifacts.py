@@ -11,7 +11,7 @@ import pytest
 
 from lunavla.v3 import ExperimentConfig, audit_episodes, split_episode_ids, verify_run_directory
 from lunavla.v3.data import episode_sha256
-from lunavla.v3.engine import EngineV3, run_alpha
+from lunavla.v3.engine import EngineV3, dataset_for_config, run_alpha
 from lunavla.v3.fake_tasks import FakePointEnvV3, fake_feature_schema, make_fake_episodes
 
 
@@ -46,6 +46,52 @@ def test_episode_hash_covers_final_next_observation() -> None:
     changed_transition = replace(final, next_observation=changed_observation)
     changed_episode = replace(episode, transitions=(*episode.transitions[:-1], changed_transition))
     assert episode_sha256(episode) != episode_sha256(changed_episode)
+
+
+def test_episode_rejects_discontinuous_transition_chain() -> None:
+    episode = make_fake_episodes(task_id="fake_pusht", seed=42, episode_count=3, steps=2)[0]
+    second = episode.transitions[1]
+    state = {name: value.copy() for name, value in second.observation.state.items()}
+    next(iter(state.values()))[0] += 0.25
+    changed = replace(second.observation, state=state)
+    with pytest.raises(ValueError, match="previous next_observation"):
+        replace(episode, transitions=(episode.transitions[0], replace(second, observation=changed)))
+
+
+def test_data_audit_preserves_mixed_episode_id_types() -> None:
+    episodes = make_fake_episodes(task_id="fake_pusht", seed=42, episode_count=3, steps=2)
+
+    def with_id(episode: object, identifier: str | int) -> object:
+        value = episode
+        transitions = tuple(
+            replace(
+                item,
+                observation=replace(item.observation, episode_id=identifier),
+                next_observation=replace(item.next_observation, episode_id=identifier),
+            )
+            for item in value.transitions
+        )
+        return replace(value, episode_id=identifier, transitions=transitions)
+
+    mixed = (with_id(episodes[0], 1), with_id(episodes[1], "1"), episodes[2])
+    split = {"train": [1], "validation": ["1"], "test": [episodes[2].episode_id]}
+    audit = audit_episodes(mixed, feature_schema=fake_feature_schema("fake_pusht"), split=split)
+    assert len(audit.episode_hashes) == 3
+    assert [item.to_dict()["episode_id_type"] for item in audit.episode_hashes[:2]] == [
+        "integer",
+        "string",
+    ]
+
+
+def test_engine_trains_only_the_declared_train_split(tmp_path: Path) -> None:
+    config = ExperimentConfig.from_mapping(_mapping(tmp_path))
+    bundle = dataset_for_config(config)
+    assert len(bundle.episodes) == 6
+    assert len(bundle.select("train")) == 4
+    observations, _, _ = EngineV3._supervision(
+        bundle.source("train").load(), int(config.policy["parameters"]["chunk_size"])
+    )
+    assert len(observations) == 4 * 5
 
 
 def test_data_audit_rejects_split_overlap_and_schema_mismatch() -> None:
