@@ -47,6 +47,7 @@ release = [
 
 [project.scripts]
 lunavla-v2 = "lunavla.cli:main"
+lunavla-v3 = "lunavla.v3.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["dataset*", "lunavla*", "model*", "trainer*"]
@@ -54,7 +55,7 @@ exclude = ["tests*", "tests_v2*"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
-testpaths = ["tests", "tests_v2"]
+testpaths = ["tests", "tests_v2", "tests_v3"]
 pythonpath = ["."]
 markers = [
   "integration: end-to-end tests that invoke a CLI or train a policy",

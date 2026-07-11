@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "release_stage": "v3.0.0-alpha.1",
+  "contracts": {
+    "FeatureSpec": {
+      "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
+    },
+    "FeatureSchema": {
+      "signature": "(features: 'tuple[FeatureSpec, ...]', schema_version: 'int' = 1) -> None"
+    },
+    "EmbodimentSpec": {
+      "signature": "(embodiment_id: 'str', task_id: 'str', control_rate_hz: 'float | None', camera_mapping: 'Mapping[str, str]', state_mapping: 'Mapping[str, str]', action_mapping: 'Mapping[str, str]') -> None"
+    },
+    "ObservationV3": {
+      "signature": "(images: 'Mapping[str, Array]', state: 'Mapping[str, Array]', instruction: 'str | None', timestamp_s: 'float', episode_id: 'str | int', step_index: 'int', metadata: 'Mapping[str, Any]' = <factory>) -> None"
+    },
+    "TransitionV3": {
+      "signature": "(observation: 'ObservationV3', action: 'Array', reward: 'float', next_observation: 'ObservationV3', terminated: 'bool', truncated: 'bool', info: 'Mapping[str, Any]' = <factory>) -> None"
+    },
+    "EpisodeRecordV3": {
+      "signature": "(episode_id: 'str | int', transitions: 'tuple[TransitionV3, ...]', metadata: 'Mapping[str, Any]' = <factory>) -> None"
+    },
+    "ExperimentConfig": {
+      "signature": "(**_: 'Any') -> 'None'"
+    }
+  }
+}
