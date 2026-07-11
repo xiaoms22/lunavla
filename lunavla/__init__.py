@@ -1,4 +1,4 @@
-"""Frozen public contracts for the LunaVLA v2.0 release candidate."""
+"""Frozen public contracts for LunaVLA v2.0."""
 
 from dataset.vla_dataset import VLARecord
 from model.policy_base import ActionChunk
@@ -27,7 +27,7 @@ from .registry import PolicyRegistry, default_policy_registry
 from .temporal import TemporalEnsembler
 
 
-__version__ = "2.0.0rc1"
+__version__ = "2.0.0"
 
 __all__ = [
     "ActionChunk",

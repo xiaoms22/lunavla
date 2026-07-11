@@ -2,6 +2,21 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
+## v2.0.0 — 2026-07-11
+
+### Added
+
+- Added a fail-closed stable release profile that runs the complete language and visual matrices again on the protected `main` merge SHA, for exactly 15 training runs and 960 arm-episodes.
+- Added an isolated generated-results boundary so post-merge evidence cannot overwrite the registered Alpha/Beta snapshots under `results/v2/`.
+- Added a same-workflow real LeRobot integration gate whose strict manifest, SHA-256, GitHub provenance bundle, verified signer workflow, source ref, and source digest are bound into the stable candidate.
+- Added a combined evidence archive, release-wide checksum verification, stable SBOM/distribution bindings, and the exact `2.0.0` package-to-`v2.0.0` tag contract.
+
+### Boundaries
+
+- Stable evidence remains CPU Linux only, does not upload to PyPI, and does not require or claim GPU support.
+- Language and visual claims are copied from the new post-merge `EvidenceManifest` results and remain fail-closed; statistical failure to establish a modality contribution is reported rather than hidden.
+- The machine-readable API/schema descriptors still identify `v2.0.0-rc.1` as the point at which the stable public boundary was frozen.
+
 ## v2.0.0-rc.1 — 2026-07-11
 
 ### Added

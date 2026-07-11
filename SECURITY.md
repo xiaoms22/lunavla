@@ -7,9 +7,10 @@ maintained NumPy teaching line on `v1.x`. Historical tags and archived evidence
 snapshots remain available for reproducibility but are not separate maintenance
 branches.
 
-The `v2.0.0-rc.1` line on protected branch `v2` receives pre-release security
-fixes until v2.0.0 reaches `main`. Its CPU-only and non-robot support boundary
-does not change during the release-candidate period.
+The `v2.0.0` line on protected default branch `main` receives security fixes.
+Its supported evidence boundary is CPU Linux; experimental CUDA workflows are
+not a supported security boundary. The `v1.x` maintenance branch continues to
+receive NumPy teaching-core fixes.
 
 ## Reporting a vulnerability
 

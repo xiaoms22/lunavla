@@ -6,7 +6,7 @@ on:
       source_ref:
         description: Branch, tag, or commit in this repository to execute
         required: true
-        default: v2
+        default: main
         type: string
       expected_sha:
         description: Immutable 40-character lowercase commit SHA expected after checkout
@@ -34,8 +34,131 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  stable-integration:
+    name: stable-real-lerobot-integration
+    if: ${{ inputs.profile == 'stable' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOURCE_REF: ${{ inputs.source_ref }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      PYGAME_HIDE_SUPPORT_PROMPT: "1"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Require the actual default-branch merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REF" = "main"
+          test "${{ github.event.repository.default_branch }}" = "main"
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify the immutable main tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
+          test "$(git rev-parse --verify refs/remotes/origin/main^{commit})" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the hashed Linux CPU integration profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v2-integration-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Verify authoritative integration CPU dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --no-sync python - <<'PY'
+          import importlib
+          import importlib.metadata as metadata
+
+          import numpy
+          import torch
+          import torchvision
+          from lunavla.lerobot_integration import EXPECTED_DEPENDENCY_VERSIONS
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          expected = dict(EXPECTED_DEPENDENCY_VERSIONS)
+          actual = {name: metadata.version(name) for name in expected}
+          assert actual == expected, (actual, expected)
+          assert numpy.__version__ == "2.2.6"
+          assert torch.__version__ == "2.11.0+cpu"
+          assert torch.version.cuda is None
+          assert not torch.cuda.is_available()
+          assert torchvision.__version__ == "0.26.0+cpu"
+          for module in ("av", "gym_pusht", "gymnasium", "lerobot", "pymunk"):
+              importlib.import_module(module)
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in metadata.distributions()
+              if dist.metadata["Name"]
+          }
+          forbidden = forbidden_cpu_packages(installed)
+          assert not forbidden, f"forbidden CPU packages installed: {sorted(forbidden)}"
+          PY
+      - name: Run and verify the pinned real integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          integration_dir="$RUNNER_TEMP/stable-integration"
+          cache_dir="$RUNNER_TEMP/stable-lerobot-cache"
+          manifest_path="$integration_dir/integration_manifest.json"
+          test ! -e "$integration_dir"
+          test ! -e "$cache_dir"
+          install -d -m 0700 "$integration_dir" "$cache_dir"
+          uv run --no-sync pytest tests_v2/test_lerobot_integration.py
+          uv run --no-sync python scripts/run_v2_lerobot_integration.py run \
+            --expected-git-sha "$EXPECTED_SHA" \
+            --cache-dir "$cache_dir" \
+            --output "$manifest_path"
+          uv run --no-sync python scripts/run_v2_lerobot_integration.py verify \
+            --expected-git-sha "$EXPECTED_SHA" \
+            "$manifest_path"
+      - name: Attest the exact integration manifest
+        id: attest-integration
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ runner.temp }}/stable-integration/integration_manifest.json
+      - name: Preserve the cryptographic bundle beside the manifest
+        env:
+          BUNDLE_PATH: ${{ steps.attest-integration.outputs.bundle-path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$BUNDLE_PATH"
+          cp -- "$BUNDLE_PATH" \
+            "$RUNNER_TEMP/stable-integration/integration-attestation-bundle.jsonl"
+          test "$(find "$RUNNER_TEMP/stable-integration" -type f | wc -l)" -eq 2
+      - name: Upload same-workflow integration inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: stable-integration-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/stable-integration/
+          if-no-files-found: error
+          retention-days: 30
+
   dispatch:
     name: v2-${{ inputs.profile }}-evidence
+    needs: stable-integration
+    if: >-
+      ${{ always() &&
+          (inputs.profile != 'stable' || needs.stable-integration.result == 'success') }}
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
@@ -51,6 +174,10 @@ jobs:
           [[ -n "$SOURCE_REF" && "$SOURCE_REF" != -* && "$SOURCE_REF" != *$'\n'* ]]
           [[ "$SOURCE_REF" != refs/pull/* ]]
           [[ "$PROFILE" =~ ^(alpha|language|vision|rc|stable)$ ]]
+          if [[ "$PROFILE" = "stable" ]]; then
+            test "$SOURCE_REF" = "main"
+            test "${{ github.event.repository.default_branch }}" = "main"
+          fi
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.source_ref }}
@@ -63,25 +190,71 @@ jobs:
           test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
           test -f scripts/run_v2_release_profile.py
+          if [[ "$PROFILE" = "stable" ]]; then
+            test "$(git rev-parse --verify refs/remotes/origin/main^{commit})" = "$EXPECTED_SHA"
+          fi
+      - name: Download same-workflow integration inputs
+        if: ${{ inputs.profile == 'stable' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: stable-integration-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/stable-integration-inputs
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install the hashed Linux CPU release profile
         shell: bash
         run: |
+          set -euo pipefail
           python -m pip install --upgrade pip "uv==0.11.26"
           uv venv --python 3.12
           uv pip sync requirements-v2-release-cpu.lock \
             --require-hashes --strict --only-binary :all: --torch-backend cpu
-          uv pip install --no-deps -e .
+          uv pip install --no-deps --no-build-isolation --editable .
           uv pip check
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Verify authoritative release CPU dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata as metadata
+
+          import numpy
+          import torch
+          import torchvision
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          assert numpy.__version__ == "2.2.6"
+          assert torch.__version__ == "2.11.0+cpu"
+          assert torch.version.cuda is None
+          assert not torch.cuda.is_available()
+          assert torchvision.__version__ == "0.26.0+cpu"
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in metadata.distributions()
+              if dist.metadata["Name"]
+          }
+          forbidden = forbidden_cpu_packages(installed)
+          assert not forbidden, f"forbidden CPU packages installed: {sorted(forbidden)}"
+          PY
       - name: Build and verify release evidence
         shell: bash
-        run: >-
-          python scripts/run_v2_release_profile.py
-          --profile "$PROFILE"
-          --expected-sha "$EXPECTED_SHA"
+        run: |
+          set -euo pipefail
+          if [[ "$PROFILE" = "stable" ]]; then
+            python scripts/run_v2_release_profile.py \
+              --profile "$PROFILE" \
+              --expected-sha "$EXPECTED_SHA" \
+              --integration-manifest \
+                "$RUNNER_TEMP/stable-integration-inputs/integration_manifest.json" \
+              --integration-attestation-bundle \
+                "$RUNNER_TEMP/stable-integration-inputs/integration-attestation-bundle.jsonl"
+          else
+            python scripts/run_v2_release_profile.py \
+              --profile "$PROFILE" \
+              --expected-sha "$EXPECTED_SHA"
+          fi
       - name: Attest release distributions and evidence bundle
         uses: actions/attest-build-provenance@v2
         with:
@@ -89,16 +262,25 @@ jobs:
           subject-path: |
             release-assets/dist/*
             release-assets/lunavla-v2-*-evidence.tar.gz
-            release-assets/SHA256SUMS
-            release-assets/sbom.json
             release-assets/release-candidate.json
+            release-assets/sbom.json
             release-assets/environment-requirements.txt
-      - name: Upload release candidate
+            release-assets/SHA256SUMS
+      - name: Upload non-stable release candidate
+        if: ${{ inputs.profile != 'stable' }}
         uses: actions/upload-artifact@v4
         with:
           name: lunavla-v2-${{ inputs.profile }}-${{ inputs.expected_sha }}
           path: |
             release-assets/
             outputs/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload stable release candidate
+        if: ${{ inputs.profile == 'stable' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lunavla-v2-stable-${{ inputs.expected_sha }}
+          path: release-assets/
           if-no-files-found: error
           retention-days: 30
