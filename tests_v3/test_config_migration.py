@@ -45,6 +45,7 @@ def test_v2_migration_preserves_semantics_and_is_stable() -> None:
     assert v3.feature_schema.by_role("state")[0].shape == (4,)
     assert v3.feature_schema.by_role("action")[0].shape == (2,)
     assert v3.embodiment["control_rate_hz"] is None
+    assert v3.policy["parameters"]["compat_read_only"] is True
 
 
 @pytest.mark.parametrize("version", [True, 2.0, "2"])
@@ -110,4 +111,34 @@ def test_unknown_nested_parameters_fail() -> None:
         "parameters": {"typo": 1},
     }
     with pytest.raises(ValueError, match="dataset.parameters.*typo"):
+        ExperimentConfig.from_mapping(payload)
+
+
+def test_runnable_task_dataset_and_policy_combinations_fail_fast() -> None:
+    payload = ExperimentConfig.load("configs/v3/fake_pusht_alpha.yaml").to_dict()
+    payload["dataset"]["type"] = "fake_libero"
+    with pytest.raises(ValueError, match="task.id and dataset.type must match"):
+        ExperimentConfig.from_mapping(payload)
+    payload = ExperimentConfig.load("configs/v3/fake_pusht_alpha.yaml").to_dict()
+    payload["policy"] = {
+        "type": "transformer_chunk_cvae",
+        "parameters": {
+            "state_dim": 4,
+            "instruction_dim": 0,
+            "action_dim": 2,
+            "chunk_size": 4,
+        },
+    }
+    with pytest.raises(ValueError, match="migration-only"):
+        ExperimentConfig.from_mapping(payload)
+
+
+@pytest.mark.parametrize(
+    "checkpoint_name",
+    ["../escape.json", "/tmp/escape.json", "nested/policy.json", "checkpoint.v3.json", "manifest.json"],
+)
+def test_checkpoint_name_is_a_contained_non_reserved_basename(checkpoint_name: str) -> None:
+    payload = ExperimentConfig.load("configs/v3/fake_pusht_alpha.yaml").to_dict()
+    payload["artifacts"]["checkpoint_name"] = checkpoint_name
+    with pytest.raises(ValueError, match="checkpoint_name"):
         ExperimentConfig.from_mapping(payload)

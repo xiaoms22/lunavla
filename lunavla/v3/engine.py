@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -197,16 +199,9 @@ def dataset_for_config(config: ExperimentConfig) -> DatasetBundle:
     return DatasetBundle(tuple(episodes), split, audit)
 
 
-def run_alpha(config: ExperimentConfig, *, overwrite: bool = False) -> AlphaRunResult:
-    output = Path(config.artifacts["output_dir"])
-    if output.exists() and any(output.iterdir()) and not overwrite:
-        raise FileExistsError(f"output directory already exists: {output}")
+def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
     output.mkdir(parents=True, exist_ok=True)
     rollouts = output / "rollouts"
-    if rollouts.exists():
-        for child in rollouts.iterdir():
-            if child.is_file():
-                child.unlink()
     rollouts.mkdir(exist_ok=True)
     bundle = dataset_for_config(config)
     engine = EngineV3(config)
@@ -247,3 +242,28 @@ def run_alpha(config: ExperimentConfig, *, overwrite: bool = False) -> AlphaRunR
     )
     manifest.save(output / "manifest.json")
     return AlphaRunResult(losses, metrics, output)
+
+
+def run_alpha(config: ExperimentConfig, *, overwrite: bool = False) -> AlphaRunResult:
+    output = Path(config.artifacts["output_dir"])
+    if output.exists() and not output.is_dir():
+        raise FileExistsError(f"output path is not a directory: {output}")
+    if output.exists() and any(output.iterdir()) and not overwrite:
+        raise FileExistsError(f"output directory already exists: {output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    staging = output.with_name(f".{output.name}.staging-{uuid.uuid4().hex}")
+    backup = output.with_name(f".{output.name}.previous-{uuid.uuid4().hex}")
+    try:
+        staged = _execute_alpha(config, staging)
+        if output.exists():
+            output.replace(backup)
+        staging.replace(output)
+        if backup.exists():
+            shutil.rmtree(backup)
+        return AlphaRunResult(staged.losses, staged.metrics, output)
+    except Exception:
+        if staging.exists():
+            shutil.rmtree(staging)
+        if backup.exists() and not output.exists():
+            backup.replace(output)
+        raise

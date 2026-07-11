@@ -39,6 +39,14 @@ _NUMPY_PARAMETER_FIELDS = {
     "state_dim", "instruction_dim", "action_dim", "chunk_size", "hidden_dim",
     "state_feature", "unused_modalities",
 }
+_RESERVED_ARTIFACT_NAMES = {
+    "checkpoint.v3.json",
+    "data_audit.json",
+    "manifest.json",
+    "metrics.json",
+    "resolved_config.json",
+    "rollouts",
+}
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
@@ -70,6 +78,23 @@ def _positive_float(value: Any, name: str) -> float:
     if not math.isfinite(result) or result <= 0:
         raise ValueError(f"{name} must be positive and finite")
     return result
+
+
+def _checkpoint_name(value: Any) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("artifacts.checkpoint_name must be a non-empty string")
+    name = value.strip()
+    if (
+        name in {".", ".."}
+        or Path(name).is_absolute()
+        or Path(name).name != name
+        or "/" in name
+        or "\\" in name
+    ):
+        raise ValueError("artifacts.checkpoint_name must be a relative basename")
+    if name in _RESERVED_ARTIFACT_NAMES:
+        raise ValueError(f"artifacts.checkpoint_name is reserved: {name}")
+    return name
 
 
 def _freeze(value: Any) -> Any:
@@ -137,7 +162,21 @@ class ExperimentConfig:
         if policy["type"] not in _POLICIES:
             raise ValueError(f"unsupported policy.type {policy['type']!r}")
         policy["parameters"] = _mapping(policy["parameters"], "policy.parameters")
-        if set(policy["parameters"]) != {"legacy"}:
+        if "legacy" in policy["parameters"]:
+            if set(policy["parameters"]) != {"legacy", "compat_read_only"}:
+                raise ValueError(
+                    "legacy policy.parameters requires exactly legacy and compat_read_only"
+                )
+            if policy["parameters"]["compat_read_only"] is not True:
+                raise ValueError("migrated legacy policies must be marked compat_read_only=true")
+            policy["parameters"]["legacy"] = _mapping(
+                policy["parameters"]["legacy"], "policy.parameters.legacy"
+            )
+        else:
+            if not policy["type"].startswith("numpy_"):
+                raise ValueError(
+                    f"policy.type {policy['type']!r} is migration-only in v3 Alpha 1"
+                )
             allowed_policy = _NUMPY_PARAMETER_FIELDS if policy["type"].startswith("numpy_") else set()
             _reject_unknown(policy["parameters"], allowed_policy, "policy.parameters")
             for name in ("state_dim", "instruction_dim", "action_dim", "chunk_size"):
@@ -193,6 +232,19 @@ class ExperimentConfig:
                     dataset["parameters"][name] = _integer(
                         dataset["parameters"][name], f"dataset.parameters.{name}", positive=True
                     )
+            if dataset["parameters"].get("episode_count", 6) < 3:
+                raise ValueError("fake datasets require at least three episodes")
+
+        task_id = task["id"]
+        dataset_type = dataset["type"]
+        if task_id in {"fake_pusht", "fake_libero"} and dataset_type != task_id:
+            raise ValueError("fake task.id and dataset.type must match")
+        if dataset_type in {"fake_pusht", "fake_libero"} and task_id != dataset_type:
+            raise ValueError("fake dataset.type and task.id must match")
+        if dataset_type == "v2_compat" and "legacy" not in policy["parameters"]:
+            raise ValueError("v2_compat datasets require a migrated compat_read_only policy")
+        if task_id in {"fake_pusht", "fake_libero"} and dataset["split"] != "train":
+            raise ValueError("runnable fake datasets require dataset.split=train")
 
         feature_schema = FeatureSchema.from_mapping(_mapping(root["features"], "features"))
         embodiment_section = sections["embodiment"]
@@ -236,9 +288,10 @@ class ExperimentConfig:
         if not isinstance(diagnostics["enabled"], bool):
             raise TypeError("diagnostics.enabled must be boolean")
         artifacts = sections["artifacts"]
-        for name in ("output_dir", "checkpoint_name"):
-            if not isinstance(artifacts[name], str) or not artifacts[name].strip():
-                raise ValueError(f"artifacts.{name} must be a non-empty string")
+        if not isinstance(artifacts["output_dir"], str) or not artifacts["output_dir"].strip():
+            raise ValueError("artifacts.output_dir must be a non-empty string")
+        artifacts["output_dir"] = artifacts["output_dir"].strip()
+        artifacts["checkpoint_name"] = _checkpoint_name(artifacts["checkpoint_name"])
 
         instance = object.__new__(cls)
         values = {
