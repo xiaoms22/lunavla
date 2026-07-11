@@ -1,0 +1,28 @@
+schema_version: 1
+design_id: fake-libero-act-image-ci
+base_config: configs/v3/diagnostic_act_image.yaml
+output_dir: outputs/v3/diagnostic-image-ci
+train_seeds: [11]
+evaluation_seeds: [1000, 1001]
+routes:
+  - schema_version: 1
+    mode: expert_only
+    state_features: [state.proprioception]
+interventions:
+  - schema_version: 1
+    arm_id: image_control
+    kind: image
+    operator: control
+    phase: rollout
+    parameters: {}
+  - schema_version: 1
+    arm_id: image_shuffle
+    kind: image
+    operator: shuffle
+    phase: rollout
+    parameters: {}
+donor_seed: 42
+analysis_seed: 202701
+bootstrap_samples: 100
+counterfactual_transform_id: null
+reduced_design: true

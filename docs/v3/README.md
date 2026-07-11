@@ -28,12 +28,16 @@ Implemented in the current draft:
   remain fail-closed in the separate v3.1 validation track.
 - config contract revision 2 with explicit prompt rendering and state routing while revision 1
   retains byte-stable resolved serialization;
-- canonical byte-hashed prompts, routes `none/expert_only/prompt_only/dual`, same-split donor banks,
-  and step-wise `control/mask/shuffle/counterfactual/layout_drift` prompt interventions;
+- canonical byte-hashed train/eval/deploy preprocessing, routes
+  `none/expert_only/prompt_only/dual`, typed same-split instruction/image donor banks, and step-wise
+  `control/mask/shuffle/counterfactual/layout_drift` prompt interventions;
 - schema-4 revision-3 diagnostic run manifests, EvidenceManifest v2, tamper verification, per-pair
   CSV, and a dependency-free static report;
 - `diagnostic-run`, `diagnostic-verify`, and `diagnostic-report` commands. The tracked CI design is
-  reduced and always records `claim_allowed=false`.
+  a reduced 40-pair NumPy route/prompt matrix plus a separate four-pair ACT image-shuffle smoke;
+  both always record `claim_allowed=false`.
+- four byte-reproducible 16×16 synthetic PNG fixtures with a hash manifest. Real-data thumbnails
+  remain prohibited.
 
 The fake LIBERO fixture tests data shape and lifecycle only. This branch does not download real
 LeRobot or LIBERO data, download or train SmolVLA weights, or establish language, image, state-route,

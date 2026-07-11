@@ -19,9 +19,10 @@
    license/GPU validation contracts move intact to the future v3.1 track.
 7. **Beta 1 — implemented in an unmerged Draft PR:** canonical prompt parity, declared state
    routes, same-split donors, step-wise paired interventions, five-layer failure records,
-   revision-3 run manifests, EvidenceManifest v2, and verified static reports. The reduced fixture
-   proves only framework integrity and cannot open a scientific claim. Integration targets the
-   protected `v3-next` branch after Alpha 3.
+   revision-3 run manifests, EvidenceManifest v2, and verified static reports. The CPU gate runs a
+   40-pair NumPy route/prompt matrix and an independent four-pair ACT image-shuffle smoke with
+   synthetic thumbnails. These reduced fixtures prove only framework integrity and cannot open a
+   scientific claim. Integration targets the protected `v3-next` branch after Alpha 3.
 8. **Beta 2 — staged Draft:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as
    a diagnostic subset rather than a full benchmark.
 9. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
