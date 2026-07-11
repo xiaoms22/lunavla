@@ -7,6 +7,12 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+from .checkpoint_contract import (
+    load_json_object,
+    safe_metadata,
+    validate_legacy_checkpoint,
+    validate_versioned_checkpoint,
+)
 from .losses import masked_mse, masked_mse_gradient
 from .minivla_policy import CHECKPOINT_FORMAT, CHECKPOINT_SCHEMA_VERSION
 from .policy_base import ActionChunk, MiniVLAPolicyBase, PolicyBatch, PolicySample
@@ -166,7 +172,7 @@ class NumpyBCMLPPolicy(MiniVLAPolicyBase):
                     "b2": self.b2.tolist(),
                 },
             },
-            "metadata": metadata,
+            "metadata": safe_metadata(metadata),
         }
 
     def save(self, path: str | Path, metadata: dict[str, Any]) -> None:
@@ -175,7 +181,12 @@ class NumpyBCMLPPolicy(MiniVLAPolicyBase):
             raise ValueError("new checkpoints must use the checkpoint.json format")
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(
-            json.dumps(self._checkpoint_payload(metadata), indent=2, sort_keys=True),
+            json.dumps(
+                self._checkpoint_payload(metadata),
+                indent=2,
+                sort_keys=True,
+                allow_nan=False,
+            ),
             encoding="utf-8",
         )
 
@@ -189,38 +200,40 @@ class NumpyBCMLPPolicy(MiniVLAPolicyBase):
 
     @classmethod
     def load(cls, path: str | Path) -> tuple["NumpyBCMLPPolicy", dict[str, Any]]:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        payload = load_json_object(path)
         if "schema_version" in payload:
-            if payload.get("schema_version") != CHECKPOINT_SCHEMA_VERSION:
-                raise ValueError(f"unsupported checkpoint schema_version: {payload.get('schema_version')}")
-            if payload.get("format") != CHECKPOINT_FORMAT:
-                raise ValueError(f"unsupported checkpoint format: {payload.get('format')}")
-            policy_payload = payload["policy"]
-            if policy_payload.get("type") != cls.policy_name:
-                raise ValueError(f"checkpoint contains policy type {policy_payload.get('type')!r}")
+            policy_payload, parameters, metadata = validate_versioned_checkpoint(
+                payload,
+                policy_name=cls.policy_name,
+            )
             policy = cls(
-                input_dim=int(policy_payload["input_dim"]),
-                action_dim=int(policy_payload["action_dim"]),
-                chunk_size=int(policy_payload["chunk_size"]),
-                hidden_dim=int(policy_payload["hidden_dim"]),
+                input_dim=policy_payload["input_dim"],
+                action_dim=policy_payload["action_dim"],
+                chunk_size=policy_payload["chunk_size"],
+                hidden_dim=policy_payload["hidden_dim"],
                 weights={
                     key: np.asarray(value, dtype=np.float32)
-                    for key, value in policy_payload["parameters"].items()
+                    for key, value in parameters.items()
                 },
             )
-            return policy, dict(payload.get("metadata", {}))
+            return policy, metadata
 
+        parameters, metadata = validate_legacy_checkpoint(
+            payload,
+            policy_name=cls.policy_name,
+            accepted_names=frozenset({cls.policy_name, "bc", "bc_mlp"}),
+        )
         policy = cls(
-            input_dim=int(payload["input_dim"]),
-            action_dim=int(payload["action_dim"]),
-            chunk_size=int(payload["chunk_size"]),
-            hidden_dim=int(payload["hidden_dim"]),
+            input_dim=payload["input_dim"],
+            action_dim=payload["action_dim"],
+            chunk_size=payload["chunk_size"],
+            hidden_dim=payload["hidden_dim"],
             weights={
                 key: np.asarray(value, dtype=np.float32)
-                for key, value in payload["weights"].items()
+                for key, value in parameters.items()
             },
         )
-        return policy, dict(payload.get("metadata", {}))
+        return policy, metadata
 
     @classmethod
     def from_pretrained(

@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "release_stage": "v2.0.0-rc.1",
+  "contracts": {
+    "ActionChunk": {
+      "kind": "dataclass",
+      "fields": ["values", "valid_mask"],
+      "signature": "(values: 'Float32Array', valid_mask: 'BoolArray') -> None"
+    },
+    "Observation": {
+      "kind": "dataclass",
+      "fields": ["state", "instruction", "image"],
+      "signature": "(state: 'Array', instruction: 'str | None' = None, image: 'Array | None' = None) -> None"
+    },
+    "Transition": {
+      "kind": "dataclass",
+      "fields": [
+        "observation",
+        "action",
+        "reward",
+        "next_observation",
+        "terminated",
+        "info"
+      ],
+      "signature": "(observation: 'Observation', action: 'Array', reward: 'float', next_observation: 'Observation', terminated: 'bool', info: 'Mapping[str, Any]' = <factory>) -> None"
+    },
+    "PolicyBatch": {
+      "kind": "dataclass",
+      "fields": ["observations", "targets", "valid_mask", "device"],
+      "signature": "(observations: 'tuple[Observation, ...]', targets: 'Array', valid_mask: 'Array', device: 'str' = 'cpu') -> None",
+      "members": {
+        "batch_size": {
+          "kind": "property",
+          "signature": "(self) -> 'int'"
+        }
+      }
+    },
+    "VLAPolicy": {
+      "kind": "protocol",
+      "signature": "(*args, **kwargs)",
+      "members": {
+        "policy_id": {
+          "kind": "property",
+          "signature": "(self) -> 'str'"
+        },
+        "device": {
+          "kind": "property",
+          "signature": "(self) -> 'str'"
+        },
+        "action_dim": {
+          "kind": "property",
+          "signature": "(self) -> 'int'"
+        },
+        "chunk_size": {
+          "kind": "property",
+          "signature": "(self) -> 'int'"
+        },
+        "train_batch": {
+          "kind": "method",
+          "signature": "(self, batch: 'PolicyBatch', *, learning_rate: 'float') -> 'float'"
+        },
+        "predict_chunk": {
+          "kind": "method",
+          "signature": "(self, observation: 'Observation') -> 'ActionChunk'"
+        },
+        "save_checkpoint": {
+          "kind": "method",
+          "signature": "(self, path: 'Path', *, metadata: 'Mapping[str, Any] | None' = None) -> 'Path'"
+        }
+      }
+    },
+    "TaskEnv": {
+      "kind": "protocol",
+      "signature": "(*args, **kwargs)",
+      "members": {
+        "reset": {
+          "kind": "method",
+          "signature": "(self, *, seed: 'int | None' = None) -> 'Observation'"
+        },
+        "step": {
+          "kind": "method",
+          "signature": "(self, action: 'Array') -> 'Transition'"
+        },
+        "close": {
+          "kind": "method",
+          "signature": "(self) -> 'None'"
+        }
+      }
+    },
+    "DatasetSource": {
+      "kind": "protocol",
+      "signature": "(*args, **kwargs)",
+      "members": {
+        "load": {
+          "kind": "method",
+          "signature": "(self) -> 'Sequence[Transition]'"
+        }
+      }
+    }
+  }
+}

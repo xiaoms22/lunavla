@@ -1,0 +1,35 @@
+{
+  "arms": {
+    "control": {
+      "mean_final_distance": 0.4385130852460861,
+      "mean_first_action_mse": 0.031215051227870088,
+      "mean_reward": -17.381146573151153,
+      "mean_steps": 40.0,
+      "success_rate": 0.0
+    },
+    "counterfactual": {
+      "mean_final_distance": 0.4557547513395548,
+      "mean_first_action_mse": 0.04990329249024702,
+      "mean_reward": -18.12694910230736,
+      "mean_steps": 40.0,
+      "success_rate": 0.0
+    },
+    "mask": {
+      "mean_final_distance": 0.34902678554256755,
+      "mean_first_action_mse": 0.01953376583211745,
+      "mean_reward": -13.907086294144392,
+      "mean_steps": 40.0,
+      "success_rate": 0.0
+    },
+    "shuffle": {
+      "mean_final_distance": 0.30115795508027077,
+      "mean_first_action_mse": 0.029188653666551545,
+      "mean_reward": -12.082427244012555,
+      "mean_steps": 40.0,
+      "success_rate": 0.0
+    }
+  },
+  "claim_allowed": false,
+  "final_loss": 0.001395424478687346,
+  "observational": false
+}

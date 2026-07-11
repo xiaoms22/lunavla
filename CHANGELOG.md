@@ -2,7 +2,50 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
-## Unreleased — v1.1.0
+## v2.0.0 — 2026-07-11
+
+### Added
+
+- Added a fail-closed stable release profile that runs the complete language and visual matrices again on the protected `main` merge SHA, for exactly 15 training runs and 960 arm-episodes.
+- Added an isolated generated-results boundary so post-merge evidence cannot overwrite the registered Alpha/Beta snapshots under `results/v2/`.
+- Added a same-workflow real LeRobot integration gate whose strict manifest, SHA-256, GitHub provenance bundle, verified signer workflow, source ref, and source digest are bound into the stable candidate.
+- Added a combined evidence archive, release-wide checksum verification, stable SBOM/distribution bindings, and the exact `2.0.0` package-to-`v2.0.0` tag contract.
+
+### Boundaries
+
+- Stable evidence remains CPU Linux only, does not upload to PyPI, and does not require or claim GPU support.
+- Language and visual claims are copied from the new post-merge `EvidenceManifest` results and remain fail-closed; statistical failure to establish a modality contribution is reported rather than hidden.
+- The machine-readable API/schema descriptors still identify `v2.0.0-rc.1` as the point at which the stable public boundary was frozen.
+
+## v2.0.0-rc.1 — 2026-07-11
+
+### Added
+
+- Added experimental `Observation`, `Transition`, `VLAPolicy`, `TaskEnv`, and `DatasetSource` contracts plus a shared policy registry and train/evaluation engine.
+- Added a v1 NumPy adapter and an optional PyTorch action-query chunk Transformer with CVAE/KL, padding masks, checkpoint round trips, and temporal ensembling.
+- Added instruction-dependent task fixtures with held-out paraphrases and mask/shuffle/counterfactual pair construction.
+- Added rendered direct-reach and waypoint-reach fixtures, state-only controls, image occlusion/shuffle pairing, and a lazy LeRobot adapter.
+- Added a strict schema-v2 configuration contract, v1.1-to-v2 migration command, versioned dependency lock, CPU gates, and an isolated manual GPU workflow.
+- Added hash-locked Linux CPU profiles, a guarded release-evidence entry point, and a real Transformer-through-Engine integration test.
+- Added five-seed controlled language and visual studies, hierarchical paired bootstrap reporting, immutable publication registries, and read-only verified review snapshots.
+- Added the pinned official LeRobot PushT episode adapter, full 161-frame decode validation, one bounded optimizer step, and a headless Gym PushT smoke.
+- Added frozen runtime, configuration, manifest, and checkpoint descriptors plus an RC release profile.
+
+### Hardened
+
+- Invalid task, modality-ablation, state-only, rendered-image, and Transformer head configurations now fail before training starts.
+- CPU CI rejects CUDA-only packages and verifies exact NumPy 2.2.6, PyTorch 2.11 CPU, and torchvision 0.26 dependencies.
+- Release candidates must come from a clean checkout at an explicitly supplied immutable Git SHA.
+- Public arrays, resolved configs, and manifests now have explicit deep ownership/immutability semantics; environments close exactly once.
+- Unknown nested parameters, malformed digests, unsafe metadata, non-finite values, boolean schema versions, and incompatible legacy checkpoints now fail closed.
+
+### Boundaries
+
+- The completed language and visual studies did not open their predeclared contribution gates; instruction-following and visual-control contribution remain not established.
+- The public runtime API, config schema 2, EvidenceDesign schema 1, RunManifest schema 3, Transformer checkpoint schema 3, and NumPy checkpoint schema 1 are frozen for the RC.
+- LeRobot integration establishes adapter connectivity only; it is not a PushT performance, real-robot, production, or CUDA-support claim.
+
+## v1.1.0 — 2026-07-10
 
 ### Changed
 

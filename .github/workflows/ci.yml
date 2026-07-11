@@ -30,9 +30,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
       - name: Ruff
-        run: ruff check .
+        run: |
+          ruff check .
+          ruff check scripts/run_v2_release_profile.py
       - name: Mypy
-        run: mypy dataset model trainer eval_vla.py
+        run: mypy dataset model trainer lunavla scripts/run_v2_release_profile.py eval_vla.py
       - name: Compile Python sources
         run: python -m compileall -q dataset model scripts trainer eval_vla.py
       - name: Validate configuration files

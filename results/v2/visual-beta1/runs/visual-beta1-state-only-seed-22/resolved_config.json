@@ -1,0 +1,86 @@
+{
+  "artifacts": {
+    "checkpoint_name": "checkpoint.pt",
+    "output_dir": "outputs/evidence/visual-beta1/runs/visual-beta1-state-only-seed-22"
+  },
+  "dataset": {
+    "episode_count": 64,
+    "parameters": {
+      "observation_mode": "vision_required",
+      "split_seed": 42,
+      "state_only": true
+    },
+    "seed": 42,
+    "split": "train",
+    "type": "memory"
+  },
+  "engine": "lunavla_v2",
+  "evaluation": {
+    "episodes": 24,
+    "execution_mode": "receding_horizon",
+    "image_ablation": "state_only",
+    "language_ablation": "none",
+    "parameters": {
+      "bootstrap_samples": 10000
+    },
+    "seed": 1000,
+    "seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009,
+      1010,
+      1011,
+      1012,
+      1013,
+      1014,
+      1015,
+      1016,
+      1017,
+      1018,
+      1019,
+      1020,
+      1021,
+      1022,
+      1023
+    ]
+  },
+  "policy": {
+    "action_dim": 2,
+    "chunk_size": 4,
+    "d_model": 64,
+    "device": "cpu",
+    "dropout": 0.0,
+    "image_shape": null,
+    "instruction_dim": 32,
+    "latent_dim": 16,
+    "nhead": 4,
+    "num_layers": 2,
+    "state_dim": 3,
+    "temporal_ensemble_decay": 0.25,
+    "type": "transformer_chunk_cvae"
+  },
+  "project_name": "visual-beta1-state-only-seed-22",
+  "schema_version": 2,
+  "task": {
+    "family": "all",
+    "id": "rendered_visual_point_reach",
+    "max_steps": 24,
+    "parameters": {},
+    "render_size": 32
+  },
+  "training": {
+    "batch_size": 32,
+    "device": "cpu",
+    "kl_weight": 0.01,
+    "learning_rate": 0.0003,
+    "seed": 22,
+    "steps": 1500
+  }
+}

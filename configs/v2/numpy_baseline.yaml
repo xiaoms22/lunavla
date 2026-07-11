@@ -1,0 +1,36 @@
+schema_version: 2
+project_name: lunavla-v2-numpy-baseline
+engine: lunavla_v2
+policy:
+  type: numpy_linear_chunk
+  state_dim: 4
+  instruction_dim: 0
+  action_dim: 2
+  chunk_size: 4
+  device: cpu
+task:
+  id: pusht_style_point_reach
+  family: point_reach
+  max_steps: 40
+  goal: [0.8, 0.2]
+dataset:
+  type: memory
+  split: train
+  seed: 42
+  episode_count: 32
+training:
+  device: cpu
+  seed: 42
+  batch_size: 32
+  steps: 100
+  learning_rate: 0.04
+  kl_weight: 0.0
+evaluation:
+  execution_mode: open_loop_chunk
+  episodes: 20
+  seed: 1000
+  language_ablation: none
+  image_ablation: none
+artifacts:
+  output_dir: outputs/v2/numpy-baseline
+  checkpoint_name: checkpoint.json
