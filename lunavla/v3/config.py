@@ -36,7 +36,7 @@ _SECTION_FIELDS = {
 }
 _POLICIES = {
     "numpy_linear_chunk", "numpy_bc_mlp", "transformer_chunk", "transformer_chunk_cvae",
-    "act", "act_v3", "diffusion_v3",
+    "act", "act_v3", "diffusion_v3", "lerobot_smolvla",
 }
 _TASKS = {"fake_pusht", "fake_libero", "pusht_style_point_reach", "language_conditioned_point_reach", "rendered_visual_point_reach", "lerobot_pusht"}
 _DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat"}
@@ -59,6 +59,12 @@ _DIFFUSION_PARAMETER_FIELDS = {
     "diffusion_step_embed_dim", "spatial_softmax_num_keypoints", "vision_backbone",
     "use_group_norm", "use_separate_rgb_encoder_per_camera", "pretrained_backbone_weights",
     "beta_schedule", "clip_sample", "clip_sample_range",
+}
+_SMOLVLA_PARAMETER_FIELDS = {
+    "state_feature", "camera_features", "chunk_size", "history", "horizon",
+    "execution_steps", "n_action_steps", "max_state_dim", "max_action_dim",
+    "repo_id", "revision", "file_hashes", "license_status", "pretrained_enabled",
+    "conformance_only",
 }
 _TRAINING_DEFAULTS: Mapping[str, Any] = {
     "optimizer": {"type": "sgd", "parameters": {}},
@@ -206,7 +212,7 @@ class ExperimentConfig:
         else:
             if not (
                 policy["type"].startswith("numpy_")
-                or policy["type"] in {"act_v3", "diffusion_v3"}
+                or policy["type"] in {"act_v3", "diffusion_v3", "lerobot_smolvla"}
             ):
                 raise ValueError(
                     f"policy.type {policy['type']!r} is migration-only in v3 Alpha 1"
@@ -216,6 +222,8 @@ class ExperimentConfig:
                 allowed_policy = _ACT_PARAMETER_FIELDS
             elif policy["type"] == "diffusion_v3":
                 allowed_policy = _DIFFUSION_PARAMETER_FIELDS
+            elif policy["type"] == "lerobot_smolvla":
+                allowed_policy = _SMOLVLA_PARAMETER_FIELDS
             _reject_unknown(policy["parameters"], allowed_policy, "policy.parameters")
             required_parameters: tuple[str, ...]
             if policy["type"].startswith("numpy_"):
@@ -226,12 +234,19 @@ class ExperimentConfig:
                     "num_encoder_layers", "num_decoder_layers", "dim_feedforward",
                     "latent_dim", "dropout", "kl_weight",
                 )
-            else:
+            elif policy["type"] == "diffusion_v3":
                 required_parameters = (
                     "state_feature", "camera_features", "chunk_size", "history", "horizon",
                     "execution_steps", "n_action_steps", "noise_scheduler_type",
                     "num_train_timesteps", "num_inference_steps", "prediction_type",
                     "do_mask_loss_for_padding", "noise_seed", "down_dims",
+                )
+            else:
+                required_parameters = (
+                    "state_feature", "camera_features", "chunk_size", "history", "horizon",
+                    "execution_steps", "n_action_steps", "max_state_dim", "max_action_dim",
+                    "repo_id", "revision", "file_hashes", "license_status",
+                    "pretrained_enabled", "conformance_only",
                 )
             for name in required_parameters:
                 if name not in policy["parameters"]:
@@ -395,6 +410,51 @@ class ExperimentConfig:
                     raise ValueError(
                         "diffusion_v3 must explicitly declare unused_modalities=[instruction]"
                     )
+            if policy["type"] == "lerobot_smolvla":
+                parameters = policy["parameters"]
+                cameras = parameters["camera_features"]
+                if isinstance(cameras, (str, bytes, Mapping)) or not isinstance(cameras, Sequence):
+                    raise TypeError("policy.parameters.camera_features must be a sequence")
+                camera_values = list(cameras)
+                if not camera_values or any(
+                    not isinstance(item, str) or not item for item in camera_values
+                ):
+                    raise ValueError("lerobot_smolvla requires non-empty camera feature names")
+                if len(camera_values) != len(set(camera_values)):
+                    raise ValueError("lerobot_smolvla camera_features cannot contain duplicates")
+                parameters["camera_features"] = camera_values
+                for name in ("n_action_steps", "max_state_dim", "max_action_dim"):
+                    parameters[name] = _integer(
+                        parameters[name], f"policy.parameters.{name}", positive=True
+                    )
+                if parameters["history"] != 1:
+                    raise ValueError("lerobot_smolvla Alpha 2 requires history=1")
+                if not (
+                    parameters["chunk_size"]
+                    == parameters["horizon"]
+                    == parameters["execution_steps"]
+                    == parameters["n_action_steps"]
+                ):
+                    raise ValueError("lerobot_smolvla chunk, horizon, and action steps must match")
+                fixed_strings = {
+                    "repo_id": "lerobot/smolvla_base",
+                    "revision": "d06fce6e38c25c04ac5a6319eefb9fae0e257cb2",
+                    "license_status": "unverified",
+                }
+                for name, expected in fixed_strings.items():
+                    if parameters[name] != expected:
+                        raise ValueError(f"lerobot_smolvla {name} must be pinned to {expected}")
+                hashes = _mapping(parameters["file_hashes"], "policy.parameters.file_hashes")
+                if hashes != {
+                    "model.safetensors":
+                    "7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb"
+                }:
+                    raise ValueError("lerobot_smolvla model.safetensors hash is not pinned")
+                parameters["file_hashes"] = hashes
+                if parameters["pretrained_enabled"] is not False:
+                    raise ValueError("unverified SmolVLA weights must remain disabled")
+                if parameters["conformance_only"] is not True:
+                    raise ValueError("lerobot_smolvla must remain conformance_only in Alpha 2")
             if policy["type"].startswith("numpy_"):
                 unused = policy["parameters"].get("unused_modalities", [])
                 if isinstance(unused, (str, bytes, Mapping)) or not isinstance(
@@ -500,6 +560,21 @@ class ExperimentConfig:
                     shape = camera_features[name].shape
                     if len(shape) != 3 or shape[-1] != 3:
                         raise ValueError("diffusion_v3 requires HWC RGB camera features")
+            if policy["type"] == "lerobot_smolvla":
+                camera_features = {item.name: item for item in feature_schema.by_role("image")}
+                configured = tuple(policy["parameters"]["camera_features"])
+                if configured != tuple(camera_features):
+                    raise ValueError(
+                        "lerobot_smolvla camera_features must exactly match FeatureSchema order"
+                    )
+                for name in configured:
+                    shape = camera_features[name].shape
+                    if len(shape) != 3 or shape[-1] != 3:
+                        raise ValueError("lerobot_smolvla requires HWC RGB camera features")
+                if state_features[state_feature_name].shape[0] > policy["parameters"]["max_state_dim"]:
+                    raise ValueError("SmolVLA state feature exceeds max_state_dim")
+                if action_features[0].shape[0] > policy["parameters"]["max_action_dim"]:
+                    raise ValueError("SmolVLA action feature exceeds max_action_dim")
 
         training = sections["training"]
         training["device"] = normalize_device(training["device"])
@@ -613,6 +688,18 @@ class ExperimentConfig:
             raise ValueError("diffusion_v3 Alpha 2 requires empty scheduler.parameters")
         if policy["type"] == "diffusion_v3" and training["precision"] != "float32":
             raise ValueError("diffusion_v3 Alpha 2 supports float32 precision only")
+        if policy["type"] == "lerobot_smolvla" and optimizer["type"] != "adamw":
+            raise ValueError("lerobot_smolvla conformance config requires optimizer.type=adamw")
+        if policy["type"] == "lerobot_smolvla" and optimizer["parameters"]:
+            raise ValueError("lerobot_smolvla conformance config requires empty optimizer parameters")
+        if policy["type"] == "lerobot_smolvla" and scheduler["type"] != "constant":
+            raise ValueError("lerobot_smolvla conformance config requires a constant scheduler")
+        if policy["type"] == "lerobot_smolvla" and scheduler["parameters"]:
+            raise ValueError("lerobot_smolvla conformance config requires empty scheduler parameters")
+        if policy["type"] == "lerobot_smolvla" and training["precision"] != "float32":
+            raise ValueError("lerobot_smolvla conformance config requires float32")
+        if policy["type"] == "lerobot_smolvla" and training["device"] != "cpu":
+            raise ValueError("lerobot_smolvla conformance config is CPU-only")
         if (
             policy["type"] == "act_v3"
             and policy["parameters"].get("temporal_ensemble_decay") is not None

@@ -10,8 +10,10 @@
    checkpoint resume through the unified Engine.
 4. **Alpha 2 LeRobot Diffusion — implemented in this branch:** public policy/processor APIs,
    DDIM scheduler, history and padding contracts, hash-locked CPU dependencies, and exact resume.
-5. **Alpha 2 SmolVLA — next sequential PR:** public-API conformance adapter with its pretrained
-   weight and optimizer gates closed until the model-weight license and a single GPU are verified.
+5. **Alpha 2 SmolVLA adapter — implemented in this branch:** dependency-injected public policy and
+   processor conformance, pinned upstream identity, and fail-closed pretrained/optimizer gates.
+   Actual weights, optimizer, resume, and inference remain blocked until the model-weight license
+   and a single GPU are verified.
 6. **Beta 1 — planned:** prompt rendering parity, declared state routes, paired interventions, and
    language/vision/state/action/execution failure reports.
 7. **Beta 2 — planned:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as

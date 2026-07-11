@@ -20,9 +20,12 @@ Implemented in this Alpha:
 - `diffusion_v3`, an adapter over the public LeRobot 0.6.0 Diffusion Policy and processor APIs,
   with train-only normalization, DDIM noise control, padding masks, `save_pretrained()` artifacts,
   exact CPU optimizer/RNG resume, and a hash-locked CPU dependency profile.
+- `lerobot_smolvla`, a dependency-injected public-API conformance adapter. Its fixed model revision
+  and 907 MB weight hash are recorded, but `license_status=unverified`, pretrained loading is
+  disabled, and no optimizer/resume claim is made.
 
 The fake LIBERO fixture tests data shape and lifecycle only. This branch does not download real
-LeRobot or LIBERO data, implement SmolVLA weights, or establish language, image, state-route,
+LeRobot or LIBERO data, download or train SmolVLA weights, or establish language, image, state-route,
 PushT, LIBERO, ACT, or Diffusion performance.
 
 - [Direction](v3_overview.md)

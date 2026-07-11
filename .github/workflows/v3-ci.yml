@@ -150,6 +150,57 @@ jobs:
           uv run --no-sync lunavla-v3 validate-config configs/v3/diffusion_fake_libero_cpu.yaml
           uv run --no-sync pytest tests_v3/test_diffusion_policy.py
 
+  smolvla-adapter:
+    name: v3-smolvla-adapter
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install hash-locked SmolVLA conformance environment
+        run: |
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v3-smolvla-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+      - name: Verify pinned public API dependencies and CPU-only runtime
+        run: |
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata as metadata
+
+          import accelerate
+          import numpy
+          import torch
+          import torchvision
+          import transformers
+
+          assert numpy.__version__ == "2.2.6"
+          assert torch.__version__ == "2.11.0+cpu"
+          assert torch.version.cuda is None
+          assert not torch.cuda.is_available()
+          assert torchvision.__version__ == "0.26.0+cpu"
+          assert metadata.version("lerobot") == "0.6.0"
+          assert transformers.__version__ == "5.5.4"
+          assert accelerate.__version__ == "1.14.0"
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in metadata.distributions()
+              if dist.metadata["Name"]
+          }
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          forbidden = forbidden_cpu_packages(installed)
+          assert not forbidden, f"CUDA/NCCL/Triton packages installed: {sorted(forbidden)}"
+          PY
+      - name: SmolVLA public API conformance and license gates
+        run: |
+          uv run --no-sync lunavla-v3 validate-config configs/v3/smolvla_conformance_cpu.yaml
+          uv run --no-sync pytest tests_v3/test_smolvla_adapter.py
+
   v2-compat:
     name: v3-v2-compat
     runs-on: ubuntu-latest

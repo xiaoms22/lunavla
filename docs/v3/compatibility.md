@@ -24,5 +24,12 @@
 - Diffusion checkpoints contain upstream `save_pretrained()` model and processor artifacts plus
   strict optimizer and RNG state. Scheduler, inference-step, normalization, processor, or lock
   drift fails restore or run verification.
+- `lerobot_smolvla` is an adapter-contract policy id, not a verified pretrained policy. The fixed
+  upstream revision and model hash are recorded, while the weight license remains `unverified` and
+  `pretrained_enabled=false`. Default registry creation, optimizer steps, and restore fail closed;
+  CI uses only dependency-injected implementations of the documented public methods.
+- the SmolVLA GPU workflow is manual-only and targets an existing self-hosted single-NVIDIA runner.
+  It checks public license evidence and the repository gate before any future weight access; with
+  the current config it intentionally refuses to proceed.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
   contracts.
