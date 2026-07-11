@@ -48,7 +48,7 @@ jobs:
             git check-ref-format --branch "$SOURCE_REF" >/dev/null
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref }}
           fetch-depth: 1
