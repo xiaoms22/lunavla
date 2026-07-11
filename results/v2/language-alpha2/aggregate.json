@@ -1,0 +1,164 @@
+{
+  "claims": [
+    {
+      "allowed": false,
+      "allowed_statement": "Controlled evidence supports instruction-following in the declared task suite.",
+      "checks": {
+        "control_success_advantage": false,
+        "controlled_full_design": true,
+        "counterfactual_distance_worse": true
+      },
+      "claim_id": "instruction_following",
+      "denied_statement": "Instruction-following has not yet been established.",
+      "failed_checks": [
+        "control_success_advantage"
+      ],
+      "statement": "Instruction-following has not yet been established."
+    }
+  ],
+  "statistics": [
+    {
+      "estimate": 0.03333333333333333,
+      "lower": 0.0130375510983506,
+      "method": "wilson",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "control",
+      "statistic_id": "control-success",
+      "train_seed_n": null,
+      "upper": 0.082580337559106
+    },
+    {
+      "estimate": 0.054395980481058356,
+      "lower": 0.014412878094784295,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 120,
+      "scope": "counterfactual:all",
+      "statistic_id": "counterfactual-all-final_distance",
+      "train_seed_n": 5,
+      "upper": 0.09099968553287906
+    },
+    {
+      "estimate": 0.018126155329324926,
+      "lower": 0.005793973598847515,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 120,
+      "scope": "counterfactual:all",
+      "statistic_id": "counterfactual-all-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.03113719441178545
+    },
+    {
+      "estimate": -0.03333333333333333,
+      "lower": -0.075,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "counterfactual:all",
+      "statistic_id": "counterfactual-all-success",
+      "train_seed_n": 5,
+      "upper": 0.0
+    },
+    {
+      "estimate": 0.0,
+      "lower": 0.0,
+      "method": "wilson",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "counterfactual",
+      "statistic_id": "counterfactual-success",
+      "train_seed_n": null,
+      "upper": 0.031019166418703486
+    },
+    {
+      "estimate": -0.08009172979121407,
+      "lower": -0.1404015663821095,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 120,
+      "scope": "mask:all",
+      "statistic_id": "mask-all-final_distance",
+      "train_seed_n": 5,
+      "upper": -0.01777170867232296
+    },
+    {
+      "estimate": -0.021173361944480953,
+      "lower": -0.029248636927125822,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 120,
+      "scope": "mask:all",
+      "statistic_id": "mask-all-first_action_mse",
+      "train_seed_n": 5,
+      "upper": -0.013701649364835856
+    },
+    {
+      "estimate": -0.03333333333333333,
+      "lower": -0.075,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "mask:all",
+      "statistic_id": "mask-all-success",
+      "train_seed_n": 5,
+      "upper": 0.0
+    },
+    {
+      "estimate": 0.0,
+      "lower": 0.0,
+      "method": "wilson",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "mask",
+      "statistic_id": "mask-success",
+      "train_seed_n": null,
+      "upper": 0.031019166418703486
+    },
+    {
+      "estimate": -0.09927067752578296,
+      "lower": -0.17594601550585745,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "final_distance",
+      "sample_n": 120,
+      "scope": "shuffle:all",
+      "statistic_id": "shuffle-all-final_distance",
+      "train_seed_n": 5,
+      "upper": -0.02387544347492322
+    },
+    {
+      "estimate": -0.004352047345885997,
+      "lower": -0.01676613160290496,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "first_action_mse",
+      "sample_n": 120,
+      "scope": "shuffle:all",
+      "statistic_id": "shuffle-all-first_action_mse",
+      "train_seed_n": 5,
+      "upper": 0.008142923076831416
+    },
+    {
+      "estimate": 0.1,
+      "lower": 0.025,
+      "method": "hierarchical_paired_bootstrap",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "shuffle:all",
+      "statistic_id": "shuffle-all-success",
+      "train_seed_n": 5,
+      "upper": 0.18333333333333332
+    },
+    {
+      "estimate": 0.13333333333333333,
+      "lower": 0.08376608962687311,
+      "method": "wilson",
+      "metric": "success_rate",
+      "sample_n": 120,
+      "scope": "shuffle",
+      "statistic_id": "shuffle-success",
+      "train_seed_n": null,
+      "upper": 0.20564796574684285
+    }
+  ]
+}

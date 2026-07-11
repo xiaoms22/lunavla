@@ -1,0 +1,68 @@
+{
+  "base_config_sha256": "2a91dc367235937903f1097279c224ba7b202f0303ca3feb679d505dc27b3acf",
+  "claim_allowed": false,
+  "design_id": "language-alpha2",
+  "design_sha256": "09b1b3bfbb2a9b05f6e3edeb753655588da558a166733e8e5570223e1daefd54",
+  "expected_arm_episodes": 480,
+  "expected_training_runs": 5,
+  "jobs": [
+    {
+      "arm_ids": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "run_id": "language-alpha2-seed-11",
+      "train_seed": 11,
+      "variant": "shared"
+    },
+    {
+      "arm_ids": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "run_id": "language-alpha2-seed-22",
+      "train_seed": 22,
+      "variant": "shared"
+    },
+    {
+      "arm_ids": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "run_id": "language-alpha2-seed-33",
+      "train_seed": 33,
+      "variant": "shared"
+    },
+    {
+      "arm_ids": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "run_id": "language-alpha2-seed-44",
+      "train_seed": 44,
+      "variant": "shared"
+    },
+    {
+      "arm_ids": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "run_id": "language-alpha2-seed-55",
+      "train_seed": 55,
+      "variant": "shared"
+    }
+  ],
+  "observational": false,
+  "reduced_design": false,
+  "reproducibility_run_id": "language-alpha2-seed-11"
+}

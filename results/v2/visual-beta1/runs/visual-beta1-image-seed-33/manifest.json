@@ -1,0 +1,1032 @@
+{
+  "arms": [
+    {
+      "id": "control",
+      "mode": "none",
+      "role": "control"
+    },
+    {
+      "id": "occlusion",
+      "mode": "occlusion",
+      "role": "intervention"
+    },
+    {
+      "id": "shuffle",
+      "mode": "shuffle",
+      "role": "intervention"
+    }
+  ],
+  "artifact_sha256": {
+    "donor_bank.json": "dffa00f4f39a99b7b5a43fb658f9da4f0dfcebcb756b1219c6923968325a9cce",
+    "metrics.json": "cc450b9d4136525827ce57de2f7a23255a311f9c69a42e5baa4fc8e6a6793bc7",
+    "per_pair.csv": "c2fdcad9a47a06ecd26b4eb22b48be1db51e5e0340c6e6b4e4e3f87ea742c4d0",
+    "resolved_config.json": "1b98cadd6cdb7855ac18e09d64c11a7cddc3e06b578274542532c4d8936b117c",
+    "rollouts.json": "6f78934acff70c6cdce6bfa8396e722af56c12846b95c2d2af92296bf6f1f69b"
+  },
+  "checkpoint_sha256": "90da2e2d4c124936d3f7fbe4092255c37e8b67c12fe59b5f64067d9c8e3c44fd",
+  "command": [
+    "lunavla-v2",
+    "evidence-run",
+    "configs/v2/evidence/visual_beta1.yaml"
+  ],
+  "condition": {
+    "arm_ids": [
+      "control",
+      "occlusion",
+      "shuffle"
+    ],
+    "image_ablation": "none",
+    "language_ablation": "none",
+    "train_seed": 33,
+    "variant": "image"
+  },
+  "config": {
+    "artifacts": {
+      "checkpoint_name": "checkpoint.pt",
+      "output_dir": "outputs/evidence/visual-beta1/runs/visual-beta1-image-seed-33"
+    },
+    "dataset": {
+      "episode_count": 64,
+      "parameters": {
+        "observation_mode": "vision_required",
+        "split_seed": 42
+      },
+      "seed": 42,
+      "split": "train",
+      "type": "memory"
+    },
+    "engine": "lunavla_v2",
+    "evaluation": {
+      "episodes": 24,
+      "execution_mode": "receding_horizon",
+      "image_ablation": "none",
+      "language_ablation": "none",
+      "parameters": {
+        "bootstrap_samples": 10000
+      },
+      "seed": 1000,
+      "seeds": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010,
+        1011,
+        1012,
+        1013,
+        1014,
+        1015,
+        1016,
+        1017,
+        1018,
+        1019,
+        1020,
+        1021,
+        1022,
+        1023
+      ]
+    },
+    "policy": {
+      "action_dim": 2,
+      "chunk_size": 4,
+      "d_model": 64,
+      "device": "cpu",
+      "dropout": 0.0,
+      "image_shape": [
+        32,
+        32,
+        3
+      ],
+      "instruction_dim": 32,
+      "latent_dim": 16,
+      "nhead": 4,
+      "num_layers": 2,
+      "state_dim": 3,
+      "temporal_ensemble_decay": 0.25,
+      "type": "transformer_chunk_cvae"
+    },
+    "project_name": "visual-beta1-image-seed-33",
+    "schema_version": 2,
+    "task": {
+      "family": "all",
+      "id": "rendered_visual_point_reach",
+      "max_steps": 24,
+      "parameters": {},
+      "render_size": 32
+    },
+    "training": {
+      "batch_size": 32,
+      "device": "cpu",
+      "kl_weight": 0.01,
+      "learning_rate": 0.0003,
+      "seed": 33,
+      "steps": 1500
+    }
+  },
+  "config_sha256": "a6c027fda6c283757d6e08ca762c0d0e7ea5850134e06cab8c6194d28df22cb4",
+  "data_seeds": [
+    42
+  ],
+  "data_sha256": "e010cc8d6ae4b5c03e5ece262f6186e83f3a5dabb5dd35a96944392df3b2ca0d",
+  "dataset_split": {
+    "test": [
+      105,
+      109,
+      11,
+      110,
+      16,
+      31,
+      42,
+      43,
+      53,
+      71,
+      80,
+      82,
+      86
+    ],
+    "train": [
+      0,
+      1,
+      10,
+      100,
+      101,
+      102,
+      104,
+      106,
+      107,
+      111,
+      112,
+      113,
+      114,
+      116,
+      117,
+      119,
+      12,
+      120,
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      13,
+      14,
+      17,
+      18,
+      19,
+      2,
+      21,
+      22,
+      23,
+      24,
+      25,
+      27,
+      29,
+      3,
+      30,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      4,
+      40,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      5,
+      50,
+      51,
+      52,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      6,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      7,
+      70,
+      72,
+      73,
+      74,
+      75,
+      77,
+      78,
+      79,
+      8,
+      81,
+      83,
+      84,
+      85,
+      88,
+      9,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99
+    ],
+    "validation": [
+      103,
+      108,
+      115,
+      118,
+      15,
+      20,
+      26,
+      28,
+      32,
+      41,
+      76,
+      87,
+      89
+    ]
+  },
+  "dependencies": {
+    "Pillow": "12.3.0",
+    "PyYAML": "6.0.3",
+    "lerobot": "0.6.0",
+    "numpy": "2.2.6",
+    "torch": "2.11.0+cpu",
+    "torchvision": "0.26.0+cpu"
+  },
+  "design_id": "visual-beta1",
+  "design_sha256": "df1e8fb343449e407c8cd9c07e1c84beb7c6f5361db115864fd0ae7487a00ebd",
+  "eval_fixture": {
+    "eval_seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009,
+      1010,
+      1011,
+      1012,
+      1013,
+      1014,
+      1015,
+      1016,
+      1017,
+      1018,
+      1019,
+      1020,
+      1021,
+      1022,
+      1023
+    ],
+    "evidence_episodes": [
+      {
+        "eval_seed": 1000,
+        "family": "direct_reach",
+        "goal": [
+          0.8495622277259827,
+          0.8382781147956848
+        ],
+        "start": [
+          0.16539445519447327,
+          0.297455370426178
+        ],
+        "waypoint": [
+          0.8495622277259827,
+          0.8382781147956848
+        ]
+      },
+      {
+        "eval_seed": 1001,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7618091702461243,
+          0.2542518675327301
+        ],
+        "start": [
+          0.2740498483181,
+          0.15736344456672668
+        ],
+        "waypoint": [
+          0.4482593536376953,
+          0.7584246397018433
+        ]
+      },
+      {
+        "eval_seed": 1002,
+        "family": "direct_reach",
+        "goal": [
+          0.6818085312843323,
+          0.7918718457221985
+        ],
+        "start": [
+          0.29120033979415894,
+          0.14153635501861572
+        ],
+        "waypoint": [
+          0.6818085312843323,
+          0.7918718457221985
+        ]
+      },
+      {
+        "eval_seed": 1003,
+        "family": "waypoint_reach",
+        "goal": [
+          0.749183177947998,
+          0.698354184627533
+        ],
+        "start": [
+          0.1257140338420868,
+          0.19985556602478027
+        ],
+        "waypoint": [
+          0.3714543879032135,
+          0.8202170729637146
+        ]
+      },
+      {
+        "eval_seed": 1004,
+        "family": "direct_reach",
+        "goal": [
+          0.7717880010604858,
+          0.287015438079834
+        ],
+        "start": [
+          0.1501648873090744,
+          0.28935059905052185
+        ],
+        "waypoint": [
+          0.7717880010604858,
+          0.287015438079834
+        ]
+      },
+      {
+        "eval_seed": 1005,
+        "family": "waypoint_reach",
+        "goal": [
+          0.712410569190979,
+          0.5015961527824402
+        ],
+        "start": [
+          0.27295953035354614,
+          0.2710604965686798
+        ],
+        "waypoint": [
+          0.3737541437149048,
+          0.5112996101379395
+        ]
+      },
+      {
+        "eval_seed": 1006,
+        "family": "direct_reach",
+        "goal": [
+          0.6616732478141785,
+          0.5504916310310364
+        ],
+        "start": [
+          0.26619666814804077,
+          0.17218933999538422
+        ],
+        "waypoint": [
+          0.6616732478141785,
+          0.5504916310310364
+        ]
+      },
+      {
+        "eval_seed": 1007,
+        "family": "waypoint_reach",
+        "goal": [
+          0.6930992603302002,
+          0.2833571135997772
+        ],
+        "start": [
+          0.2385486662387848,
+          0.26316341757774353
+        ],
+        "waypoint": [
+          0.39138588309288025,
+          0.3950859606266022
+        ]
+      },
+      {
+        "eval_seed": 1008,
+        "family": "direct_reach",
+        "goal": [
+          0.7801098823547363,
+          0.18046949803829193
+        ],
+        "start": [
+          0.22739233076572418,
+          0.153957337141037
+        ],
+        "waypoint": [
+          0.7801098823547363,
+          0.18046949803829193
+        ]
+      },
+      {
+        "eval_seed": 1009,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7320593595504761,
+          0.4001365900039673
+        ],
+        "start": [
+          0.20236432552337646,
+          0.29009273648262024
+        ],
+        "waypoint": [
+          0.5654159784317017,
+          0.8199999928474426
+        ]
+      },
+      {
+        "eval_seed": 1010,
+        "family": "direct_reach",
+        "goal": [
+          0.8349933624267578,
+          0.8369823098182678
+        ],
+        "start": [
+          0.1523224264383316,
+          0.1596982330083847
+        ],
+        "waypoint": [
+          0.8349933624267578,
+          0.8369823098182678
+        ]
+      },
+      {
+        "eval_seed": 1011,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7592129111289978,
+          0.6423392295837402
+        ],
+        "start": [
+          0.11712983250617981,
+          0.1473620980978012
+        ],
+        "waypoint": [
+          0.5069183111190796,
+          0.5168411731719971
+        ]
+      },
+      {
+        "eval_seed": 1012,
+        "family": "direct_reach",
+        "goal": [
+          0.8293398022651672,
+          0.5988143086433411
+        ],
+        "start": [
+          0.2886112332344055,
+          0.20226551592350006
+        ],
+        "waypoint": [
+          0.8293398022651672,
+          0.5988143086433411
+        ]
+      },
+      {
+        "eval_seed": 1013,
+        "family": "waypoint_reach",
+        "goal": [
+          0.8615785837173462,
+          0.6084561944007874
+        ],
+        "start": [
+          0.2610005736351013,
+          0.2615881562232971
+        ],
+        "waypoint": [
+          0.45568597316741943,
+          0.39213114976882935
+        ]
+      },
+      {
+        "eval_seed": 1014,
+        "family": "direct_reach",
+        "goal": [
+          0.7277628779411316,
+          0.6692131161689758
+        ],
+        "start": [
+          0.2076328694820404,
+          0.1686541736125946
+        ],
+        "waypoint": [
+          0.7277628779411316,
+          0.6692131161689758
+        ]
+      },
+      {
+        "eval_seed": 1015,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7229613661766052,
+          0.5418606400489807
+        ],
+        "start": [
+          0.22501909732818604,
+          0.27944275736808777
+        ],
+        "waypoint": [
+          0.3852439522743225,
+          0.5950309634208679
+        ]
+      },
+      {
+        "eval_seed": 1016,
+        "family": "direct_reach",
+        "goal": [
+          0.7276465892791748,
+          0.7972909212112427
+        ],
+        "start": [
+          0.16539445519447327,
+          0.297455370426178
+        ],
+        "waypoint": [
+          0.7276465892791748,
+          0.7972909212112427
+        ]
+      },
+      {
+        "eval_seed": 1017,
+        "family": "waypoint_reach",
+        "goal": [
+          0.798987090587616,
+          0.19706296920776367
+        ],
+        "start": [
+          0.2740498483181,
+          0.15736344456672668
+        ],
+        "waypoint": [
+          0.41909128427505493,
+          0.6315780282020569
+        ]
+      },
+      {
+        "eval_seed": 1018,
+        "family": "direct_reach",
+        "goal": [
+          0.849662721157074,
+          0.16374897956848145
+        ],
+        "start": [
+          0.29120033979415894,
+          0.14153635501861572
+        ],
+        "waypoint": [
+          0.849662721157074,
+          0.16374897956848145
+        ]
+      },
+      {
+        "eval_seed": 1019,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7287698984146118,
+          0.4199065864086151
+        ],
+        "start": [
+          0.1257140338420868,
+          0.19985556602478027
+        ],
+        "waypoint": [
+          0.45362263917922974,
+          0.719424843788147
+        ]
+      },
+      {
+        "eval_seed": 1020,
+        "family": "direct_reach",
+        "goal": [
+          0.6664309501647949,
+          0.2886817455291748
+        ],
+        "start": [
+          0.1501648873090744,
+          0.28935059905052185
+        ],
+        "waypoint": [
+          0.6664309501647949,
+          0.2886817455291748
+        ]
+      },
+      {
+        "eval_seed": 1021,
+        "family": "waypoint_reach",
+        "goal": [
+          0.7478339076042175,
+          0.24158421158790588
+        ],
+        "start": [
+          0.27295953035354614,
+          0.2710604965686798
+        ],
+        "waypoint": [
+          0.5163754224777222,
+          0.49331235885620117
+        ]
+      },
+      {
+        "eval_seed": 1022,
+        "family": "direct_reach",
+        "goal": [
+          0.6604954600334167,
+          0.8057841658592224
+        ],
+        "start": [
+          0.26619666814804077,
+          0.17218933999538422
+        ],
+        "waypoint": [
+          0.6604954600334167,
+          0.8057841658592224
+        ]
+      },
+      {
+        "eval_seed": 1023,
+        "family": "waypoint_reach",
+        "goal": [
+          0.895045816898346,
+          0.8498805165290833
+        ],
+        "start": [
+          0.2385486662387848,
+          0.26316341757774353
+        ],
+        "waypoint": [
+          0.5631147623062134,
+          0.6915439963340759
+        ]
+      }
+    ],
+    "evidence_fixture_sha256": "0b23d7aa6f142bd8124f895317a8259c5d7c3b1265c0b488ca9846cb3e6a031f",
+    "execution_mode": "receding_horizon",
+    "family": "all",
+    "max_steps": 24,
+    "task_id": "rendered_visual_point_reach"
+  },
+  "eval_fixture_sha256": "a2ab14a6f39a6c85ea0129dd67d5877f5d59b7c5d7a682dcb18a6f6be56ac04c",
+  "eval_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019,
+    1020,
+    1021,
+    1022,
+    1023
+  ],
+  "git_dirty": false,
+  "git_sha": "bf0e550a7aa3fb0bb07354cd7cb525752c56268d",
+  "interventions": {},
+  "metrics": {
+    "arms": {
+      "control": {
+        "mean_final_distance": 0.539114418750008,
+        "mean_first_action_mse": 0.001254566940284955,
+        "mean_reward": -9.99293132731691,
+        "mean_steps": 24.0,
+        "success_rate": 0.0
+      },
+      "occlusion": {
+        "mean_final_distance": 0.5123655746380488,
+        "mean_first_action_mse": 0.001177934545315414,
+        "mean_reward": -9.489158633009842,
+        "mean_steps": 24.0,
+        "success_rate": 0.0
+      },
+      "shuffle": {
+        "mean_final_distance": 0.5403324731936058,
+        "mean_first_action_mse": 0.0012643344562093262,
+        "mean_reward": -10.031382611331841,
+        "mean_steps": 24.0,
+        "success_rate": 0.0
+      }
+    },
+    "claim_allowed": false,
+    "final_loss": 0.003525388427078724,
+    "observational": false
+  },
+  "pair_ids": [],
+  "paired_data": {
+    "donor_bank_sha256": "dffa00f4f39a99b7b5a43fb658f9da4f0dfcebcb756b1219c6923968325a9cce",
+    "non_image_pairing_sha256": "9ddc4a772c67a4c8ae050b9f3b45b26911b1937990fb4ecd98ee144415c23170",
+    "pair_ids": [],
+    "paired_intervals": []
+  },
+  "paired_data_sha256": "cd5b49b16ecb6ae2afb0d54d8ac1ed02ad48b79c851c1adaf2918b8ef8656a3c",
+  "paired_intervals": [],
+  "pairs": [
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1000,
+      "pair_id": "33:1000",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1001,
+      "pair_id": "33:1001",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1002,
+      "pair_id": "33:1002",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1003,
+      "pair_id": "33:1003",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1004,
+      "pair_id": "33:1004",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1005,
+      "pair_id": "33:1005",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1006,
+      "pair_id": "33:1006",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1007,
+      "pair_id": "33:1007",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1008,
+      "pair_id": "33:1008",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1009,
+      "pair_id": "33:1009",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1010,
+      "pair_id": "33:1010",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1011,
+      "pair_id": "33:1011",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1012,
+      "pair_id": "33:1012",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1013,
+      "pair_id": "33:1013",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1014,
+      "pair_id": "33:1014",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1015,
+      "pair_id": "33:1015",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1016,
+      "pair_id": "33:1016",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1017,
+      "pair_id": "33:1017",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1018,
+      "pair_id": "33:1018",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1019,
+      "pair_id": "33:1019",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1020,
+      "pair_id": "33:1020",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1021,
+      "pair_id": "33:1021",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1022,
+      "pair_id": "33:1022",
+      "train_seed": 33
+    },
+    {
+      "arms": [
+        "control",
+        "occlusion",
+        "shuffle"
+      ],
+      "eval_seed": 1023,
+      "pair_id": "33:1023",
+      "train_seed": 33
+    }
+  ],
+  "policy_id": "transformer_chunk_cvae",
+  "python_version": "3.12.13",
+  "run_id": "visual-beta1-image-seed-33",
+  "runtime_determinism": {
+    "PYTHONHASHSEED": null,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": false,
+    "deterministic_flags_satisfied": false,
+    "device": "cpu",
+    "numpy_bit_generator": "PCG64",
+    "seeded": true,
+    "status": "unverified",
+    "torch_deterministic_algorithms": false,
+    "torch_version": "2.11.0+cpu"
+  },
+  "schema_version": 3,
+  "source_diff_sha256": null,
+  "task_id": "rendered_visual_point_reach",
+  "train_seeds": [
+    33
+  ]
+}

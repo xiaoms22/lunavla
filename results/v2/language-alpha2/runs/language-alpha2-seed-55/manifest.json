@@ -1,0 +1,965 @@
+{
+  "arms": [
+    {
+      "id": "control",
+      "mode": "none",
+      "role": "control"
+    },
+    {
+      "id": "mask",
+      "mode": "mask",
+      "role": "intervention"
+    },
+    {
+      "id": "shuffle",
+      "mode": "shuffle",
+      "role": "intervention"
+    },
+    {
+      "id": "counterfactual",
+      "mode": "counterfactual",
+      "role": "intervention"
+    }
+  ],
+  "artifact_sha256": {
+    "donor_bank.json": "8f229120cba0bb699501830ccbf19838b6215511a368b22087c020cb2c984594",
+    "metrics.json": "33a2b5ede48eb7320a2989ab0d2e629bd23103043f52c727660072f135570b60",
+    "per_pair.csv": "654b2d6ca53702ccc7cc6c517a50d52b292f452008046cb142991855aa3e277d",
+    "resolved_config.json": "d587eb96f62ef01325366ba48b963b0c5852bd01d2860029f3030205a25f9b71",
+    "rollouts.json": "acce4b93fb7071076e15d61e58fbab868eb476b711b252a070222ec9de86f916"
+  },
+  "checkpoint_sha256": "4468eb249ecb86962848e3ad6b7a3d083908917421e979a1479f29313b866e3d",
+  "command": [
+    "lunavla-v2",
+    "evidence-run",
+    "configs/v2/evidence/language_alpha2.yaml"
+  ],
+  "condition": {
+    "arm_ids": [
+      "control",
+      "mask",
+      "shuffle",
+      "counterfactual"
+    ],
+    "image_ablation": "none",
+    "language_ablation": "none",
+    "train_seed": 55,
+    "variant": "shared"
+  },
+  "config": {
+    "artifacts": {
+      "checkpoint_name": "checkpoint.pt",
+      "output_dir": "outputs/evidence/language-alpha2/runs/language-alpha2-seed-55"
+    },
+    "dataset": {
+      "episode_count": 96,
+      "parameters": {
+        "split_seed": 42
+      },
+      "seed": 42,
+      "split": "train",
+      "type": "memory"
+    },
+    "engine": "lunavla_v2",
+    "evaluation": {
+      "episodes": 24,
+      "execution_mode": "receding_horizon",
+      "image_ablation": "none",
+      "language_ablation": "none",
+      "parameters": {
+        "bootstrap_samples": 10000
+      },
+      "seed": 1000,
+      "seeds": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010,
+        1011,
+        1012,
+        1013,
+        1014,
+        1015,
+        1016,
+        1017,
+        1018,
+        1019,
+        1020,
+        1021,
+        1022,
+        1023
+      ]
+    },
+    "policy": {
+      "action_dim": 2,
+      "chunk_size": 4,
+      "d_model": 64,
+      "device": "cpu",
+      "dropout": 0.0,
+      "image_shape": null,
+      "instruction_dim": 16,
+      "latent_dim": 16,
+      "nhead": 4,
+      "num_layers": 2,
+      "state_dim": 2,
+      "temporal_ensemble_decay": 0.25,
+      "type": "transformer_chunk_cvae"
+    },
+    "project_name": "language-alpha2-seed-55",
+    "schema_version": 2,
+    "task": {
+      "family": "point_reach",
+      "goal": [
+        0.8,
+        0.2
+      ],
+      "id": "language_conditioned_point_reach",
+      "max_steps": 40,
+      "parameters": {
+        "language_split": "heldout"
+      }
+    },
+    "training": {
+      "batch_size": 32,
+      "device": "cpu",
+      "kl_weight": 0.01,
+      "learning_rate": 0.0003,
+      "seed": 55,
+      "steps": 1000
+    }
+  },
+  "config_sha256": "a3ca15cf5d7623d8689b29431bd7d69478553c7e0bfb6773f8ea609057726eba",
+  "data_seeds": [
+    42
+  ],
+  "data_sha256": "47e8f942341a6e55382dee39c26250097f4d09186b4233d327c984a22e9c5205",
+  "dataset_split": {
+    "test": [
+      16,
+      2,
+      20,
+      21,
+      41,
+      57,
+      68,
+      69,
+      79
+    ],
+    "train": [
+      0,
+      1,
+      10,
+      11,
+      12,
+      13,
+      15,
+      17,
+      18,
+      22,
+      23,
+      24,
+      25,
+      27,
+      28,
+      3,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      4,
+      42,
+      43,
+      44,
+      45,
+      47,
+      48,
+      49,
+      5,
+      50,
+      52,
+      53,
+      54,
+      55,
+      56,
+      58,
+      59,
+      6,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      7,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      8,
+      80,
+      81,
+      83,
+      84,
+      85,
+      86,
+      88,
+      89,
+      9,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95
+    ],
+    "validation": [
+      14,
+      19,
+      26,
+      29,
+      40,
+      46,
+      51,
+      67,
+      82,
+      87
+    ]
+  },
+  "dependencies": {
+    "Pillow": "12.3.0",
+    "PyYAML": "6.0.3",
+    "lerobot": "0.6.0",
+    "numpy": "2.2.6",
+    "torch": "2.11.0+cpu",
+    "torchvision": "0.26.0+cpu"
+  },
+  "design_id": "language-alpha2",
+  "design_sha256": "09b1b3bfbb2a9b05f6e3edeb753655588da558a166733e8e5570223e1daefd54",
+  "eval_fixture": {
+    "eval_seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009,
+      1010,
+      1011,
+      1012,
+      1013,
+      1014,
+      1015,
+      1016,
+      1017,
+      1018,
+      1019,
+      1020,
+      1021,
+      1022,
+      1023
+    ],
+    "evidence_episodes": [
+      {
+        "eval_seed": 1000,
+        "instruction": "head toward the emerald target",
+        "start": [
+          0.5064157247543335,
+          0.5311525464057922
+        ],
+        "target": [
+          0.5,
+          0.8500000238418579
+        ],
+        "task_id": "reach_green_top"
+      },
+      {
+        "eval_seed": 1001,
+        "instruction": "finish at the green dot",
+        "start": [
+          0.5337784886360168,
+          0.3547101318836212
+        ],
+        "target": [
+          0.5,
+          0.8500000238418579
+        ],
+        "task_id": "reach_green_top"
+      },
+      {
+        "eval_seed": 1002,
+        "instruction": "head toward the crimson target",
+        "start": [
+          0.46424636244773865,
+          0.45715680718421936
+        ],
+        "target": [
+          0.15000000596046448,
+          0.5
+        ],
+        "task_id": "reach_red_left"
+      },
+      {
+        "eval_seed": 1003,
+        "instruction": "finish at the red dot",
+        "start": [
+          0.4063272178173065,
+          0.42701172828674316
+        ],
+        "target": [
+          0.15000000596046448,
+          0.5
+        ],
+        "task_id": "reach_red_left"
+      },
+      {
+        "eval_seed": 1004,
+        "instruction": "head toward the azure target",
+        "start": [
+          0.35026413202285767,
+          0.389045387506485
+        ],
+        "target": [
+          0.8500000238418579,
+          0.5
+        ],
+        "task_id": "reach_blue_right"
+      },
+      {
+        "eval_seed": 1005,
+        "instruction": "finish at the blue dot",
+        "start": [
+          0.3746657371520996,
+          0.6291686296463013
+        ],
+        "target": [
+          0.8500000238418579,
+          0.5
+        ],
+        "task_id": "reach_blue_right"
+      },
+      {
+        "eval_seed": 1006,
+        "instruction": "head toward the emerald target",
+        "start": [
+          0.4510764181613922,
+          0.5302571058273315
+        ],
+        "target": [
+          0.5,
+          0.8500000238418579
+        ],
+        "task_id": "reach_green_top"
+      },
+      {
+        "eval_seed": 1007,
+        "instruction": "finish at the green dot",
+        "start": [
+          0.371367484331131,
+          0.5947940945625305
+        ],
+        "target": [
+          0.5,
+          0.8500000238418579
+        ],
+        "task_id": "reach_green_top"
+      },
+      {
+        "eval_seed": 1008,
+        "instruction": "head toward the crimson target",
+        "start": [
+          0.4001758098602295,
+          0.5939152240753174
+        ],
+        "target": [
+          0.15000000596046448,
+          0.5
+        ],
+        "task_id": "reach_red_left"
+      },
+      {
+        "eval_seed": 1009,
+        "instruction": "finish at the red dot",
+        "start": [
+          0.366950124502182,
+          0.44807466864585876
+        ],
+        "target": [
+          0.15000000596046448,
+          0.5
+        ],
+        "task_id": "reach_red_left"
+      },
+      {
+        "eval_seed": 1010,
+        "instruction": "head toward the azure target",
+        "start": [
+          0.3784976899623871,
+          0.5107417106628418
+        ],
+        "target": [
+          0.8500000238418579,
+          0.5
+        ],
+        "task_id": "reach_blue_right"
+      },
+      {
+        "eval_seed": 1011,
+        "instruction": "finish at the blue dot",
+        "start": [
+          0.43523743748664856,
+          0.518997073173523
+        ],
+        "target": [
+          0.8500000238418579,
+          0.5
+        ],
+        "task_id": "reach_blue_right"
+      },
+      {
+        "eval_seed": 1012,
+        "instruction": "head toward the emerald target",
+        "start": [
+          0.44189614057540894,
+          0.584194004535675
+        ],
+        "target": [
+          0.5,
+          0.8500000238418579
+        ],
+        "task_id": "reach_green_top"
+      },
+      {
+        "eval_seed": 1013,
+        "instruction": "finish at the green dot",
+        "start": [
+          0.588347852230072,
+          0.3736938536167145
+        ],
+        "target": [
+          0.5,
+          0.8500000238418579
+        ],
+        "task_id": "reach_green_top"
+      },
+      {
+        "eval_seed": 1014,
+        "instruction": "head toward the crimson target",
+        "start": [
+          0.4806571900844574,
+          0.5257107019424438
+        ],
+        "target": [
+          0.15000000596046448,
+          0.5
+        ],
+        "task_id": "reach_red_left"
+      },
+      {
+        "eval_seed": 1015,
+        "instruction": "finish at the red dot",
+        "start": [
+          0.45797088742256165,
+          0.5321203470230103
+        ],
+        "target": [
+          0.15000000596046448,
+          0.5
+        ],
+        "task_id": "reach_red_left"
+      },
+      {
+        "eval_seed": 1016,
+        "instruction": "head toward the azure target",
+        "start": [
+          0.4183974862098694,
+          0.4828082025051117
+        ],
+        "target": [
+          0.8500000238418579,
+          0.5
+        ],
+        "task_id": "reach_blue_right"
+      },
+      {
+        "eval_seed": 1017,
+        "instruction": "finish at the blue dot",
+        "start": [
+          0.6255055069923401,
+          0.5963995456695557
+        ],
+        "target": [
+          0.8500000238418579,
+          0.5
+        ],
+        "task_id": "reach_blue_right"
+      },
+      {
+        "eval_seed": 1018,
+        "instruction": "head toward the emerald target",
+        "start": [
+          0.5281926393508911,
+          0.4864877164363861
+        ],
+        "target": [
+          0.5,
+          0.8500000238418579
+        ],
+        "task_id": "reach_green_top"
+      },
+      {
+        "eval_seed": 1019,
+        "instruction": "finish at the green dot",
+        "start": [
+          0.4150780439376831,
+          0.46879851818084717
+        ],
+        "target": [
+          0.5,
+          0.8500000238418579
+        ],
+        "task_id": "reach_green_top"
+      },
+      {
+        "eval_seed": 1020,
+        "instruction": "head toward the crimson target",
+        "start": [
+          0.5236100554466248,
+          0.43510258197784424
+        ],
+        "target": [
+          0.15000000596046448,
+          0.5
+        ],
+        "task_id": "reach_red_left"
+      },
+      {
+        "eval_seed": 1021,
+        "instruction": "finish at the red dot",
+        "start": [
+          0.46231645345687866,
+          0.3742554187774658
+        ],
+        "target": [
+          0.15000000596046448,
+          0.5
+        ],
+        "task_id": "reach_red_left"
+      },
+      {
+        "eval_seed": 1022,
+        "instruction": "head toward the azure target",
+        "start": [
+          0.3501580059528351,
+          0.6255249977111816
+        ],
+        "target": [
+          0.8500000238418579,
+          0.5
+        ],
+        "task_id": "reach_blue_right"
+      },
+      {
+        "eval_seed": 1023,
+        "instruction": "finish at the blue dot",
+        "start": [
+          0.45166072249412537,
+          0.6217696070671082
+        ],
+        "target": [
+          0.8500000238418579,
+          0.5
+        ],
+        "task_id": "reach_blue_right"
+      }
+    ],
+    "evidence_fixture_sha256": "d78e73e161477e10c86bed4cd68cc4efbac060d6bb853210b6553d4a02a620e3",
+    "execution_mode": "receding_horizon",
+    "family": "point_reach",
+    "max_steps": 40,
+    "task_id": "language_conditioned_point_reach"
+  },
+  "eval_fixture_sha256": "ceb3509be8179f6d3f83aa398ae75834941de9c76417a032883257cca0fe3f0d",
+  "eval_seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012,
+    1013,
+    1014,
+    1015,
+    1016,
+    1017,
+    1018,
+    1019,
+    1020,
+    1021,
+    1022,
+    1023
+  ],
+  "git_dirty": false,
+  "git_sha": "a546695445f6fa6e717cd560d5acf718e037940a",
+  "interventions": {},
+  "metrics": {
+    "arms": {
+      "control": {
+        "mean_final_distance": 0.4385130852460861,
+        "mean_first_action_mse": 0.031215051227870088,
+        "mean_reward": -17.381146573151153,
+        "mean_steps": 40.0,
+        "success_rate": 0.0
+      },
+      "counterfactual": {
+        "mean_final_distance": 0.4557547513395548,
+        "mean_first_action_mse": 0.04990329249024702,
+        "mean_reward": -18.12694910230736,
+        "mean_steps": 40.0,
+        "success_rate": 0.0
+      },
+      "mask": {
+        "mean_final_distance": 0.34902678554256755,
+        "mean_first_action_mse": 0.01953376583211745,
+        "mean_reward": -13.907086294144392,
+        "mean_steps": 40.0,
+        "success_rate": 0.0
+      },
+      "shuffle": {
+        "mean_final_distance": 0.30115795508027077,
+        "mean_first_action_mse": 0.029188653666551545,
+        "mean_reward": -12.082427244012555,
+        "mean_steps": 40.0,
+        "success_rate": 0.0
+      }
+    },
+    "claim_allowed": false,
+    "final_loss": 0.001395424478687346,
+    "observational": false
+  },
+  "pair_ids": [],
+  "paired_data": {
+    "donor_bank_sha256": "8f229120cba0bb699501830ccbf19838b6215511a368b22087c020cb2c984594",
+    "non_image_pairing_sha256": "c781d3f72988316cf9119eb69e2c10666ace862b6835eb9b87351065ab30c3c1",
+    "pair_ids": [],
+    "paired_intervals": []
+  },
+  "paired_data_sha256": "3e1602ac9f6b6fd6d5e30e7f6448e7f76e46f816086353cf8856c6382d5883e0",
+  "paired_intervals": [],
+  "pairs": [
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1000,
+      "pair_id": "55:1000",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1001,
+      "pair_id": "55:1001",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1002,
+      "pair_id": "55:1002",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1003,
+      "pair_id": "55:1003",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1004,
+      "pair_id": "55:1004",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1005,
+      "pair_id": "55:1005",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1006,
+      "pair_id": "55:1006",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1007,
+      "pair_id": "55:1007",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1008,
+      "pair_id": "55:1008",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1009,
+      "pair_id": "55:1009",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1010,
+      "pair_id": "55:1010",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1011,
+      "pair_id": "55:1011",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1012,
+      "pair_id": "55:1012",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1013,
+      "pair_id": "55:1013",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1014,
+      "pair_id": "55:1014",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1015,
+      "pair_id": "55:1015",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1016,
+      "pair_id": "55:1016",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1017,
+      "pair_id": "55:1017",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1018,
+      "pair_id": "55:1018",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1019,
+      "pair_id": "55:1019",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1020,
+      "pair_id": "55:1020",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1021,
+      "pair_id": "55:1021",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1022,
+      "pair_id": "55:1022",
+      "train_seed": 55
+    },
+    {
+      "arms": [
+        "control",
+        "mask",
+        "shuffle",
+        "counterfactual"
+      ],
+      "eval_seed": 1023,
+      "pair_id": "55:1023",
+      "train_seed": 55
+    }
+  ],
+  "policy_id": "transformer_chunk_cvae",
+  "python_version": "3.12.13",
+  "run_id": "language-alpha2-seed-55",
+  "runtime_determinism": {
+    "PYTHONHASHSEED": null,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": false,
+    "deterministic_flags_satisfied": false,
+    "device": "cpu",
+    "numpy_bit_generator": "PCG64",
+    "seeded": true,
+    "status": "unverified",
+    "torch_deterministic_algorithms": false,
+    "torch_version": "2.11.0+cpu"
+  },
+  "schema_version": 3,
+  "source_diff_sha256": null,
+  "task_id": "language_conditioned_point_reach",
+  "train_seeds": [
+    55
+  ]
+}

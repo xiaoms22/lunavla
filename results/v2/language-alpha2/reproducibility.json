@@ -1,0 +1,22 @@
+{
+  "checkpoint_sha256": [
+    "4f75f1b6a3492c2e80b1755d301fc61321cb7bee4fb25f84594f6200c366d66a",
+    "4f75f1b6a3492c2e80b1755d301fc61321cb7bee4fb25f84594f6200c366d66a"
+  ],
+  "config_sha256": [
+    "1a84910efa8a7202a285a550728b58c859c77c28c67c9444b4637f033102d5db",
+    "1a84910efa8a7202a285a550728b58c859c77c28c67c9444b4637f033102d5db"
+  ],
+  "data_sha256": [
+    "47e8f942341a6e55382dee39c26250097f4d09186b4233d327c984a22e9c5205",
+    "47e8f942341a6e55382dee39c26250097f4d09186b4233d327c984a22e9c5205"
+  ],
+  "metrics_sha256": [
+    "5d7ab9387e62093fc34ff0a3412e82f349c13abf679f934726d8a2cca6df81dc",
+    "5d7ab9387e62093fc34ff0a3412e82f349c13abf679f934726d8a2cca6df81dc"
+  ],
+  "original_run_id": "language-alpha2-seed-11",
+  "repeat_run_id": "language-alpha2-seed-11-repeat",
+  "required": true,
+  "verified": true
+}

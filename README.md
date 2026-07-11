@@ -1,12 +1,14 @@
 # LunaVLA
 
-![Python](https://img.shields.io/badge/Python-3.10--3.12-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/v1.1-3.10--3.12-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache--2.0-blue)
-![Status](https://img.shields.io/badge/status-v1.1%20development-yellow)
+![Status](https://img.shields.io/badge/v2.0-stable%20candidate-blue)
 
 LunaVLA is a small, CPU-runnable imitation-learning/visuomotor-agent teaching core for people preparing to study Vision-Language-Action systems. It provides a complete state-to-action exercise: generate demonstrations, train a NumPy policy, evaluate rollouts, and inspect reproducibility evidence.
 
-The current task is `pusht_style_point_reach`: a synthetic 2D point-reach exercise inspired by the shape of a PushT learning loop. It has no images, no T-block physics, no Transformer, and no real-robot interface. LunaVLA is therefore not a PushT benchmark or a production VLA model.
+The stable v1.1 task is `pusht_style_point_reach`: a synthetic 2D point-reach exercise inspired by the shape of a PushT learning loop. v1.1 has no images, no T-block physics, no Transformer, and no real-robot interface. The v2 branch adds experimental modality fixtures and a teaching-scale Transformer, but LunaVLA is still not a PushT benchmark or a production VLA model.
+
+The signed [`v1.1.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v1.1.0) remains the evidence-backed NumPy teaching core. The source version is now `2.0.0`, preserving the public boundary frozen at `v2.0.0-rc.1` while adding a post-merge stable release gate. A `v2.0.0` release is valid only after the complete language/visual studies and real LeRobot smoke rerun on the actual protected `main` merge SHA. Both previously published modality-effect gates remain closed.
 
 ## Quick start
 
@@ -21,6 +23,31 @@ python scripts/run_cpu_smoke.py
 
 The quickstart writes local artifacts under `outputs/`, which is intentionally not a source of published claims. A completed run should include its resolved config, checkpoint, metrics, and `manifest.json`. Use `--overwrite` only when intentionally replacing a local run.
 
+## Experimental v2 profile
+
+v2 fixes Python to 3.12 and keeps heavy packages opt-in. Validate the unified contracts and run dependency-light tests with:
+
+```bash
+uv sync --extra dev
+uv run lunavla-v2 validate-config configs/v2/numpy_baseline.yaml
+uv run pytest tests_v2 -m "not torch and not lerobot"
+```
+
+Install the PyTorch CPU bridge with `uv sync --extra dev --extra v2-core`. The full `v2` extra additionally installs LeRobot's dataset profile. The versioned [`uv.lock`](uv.lock) resolves NumPy 2.2, PyTorch 2.11, torchvision 0.26, and LeRobot 0.6 under Python 3.12. Linux CI and release evidence use separate hash-locked CPU profiles so they cannot pull CUDA-only packages.
+
+The RC-frozen public surface includes `ActionChunk`, `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, `EvidenceDesign`, `RunManifest`, and `EvidenceManifest`. See the [`v2.0.0 RC contract freeze`](docs/v2/contract_freeze.md), [`architecture`](docs/v2/architecture.md), [`evidence contract`](docs/v2/evidence_contract.md), [`compatibility guide`](docs/v2/compatibility.md), and [`release process`](docs/v2/release_process.md). Stable preserves those contracts; an incompatible change requires an explicit versioned migration.
+
+The predeclared language and visual studies are executed and verified with:
+
+```bash
+uv run lunavla-v2 evidence-run configs/v2/evidence/language_alpha2.yaml
+uv run lunavla-v2 evidence-verify outputs/evidence/language-alpha2
+uv run lunavla-v2 evidence-snapshot outputs/evidence/language-alpha2 \
+  --out results/v2/language-alpha2
+```
+
+Full studies are intentionally multi-seed CPU workloads. `--allow-reduced-design` is only for CI-sized observational studies; reduced output always records `claim_allowed=false` and cannot establish a language or visual contribution.
+
 ## What is implemented
 
 - `numpy_linear_chunk`: a linear NumPy policy that predicts fixed-size action chunks.
@@ -31,6 +58,72 @@ The quickstart writes local artifacts under `outputs/`, which is intentionally n
 - Versioned configuration, checkpoint, data-record, action-chunk, and run-manifest contracts.
 
 The legacy names `act` and `pusht_mock` remain temporary compatibility aliases for v1.1. They do not mean that this repository implements the ACT Transformer or the real PushT environment.
+
+## v2 language evidence (claim closed)
+
+<!-- V2_EVIDENCE_START -->
+**Claim gate: Instruction-following has not yet been established.**
+
+Verification establishes file integrity, provenance consistency, and faithful aggregation only; it does not establish that the policy follows instructions.
+
+| Rollout arm | Train seeds | Trials | Observed success rate (95% Wilson CI) |
+| --- | ---: | ---: | --- |
+| `control` | 5 | 120 | 3.3% (1.3%–8.3%) |
+| `mask` | 5 | 120 | 0.0% (0.0%–3.1%) |
+| `shuffle` | 5 | 120 | 13.3% (8.4%–20.6%) |
+| `counterfactual` | 5 | 120 | 0.0% (0.0%–3.1%) |
+
+The full matrix contains 5 training seeds and 120 paired control trials; every rollout arm uses the same 120 seed/episode pairs.
+
+Counterfactual-minus-control paired diagnostics:
+
+| Metric | Paired n | Estimate | Training-seed clustered bootstrap 95% CI |
+| --- | ---: | ---: | --- |
+| Final distance | 120 | +0.0544 | [+0.0144, +0.0910] |
+| Success-rate difference | 120 | -3.3 pp | [-7.5, +0.0] pp |
+
+The predeclared claim remains closed because the verified failed check is `control_success_advantage`. These rows must not be described as successful instruction-following.
+
+Provenance: source commit [`a546695`](https://github.com/xiaoms22/lunavla/commit/a546695445f6fa6e717cd560d5acf718e037940a); authoritative [workflow run 29106885353](https://github.com/xiaoms22/lunavla/actions/runs/29106885353); EvidenceManifest SHA-256 `106ea2421d37c6c374e31d01a788101e358317f76b6abc315318634e6c6fa3b8`.
+
+Tracked sources: [EvidenceManifest](results/v2/language-alpha2/evidence_manifest.json) and [snapshot hash manifest](results/v2/language-alpha2/snapshot_manifest.json).
+<!-- V2_EVIDENCE_END -->
+
+## v2 visual evidence (claim closed)
+
+<!-- V2_VISUAL_EVIDENCE_START -->
+**Claim gate: Visual-control contribution has not yet been established.**
+
+Verification establishes a complete paired visual study and faithful aggregation. It does not establish that images improve control.
+
+| Rollout arm | Train seeds | Trials | Observed success rate (95% Wilson CI) |
+| --- | ---: | ---: | --- |
+| `control` | 5 | 120 | 1.7% (0.5%–5.9%) |
+| `occlusion` | 5 | 120 | 5.8% (2.9%–11.6%) |
+| `shuffle` | 5 | 120 | 2.5% (0.9%–7.1%) |
+| `state_only` | 5 | 120 | 1.7% (0.5%–5.9%) |
+
+The full matrix contains 5 image-policy and 5 state-only training runs, with 120 fixed seed/episode pairs per arm.
+
+Intervention-minus-control final-distance diagnostics (positive means worse):
+
+| Contrast and task family | Paired n | Estimate | Training-seed clustered bootstrap 95% CI |
+| --- | ---: | ---: | --- |
+| `occlusion:all` | 120 | -0.0106 | [-0.0907, +0.0667] |
+| `occlusion:direct_reach` | 60 | -0.0453 | [-0.1248, +0.0338] |
+| `occlusion:waypoint_reach` | 60 | +0.0240 | [-0.0834, +0.1389] |
+| `state_only:all` | 120 | +0.0121 | [-0.0193, +0.0453] |
+| `state_only:direct_reach` | 60 | +0.0035 | [-0.0384, +0.0410] |
+| `state_only:waypoint_reach` | 60 | +0.0207 | [-0.0154, +0.0589] |
+
+The predeclared claim remains closed because all claim-critical checks failed: `occlusion_all_distance_worse`, `occlusion_direct_reach_distance_worse`, `occlusion_waypoint_reach_distance_worse`, `state_only_all_distance_worse`, `state_only_direct_reach_distance_worse`, `state_only_waypoint_reach_distance_worse`. These rows must not be described as evidence that images improve control.
+
+Provenance: source commit [`bf0e550`](https://github.com/xiaoms22/lunavla/commit/bf0e550a7aa3fb0bb07354cd7cb525752c56268d); authoritative [workflow run 29110701437](https://github.com/xiaoms22/lunavla/actions/runs/29110701437); EvidenceManifest SHA-256 `d8ff8c798a6810a09a2905dbafd6f5259ac2356623ee6060d335d660db6e9056`.
+
+Tracked sources: [EvidenceManifest](results/v2/visual-beta1/evidence_manifest.json) and [snapshot hash manifest](results/v2/visual-beta1/snapshot_manifest.json).
+<!-- V2_VISUAL_EVIDENCE_END -->
+
+These blocks are generated only after read-only snapshot verification. Keep them current with `python scripts/render_readme_results.py --check`; manual edits inside the v2 evidence markers are rejected by CI.
 
 ## Verified v1.1 results
 
@@ -101,6 +194,9 @@ The full evidence bundle, SBOM, and `SHA256SUMS` are release assets rather than 
 
 - [`MODEL_CARD.md`](MODEL_CARD.md): policy intent, interfaces, and limitations.
 - [`DATA_CARD.md`](DATA_CARD.md): generated-data schema, splits, and limitations.
+- [`docs/v2/MODEL_CARD.md`](docs/v2/MODEL_CARD.md): experimental Transformer and modality boundary.
+- [`docs/v2/DATA_CARD.md`](docs/v2/DATA_CARD.md): language, rendered-image, and LeRobot adapter data boundary.
+- [`docs/v2/evidence_contract.md`](docs/v2/evidence_contract.md): multi-seed design, verification, and claim gates.
 - [`ROADMAP.md`](ROADMAP.md): v1.x maintenance and the gated v2 bridge.
 - [`CHANGELOG.md`](CHANGELOG.md): user-visible changes.
 - [`docs/evaluation.md`](docs/evaluation.md): rollout metrics and interpretation.
@@ -113,10 +209,11 @@ The full evidence bundle, SBOM, and `SHA256SUMS` are release assets rather than 
 ```text
 configs/       versioned experiment configuration
 dataset/       synthetic and JSONL data paths
+lunavla/       experimental v2 contracts, registry, engines, and adapters
 model/         NumPy policy implementations and interfaces
 trainer/       training entry points
 scripts/       checks, experiments, and evidence tooling
-results/v1.1/  small hash-verifiable evidence snapshots
+results/       small hash-verifiable v1.1 and v2 evidence snapshots
 outputs/       local generated artifacts (not published evidence)
 ```
 
@@ -127,6 +224,8 @@ Safe description:
 > LunaVLA is a CPU-runnable teaching repository for a synthetic state-to-action imitation-learning loop with action-chunk experiments and reproducibility manifests.
 
 Do not describe v1.x as a visual VLA, an ACT implementation, a real PushT result, or a real-robot deployment. Language is represented only by small deterministic features in the current core; instruction-following has not been established by counterfactual evaluation.
+
+On v2, implemented inputs and adapters are capabilities under test, not evidence that language or images improve behavior. The name `act` is reserved for the PyTorch policy only because its implementation includes action queries, CVAE/KL training, masks, and temporal ensembling; this is still a teaching-scale implementation, not a reproduction claim about any benchmark.
 
 ## License
 

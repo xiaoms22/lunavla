@@ -7,12 +7,23 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+from lunavla.artifact_contracts import (
+    NUMPY_CHECKPOINT_FORMAT as CHECKPOINT_FORMAT,
+)
+from lunavla.artifact_contracts import (
+    NUMPY_CHECKPOINT_SCHEMA_VERSION as CHECKPOINT_SCHEMA_VERSION,
+)
+
+from .checkpoint_contract import (
+    load_json_object,
+    safe_metadata,
+    validate_legacy_checkpoint,
+    validate_versioned_checkpoint,
+)
 from .losses import masked_mse, masked_mse_gradient
 from .policy_base import ActionChunk, MiniVLAPolicyBase, PolicyBatch, PolicySample
 
 
-CHECKPOINT_SCHEMA_VERSION = 1
-CHECKPOINT_FORMAT = "lunavla.numpy_policy"
 Array = npt.NDArray[np.generic]
 Float32Array = npt.NDArray[np.float32]
 
@@ -147,7 +158,7 @@ class NumpyLinearChunkPolicy(MiniVLAPolicyBase):
                     "bias": self.bias.tolist(),
                 },
             },
-            "metadata": metadata,
+            "metadata": safe_metadata(metadata),
         }
 
     def save(self, path: str | Path, metadata: dict[str, Any]) -> None:
@@ -156,7 +167,12 @@ class NumpyLinearChunkPolicy(MiniVLAPolicyBase):
             raise ValueError("new checkpoints must use the checkpoint.json format")
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(
-            json.dumps(self._checkpoint_payload(metadata), indent=2, sort_keys=True),
+            json.dumps(
+                self._checkpoint_payload(metadata),
+                indent=2,
+                sort_keys=True,
+                allow_nan=False,
+            ),
             encoding="utf-8",
         )
 
@@ -170,34 +186,37 @@ class NumpyLinearChunkPolicy(MiniVLAPolicyBase):
 
     @classmethod
     def load(cls, path: str | Path) -> tuple["NumpyLinearChunkPolicy", dict[str, Any]]:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        payload = load_json_object(path)
         if "schema_version" in payload:
-            if payload.get("schema_version") != CHECKPOINT_SCHEMA_VERSION:
-                raise ValueError(f"unsupported checkpoint schema_version: {payload.get('schema_version')}")
-            if payload.get("format") != CHECKPOINT_FORMAT:
-                raise ValueError(f"unsupported checkpoint format: {payload.get('format')}")
-            policy_payload = payload["policy"]
-            if policy_payload.get("type") != cls.policy_name:
-                raise ValueError(f"checkpoint contains policy type {policy_payload.get('type')!r}")
-            parameters = policy_payload["parameters"]
+            policy_payload, parameters, metadata = validate_versioned_checkpoint(
+                payload,
+                policy_name=cls.policy_name,
+            )
             policy = cls(
-                input_dim=int(policy_payload["input_dim"]),
-                action_dim=int(policy_payload["action_dim"]),
-                chunk_size=int(policy_payload["chunk_size"]),
+                input_dim=policy_payload["input_dim"],
+                action_dim=policy_payload["action_dim"],
+                chunk_size=policy_payload["chunk_size"],
                 weights=np.asarray(parameters["weights"], dtype=np.float32),
                 bias=np.asarray(parameters["bias"], dtype=np.float32),
             )
-            return policy, dict(payload.get("metadata", {}))
+            return policy, metadata
 
         # Read-only compatibility for JSON payloads historically named checkpoint.pt.
-        policy = cls(
-            input_dim=int(payload["input_dim"]),
-            action_dim=int(payload["action_dim"]),
-            chunk_size=int(payload["chunk_size"]),
-            weights=np.asarray(payload["weights"], dtype=np.float32),
-            bias=np.asarray(payload["bias"], dtype=np.float32),
+        parameters, metadata = validate_legacy_checkpoint(
+            payload,
+            policy_name=cls.policy_name,
+            accepted_names=frozenset(
+                {cls.policy_name, "act", "tiny_linear", "linear_smoke"}
+            ),
         )
-        return policy, dict(payload.get("metadata", {}))
+        policy = cls(
+            input_dim=payload["input_dim"],
+            action_dim=payload["action_dim"],
+            chunk_size=payload["chunk_size"],
+            weights=np.asarray(parameters["weights"], dtype=np.float32),
+            bias=np.asarray(parameters["bias"], dtype=np.float32),
+        )
+        return policy, metadata
 
     @classmethod
     def from_pretrained(

@@ -1,0 +1,195 @@
+{
+  "contracts": {
+    "EvidenceDesign": {
+      "contract": "EvidenceDesign",
+      "registries": {
+        "arm_roles": ["baseline", "control", "intervention"],
+        "metric_directions": ["negative", "positive"],
+        "metric_kinds": ["binary", "continuous"],
+        "suite_modes": {
+          "language": ["counterfactual", "mask", "none", "shuffle"],
+          "visual": ["none", "occlusion", "shuffle", "state_only"]
+        },
+        "suites": ["language", "visual"]
+      },
+      "required_root_fields": [
+        "arms",
+        "base_config",
+        "budget",
+        "design_id",
+        "metrics",
+        "output",
+        "schema_version",
+        "seeds",
+        "suite"
+      ],
+      "required_section_fields": {
+        "arm": ["id", "mode", "role"],
+        "budget": [
+          "batch_size",
+          "bootstrap_samples",
+          "dataset_episodes",
+          "evaluation_episodes",
+          "learning_rate",
+          "training_steps"
+        ],
+        "metric": ["direction", "kind", "name"],
+        "output": ["run_root", "snapshot_root"],
+        "seeds": ["bootstrap", "data", "evaluation", "split", "train"]
+      },
+      "root_fields": [
+        "arms",
+        "base_config",
+        "budget",
+        "design_id",
+        "metrics",
+        "output",
+        "schema_version",
+        "seeds",
+        "suite"
+      ],
+      "schema_version": 1,
+      "section_fields": {
+        "arm": ["id", "mode", "role"],
+        "budget": [
+          "batch_size",
+          "bootstrap_samples",
+          "dataset_episodes",
+          "evaluation_episodes",
+          "learning_rate",
+          "training_steps"
+        ],
+        "metric": ["direction", "kind", "name"],
+        "output": ["run_root", "snapshot_root"],
+        "seeds": ["bootstrap", "data", "evaluation", "split", "train"]
+      }
+    },
+    "ExperimentConfig": {
+      "contract": "ExperimentConfig",
+      "parameter_fields": {
+        "dataset_common_split": [
+          "split_seed",
+          "test_fraction",
+          "train_fraction",
+          "validation_fraction"
+        ],
+        "dataset_generated_point": ["action_gain", "steps_per_episode"],
+        "dataset_rendered_visual": ["observation_mode", "state_only"],
+        "evaluation": ["bootstrap_samples"],
+        "task_by_id": {
+          "language_conditioned_point_reach": ["language_split"],
+          "lerobot_pusht": [],
+          "pusht_style_point_reach": [
+            "action_clip",
+            "start_high",
+            "start_low",
+            "success_distance"
+          ],
+          "rendered_visual_point_reach": []
+        }
+      },
+      "registries": {
+        "dataset_types": ["generated", "jsonl", "lerobot", "memory", "mock_pusht"],
+        "execution_modes": ["open_loop_chunk", "receding_horizon"],
+        "image_ablations": ["none", "occlusion", "shuffle", "state_only"],
+        "language_ablations": ["counterfactual", "mask", "none", "shuffle"],
+        "policy_types": [
+          "act",
+          "numpy_bc_mlp",
+          "numpy_linear_chunk",
+          "transformer_chunk",
+          "transformer_chunk_cvae"
+        ],
+        "task_ids": [
+          "language_conditioned_point_reach",
+          "lerobot_pusht",
+          "pusht_style_point_reach",
+          "rendered_visual_point_reach"
+        ],
+        "visual_observation_modes": ["privileged", "vision_required"]
+      },
+      "required_parameter_fields": {
+        "dataset.rendered_visual_point_reach": ["observation_mode"],
+        "task.language_conditioned_point_reach": ["language_split"]
+      },
+      "required_root_fields": [
+        "schema_version",
+        "project_name",
+        "policy",
+        "task",
+        "artifacts"
+      ],
+      "required_section_fields": {
+        "artifacts": ["output_dir"],
+        "dataset": [],
+        "evaluation": [],
+        "policy": ["type"],
+        "task": ["id"],
+        "training": []
+      },
+      "root_fields": [
+        "artifacts",
+        "dataset",
+        "engine",
+        "evaluation",
+        "policy",
+        "project_name",
+        "schema_version",
+        "task",
+        "training"
+      ],
+      "schema_version": 2,
+      "section_fields": {
+        "artifacts": ["checkpoint_name", "output_dir", "report_path"],
+        "dataset": [
+          "episode_count",
+          "episodes",
+          "parameters",
+          "path",
+          "repo_id",
+          "return_uint8",
+          "revision",
+          "seed",
+          "split",
+          "type",
+          "video_backend"
+        ],
+        "evaluation": [
+          "episodes",
+          "execution_mode",
+          "image_ablation",
+          "language_ablation",
+          "parameters",
+          "seed",
+          "seeds"
+        ],
+        "policy": [
+          "action_dim",
+          "chunk_size",
+          "d_model",
+          "device",
+          "dropout",
+          "hidden_dim",
+          "image_shape",
+          "instruction_dim",
+          "latent_dim",
+          "nhead",
+          "num_layers",
+          "state_dim",
+          "temporal_ensemble_decay",
+          "type"
+        ],
+        "task": ["family", "goal", "id", "max_steps", "parameters", "render_size"],
+        "training": [
+          "batch_size",
+          "device",
+          "kl_weight",
+          "learning_rate",
+          "seed",
+          "steps"
+        ]
+      }
+    }
+  },
+  "descriptor_version": 1
+}

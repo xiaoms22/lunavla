@@ -1,0 +1,22 @@
+{
+  "checkpoint_sha256": [
+    "aeea7309b71ee049946f72d0ff13c0ad5ba7c0ac142b69ea34f0a4697cb0a930",
+    "aeea7309b71ee049946f72d0ff13c0ad5ba7c0ac142b69ea34f0a4697cb0a930"
+  ],
+  "config_sha256": [
+    "624b2ecf9c68345a7705b72a5dfa182f3eae9decb38abc19ba8c3546bbea6d1e",
+    "624b2ecf9c68345a7705b72a5dfa182f3eae9decb38abc19ba8c3546bbea6d1e"
+  ],
+  "data_sha256": [
+    "e010cc8d6ae4b5c03e5ece262f6186e83f3a5dabb5dd35a96944392df3b2ca0d",
+    "e010cc8d6ae4b5c03e5ece262f6186e83f3a5dabb5dd35a96944392df3b2ca0d"
+  ],
+  "metrics_sha256": [
+    "15341a750f8b474f09ddd66bf022ead69dde31275741783459ad610f9f20373c",
+    "15341a750f8b474f09ddd66bf022ead69dde31275741783459ad610f9f20373c"
+  ],
+  "original_run_id": "visual-beta1-image-seed-11",
+  "repeat_run_id": "visual-beta1-image-seed-11-repeat",
+  "required": true,
+  "verified": true
+}

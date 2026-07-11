@@ -12,6 +12,8 @@ venv/
 # Runtime artifacts
 outputs/*
 !outputs/.gitkeep
+/release-assets/
+/results/v2/stable-release/
 data/raw/*
 !data/raw/.gitkeep
 data/interim/*
