@@ -8,7 +8,7 @@ LunaVLA is a small, CPU-runnable imitation-learning/visuomotor-agent teaching co
 
 The stable v1.1 task is `pusht_style_point_reach`: a synthetic 2D point-reach exercise inspired by the shape of a PushT learning loop. v1.1 has no images, no T-block physics, no Transformer, and no real-robot interface. The v2 branch adds experimental modality fixtures and a teaching-scale Transformer, but LunaVLA is still not a PushT benchmark or a production VLA model.
 
-The signed [`v1.1.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v1.1.0) is the stable, evidence-backed teaching core. The `v2` branch is an experimental bridge: it adds a shared engine and optional PyTorch, language, visual, and LeRobot adapters without changing the meaning of the v1.1 evidence below. No modality-effect claim is made until its paired controlled interval excludes zero.
+The signed [`v1.1.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v1.1.0) is the stable, evidence-backed teaching core. The `v2` branch is the `v2.0.0-rc.1` bridge: it adds a shared engine and optional PyTorch, language, visual, and LeRobot adapters without changing the meaning of the v1.1 evidence below. Both completed modality-effect gates remain closed.
 
 ## Quick start
 
@@ -35,7 +35,7 @@ uv run pytest tests_v2 -m "not torch and not lerobot"
 
 Install the PyTorch CPU bridge with `uv sync --extra dev --extra v2-core`. The full `v2` extra additionally installs LeRobot's dataset profile. The versioned [`uv.lock`](uv.lock) resolves NumPy 2.2, PyTorch 2.11, torchvision 0.26, and LeRobot 0.6 under Python 3.12. Linux CI and release evidence use separate hash-locked CPU profiles so they cannot pull CUDA-only packages.
 
-The experimental public surface includes `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, `EvidenceDesign`, `RunManifest`, `EvidenceManifest`, and the policy registry/engine. See [`docs/v2/architecture.md`](docs/v2/architecture.md), [`docs/v2/evidence_contract.md`](docs/v2/evidence_contract.md), [`docs/v2/compatibility.md`](docs/v2/compatibility.md), and [`docs/v2/release_process.md`](docs/v2/release_process.md). These APIs remain subject to change until v2.0 stable.
+The RC-frozen public surface includes `ActionChunk`, `Observation`, `VLAPolicy`, `TaskEnv`, `DatasetSource`, `ExperimentConfig`, `EvidenceDesign`, `RunManifest`, and `EvidenceManifest`. See the [`v2.0.0 RC contract freeze`](docs/v2/contract_freeze.md), [`architecture`](docs/v2/architecture.md), [`evidence contract`](docs/v2/evidence_contract.md), [`compatibility guide`](docs/v2/compatibility.md), and [`release process`](docs/v2/release_process.md). Bug fixes may land before v2.0.0, but incompatible contract changes require an explicit versioned migration.
 
 The predeclared language and visual studies are executed and verified with:
 

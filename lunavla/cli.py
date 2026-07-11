@@ -117,7 +117,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "run_id": manifest.run_id,
                     "config_sha256": manifest.config_sha256,
                     "checkpoint_sha256": manifest.checkpoint_sha256,
-                    "metrics": manifest.metrics,
+                    "metrics": manifest.to_dict()["metrics"],
                 }
             )
         )

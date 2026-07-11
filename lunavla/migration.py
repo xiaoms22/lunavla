@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+from numbers import Integral
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -21,7 +22,10 @@ def migrate_v11_mapping(source: Mapping[str, Any]) -> dict[str, Any]:
     """Convert a resolved v1.1 mapping and validate the v2 result."""
 
     payload = _mapping(source, "root")
-    version = int(payload.get("schema_version", 0))
+    raw_version = payload.get("schema_version", 0)
+    if isinstance(raw_version, bool) or not isinstance(raw_version, Integral):
+        raise TypeError("schema_version must be an integer")
+    version = int(raw_version)
     if version == 2:
         return ExperimentConfig.from_mapping(payload).to_dict()
     if version != 1:
@@ -43,10 +47,19 @@ def migrate_v11_mapping(source: Mapping[str, Any]) -> dict[str, Any]:
     if not policy_type:
         raise ValueError("v1.1 policy.type is required")
 
+    dataset_source = str(dataset.get("source", "memory"))
+    supported_dataset_parameters = {
+        "split_seed",
+        "train_fraction",
+        "validation_fraction",
+        "test_fraction",
+    }
+    if dataset_source in {"memory", "mock_pusht", "generated"}:
+        supported_dataset_parameters.update({"steps_per_episode", "action_gain"})
     dataset_parameters = {
         key: copy.deepcopy(value)
         for key, value in dataset.items()
-        if key not in {"source", "split", "seed", "path", "num_episodes"}
+        if key in supported_dataset_parameters
     }
     task_parameters = {
         key: copy.deepcopy(value)
@@ -79,7 +92,7 @@ def migrate_v11_mapping(source: Mapping[str, Any]) -> dict[str, Any]:
             "parameters": task_parameters,
         },
         "dataset": {
-            "type": str(dataset.get("source", "memory")),
+            "type": dataset_source,
             "split": str(dataset.get("split", "train")),
             "seed": int(dataset.get("seed", 42)),
             "parameters": dataset_parameters,

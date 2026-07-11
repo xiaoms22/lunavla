@@ -16,7 +16,26 @@ PolicyBatch = dict[str, Array]
 PolicySample = Union[dict[str, Any], Array]
 
 
-@dataclass(frozen=True)
+def _readonly_owned_array(value: Array) -> Array:
+    """Detach an array onto a bytes-backed buffer that cannot become writable."""
+
+    contiguous = np.ascontiguousarray(value)
+    result = np.frombuffer(contiguous.tobytes(order="C"), dtype=contiguous.dtype).reshape(
+        contiguous.shape
+    )
+    result.setflags(write=False)
+    return result
+
+
+def _array_values_equal(left: Array, right: Array) -> bool:
+    return bool(
+        left.shape == right.shape
+        and left.dtype == right.dtype
+        and np.array_equal(left, right)
+    )
+
+
+@dataclass(frozen=True, eq=False)
 class ActionChunk:
     """A policy prediction with explicit action and padding dimensions."""
 
@@ -28,20 +47,30 @@ class ActionChunk:
         mask = np.asarray(self.valid_mask)
         if values.dtype.kind not in "fiu":
             raise TypeError("ActionChunk.values must have a numeric dtype")
-        if values.ndim != 2:
+        if values.ndim != 2 or any(size <= 0 for size in values.shape):
             raise ValueError(f"ActionChunk.values must be [chunk, action]; got {values.shape}")
+        if mask.dtype.kind != "b":
+            raise TypeError("ActionChunk.valid_mask must have boolean dtype")
         if mask.shape != values.shape[:1]:
             raise ValueError(
                 f"ActionChunk.valid_mask must have shape {values.shape[:1]}; got {mask.shape}"
             )
-        values = values.astype(np.float32, copy=False)
-        mask = mask.astype(bool, copy=False)
+        values = np.array(values, dtype=np.float32, copy=True)
+        mask = np.array(mask, dtype=bool, copy=True)
         if not np.all(np.isfinite(values)):
             raise ValueError("ActionChunk.values contain NaN or infinite values")
         if not np.any(mask):
             raise ValueError("ActionChunk.valid_mask must mark at least one action as valid")
-        object.__setattr__(self, "values", values)
-        object.__setattr__(self, "valid_mask", mask)
+        object.__setattr__(self, "values", _readonly_owned_array(values))
+        object.__setattr__(self, "valid_mask", _readonly_owned_array(mask))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ActionChunk):
+            return NotImplemented
+        return bool(
+            _array_values_equal(self.values, other.values)
+            and _array_values_equal(self.valid_mask, other.valid_mask)
+        )
 
 
 class MiniVLAPolicyBase(ABC):

@@ -557,3 +557,11 @@ class LeRobotEnvAdapter:
         )
         self._observation = next_observation
         return transition
+
+    def close(self) -> None:
+        """Close the wrapped environment when it exposes a lifecycle hook."""
+
+        close = getattr(self.env, "close", None)
+        if callable(close):
+            close()
+        self._observation = None

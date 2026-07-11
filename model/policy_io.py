@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import json
 import warnings
 from pathlib import Path
 from typing import Any
 
+from .checkpoint_contract import load_json_object
 from .minivla_policy import NumpyLinearChunkPolicy
 from .policy_base import MiniVLAPolicyBase
 from .policy_bc import NumpyBCMLPPolicy
@@ -68,10 +68,7 @@ def _checkpoint_policy_type(payload: dict[str, Any]) -> str:
 
 def load_policy(path: str | Path) -> tuple[MiniVLAPolicyBase, dict[str, Any]]:
     checkpoint_path = _resolve_checkpoint(path)
-    try:
-        payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"checkpoint is not valid JSON: {checkpoint_path}") from exc
+    payload = load_json_object(checkpoint_path)
     policy_type = _checkpoint_policy_type(payload)
     if policy_type == NumpyLinearChunkPolicy.policy_name:
         return NumpyLinearChunkPolicy.load(checkpoint_path)

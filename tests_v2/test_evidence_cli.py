@@ -227,7 +227,7 @@ def _evidence_fixture(tmp_path: Path) -> Path:
         )
         manifest = replace(
             created,
-            git_sha="0123456789abcdef",
+            git_sha="0" * 40,
             git_dirty=False,
             source_diff_sha256=None,
         )

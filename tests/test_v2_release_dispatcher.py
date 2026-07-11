@@ -19,7 +19,13 @@ def test_v2_dispatcher_is_manual_and_read_mostly() -> None:
     dispatch = payload["on"]["workflow_dispatch"]
     inputs = dispatch["inputs"]
     assert set(inputs) == {"source_ref", "expected_sha", "profile"}
-    assert inputs["profile"]["options"] == ["alpha", "language", "vision", "stable"]
+    assert inputs["profile"]["options"] == [
+        "alpha",
+        "language",
+        "vision",
+        "rc",
+        "stable",
+    ]
     assert payload["permissions"] == {
         "contents": "read",
         "id-token": "write",
@@ -42,3 +48,20 @@ def test_v2_dispatcher_does_not_interpolate_inputs_in_shell() -> None:
     checkout = next(step for step in steps if step.get("uses") == "actions/checkout@v4")
     assert checkout["with"]["persist-credentials"] == "false"
     assert checkout["with"]["ref"] == "${{ inputs.source_ref }}"
+
+
+def test_v2_dispatcher_attests_every_rc_release_layer() -> None:
+    payload = _load()
+    steps = payload["jobs"]["dispatch"]["steps"]
+    attestation = next(
+        step for step in steps if step.get("uses") == "actions/attest-build-provenance@v2"
+    )
+    subjects = set(attestation["with"]["subject-path"].splitlines())
+    assert subjects >= {
+        "release-assets/dist/*",
+        "release-assets/lunavla-v2-*-evidence.tar.gz",
+        "release-assets/SHA256SUMS",
+        "release-assets/sbom.json",
+        "release-assets/release-candidate.json",
+        "release-assets/environment-requirements.txt",
+    }

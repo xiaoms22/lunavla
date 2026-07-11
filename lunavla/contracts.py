@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Mapping, Protocol, Sequence, runtime_checkable
+from typing import Any, Mapping, Protocol, Sequence, TypeVar, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt
@@ -16,8 +16,17 @@ from model.policy_base import ActionChunk
 Array = npt.NDArray[np.generic]
 Float32Array = npt.NDArray[np.float32]
 BoolArray = npt.NDArray[np.bool_]
+Scalar = TypeVar("Scalar", bound=np.generic)
 
 _DEVICE_PATTERN = re.compile(r"^(?:cpu|mps(?::0)?|cuda(?::[0-9]+)?)$")
+
+
+def _readonly_copy(value: npt.NDArray[Scalar]) -> npt.NDArray[Scalar]:
+    """Detach an array onto an immutable buffer and preserve shape and dtype."""
+
+    result = np.frombuffer(value.tobytes(order="C"), dtype=value.dtype).reshape(value.shape)
+    result.setflags(write=False)
+    return result
 
 
 def normalize_device(device: str) -> str:
@@ -42,7 +51,7 @@ def _state_array(value: Array, *, name: str) -> Float32Array:
     result = np.array(array, dtype=np.float32, copy=True)
     if not np.all(np.isfinite(result)):
         raise ValueError(f"{name} contains NaN or infinite values")
-    return result
+    return _readonly_copy(result)
 
 
 def _image_array(value: Array) -> Array:
@@ -60,7 +69,17 @@ def _image_array(value: Array) -> Array:
         result = float_image
     else:
         raise TypeError("image dtype must be uint8 or floating point")
-    return result
+    return _readonly_copy(result)
+
+
+def _array_values_equal(left: Array, right: Array) -> bool:
+    """Compare public arrays without NumPy's ambiguous truth-value semantics."""
+
+    return bool(
+        left.dtype == right.dtype
+        and left.shape == right.shape
+        and np.array_equal(left, right)
+    )
 
 
 def _freeze_info_value(value: Any, *, name: str) -> Any:
@@ -89,7 +108,7 @@ def _freeze_info_value(value: Any, *, name: str) -> Any:
     raise TypeError(f"{name} contains unsupported value type {type(value).__name__}")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Observation:
     """A modality-preserving observation shared by every v2 policy and task."""
 
@@ -104,8 +123,20 @@ class Observation:
         if self.image is not None:
             object.__setattr__(self, "image", _image_array(self.image))
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Observation):
+            return NotImplemented
+        images_equal = self.image is None and other.image is None
+        if self.image is not None and other.image is not None:
+            images_equal = _array_values_equal(self.image, other.image)
+        return bool(
+            self.instruction == other.instruction
+            and _array_values_equal(self.state, other.state)
+            and images_equal
+        )
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, eq=False)
 class Transition:
     """One environment or demonstration transition at the public v2 boundary."""
 
@@ -134,8 +165,20 @@ class Transition:
         object.__setattr__(self, "terminated", bool(self.terminated))
         object.__setattr__(self, "info", _freeze_info_value(self.info, name="info"))
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Transition):
+            return NotImplemented
+        return bool(
+            self.observation == other.observation
+            and _array_values_equal(self.action, other.action)
+            and self.reward == other.reward
+            and self.next_observation == other.next_observation
+            and self.terminated == other.terminated
+            and self.info == other.info
+        )
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, eq=False)
 class PolicyBatch:
     """A raw-modality batch with padded action-chunk supervision."""
 
@@ -173,6 +216,8 @@ class PolicyBatch:
         if np.any(~np.any(mask, axis=1)):
             raise ValueError("each sample must contain at least one valid action")
 
+        targets = _readonly_copy(targets)
+        mask = _readonly_copy(mask)
         object.__setattr__(self, "observations", observations)
         object.__setattr__(self, "targets", targets)
         object.__setattr__(self, "valid_mask", mask)
@@ -181,6 +226,16 @@ class PolicyBatch:
     @property
     def batch_size(self) -> int:
         return len(self.observations)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, PolicyBatch):
+            return NotImplemented
+        return bool(
+            self.observations == other.observations
+            and _array_values_equal(self.targets, other.targets)
+            and _array_values_equal(self.valid_mask, other.valid_mask)
+            and self.device == other.device
+        )
 
 
 @runtime_checkable
@@ -222,6 +277,9 @@ class TaskEnv(Protocol):
         ...
 
     def step(self, action: Array) -> Transition:
+        ...
+
+    def close(self) -> None:
         ...
 
 

@@ -8,9 +8,10 @@ import json
 import math
 import warnings
 from dataclasses import dataclass
-from numbers import Integral
+from numbers import Integral, Real
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from types import MappingProxyType
+from typing import Any, Mapping, Sequence, cast
 
 import yaml
 
@@ -101,12 +102,58 @@ _LEROBOT_DATASET_FIELDS = {
     "video_backend",
     "return_uint8",
 }
+_TASK_PARAMETER_FIELDS = {
+    "pusht_style_point_reach": {
+        "start_low",
+        "start_high",
+        "action_clip",
+        "success_distance",
+    },
+    "language_conditioned_point_reach": {"language_split"},
+    "rendered_visual_point_reach": set(),
+    "lerobot_pusht": set(),
+}
+_SPLIT_PARAMETER_FIELDS = {
+    "split_seed",
+    "train_fraction",
+    "validation_fraction",
+    "test_fraction",
+}
+_GENERATED_POINT_PARAMETER_FIELDS = {"steps_per_episode", "action_gain"}
+_VISUAL_DATASET_PARAMETER_FIELDS = {"state_only", "observation_mode"}
+_EVALUATION_PARAMETER_FIELDS = {"bootstrap_samples"}
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise TypeError(f"{name} must be a mapping")
+    if any(not isinstance(key, str) for key in value):
+        raise TypeError(f"{name} field names must be strings")
     return copy.deepcopy(dict(value))
+
+
+def _deep_freeze(value: Any) -> Any:
+    """Return an immutable copy suitable for a public resolved contract."""
+
+    if isinstance(value, Mapping):
+        return MappingProxyType({str(key): _deep_freeze(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_deep_freeze(item) for item in value)
+    if isinstance(value, set):
+        return frozenset(_deep_freeze(item) for item in value)
+    return copy.deepcopy(value)
+
+
+def _deep_thaw(value: Any) -> Any:
+    """Convert an immutable resolved value back to plain JSON/YAML containers."""
+
+    if isinstance(value, Mapping):
+        return {str(key): _deep_thaw(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_deep_thaw(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        return [_deep_thaw(item) for item in sorted(value, key=repr)]
+    return copy.deepcopy(value)
 
 
 def _reject_unknown(name: str, value: Mapping[str, Any], allowed: set[str]) -> None:
@@ -137,8 +184,7 @@ def _episode_ids(value: Any, name: str) -> list[int]:
     if isinstance(value, (str, bytes, Mapping)) or not isinstance(value, Sequence):
         raise TypeError(f"{name} must be a sequence of integers")
     episodes = [
-        _integer(item, f"{name}[{index}]", nonnegative=True)
-        for index, item in enumerate(value)
+        _integer(item, f"{name}[{index}]", nonnegative=True) for index, item in enumerate(value)
     ]
     if not episodes:
         raise ValueError(f"{name} cannot be empty")
@@ -147,13 +193,151 @@ def _episode_ids(value: Any, name: str) -> list[int]:
     return episodes
 
 
+def _sequence(value: Any, name: str) -> list[Any]:
+    """Copy a sequence while rejecting string and mapping lookalikes."""
+
+    if isinstance(value, (str, bytes, Mapping)) or not isinstance(value, Sequence):
+        raise TypeError(f"{name} must be a non-string sequence")
+    return list(value)
+
+
 def _finite_float(value: Any, name: str, *, positive: bool = False) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise TypeError(f"{name} must be a number")
     result = float(value)
     if not math.isfinite(result):
         raise ValueError(f"{name} must be finite")
     if positive and result <= 0:
         raise ValueError(f"{name} must be positive")
     return result
+
+
+def _validate_task_parameters(task: dict[str, Any]) -> None:
+    task_id = str(task["id"])
+    parameters = task["parameters"]
+    _reject_unknown(
+        f"task.parameters for task.id={task_id}",
+        parameters,
+        _TASK_PARAMETER_FIELDS[task_id],
+    )
+    if task_id == "pusht_style_point_reach":
+        for name in ("start_low", "start_high"):
+            if name in parameters:
+                parameters[name] = _finite_float(parameters[name], f"task.parameters.{name}")
+        start_low = float(parameters.get("start_low", 0.05))
+        start_high = float(parameters.get("start_high", 0.95))
+        if not 0 <= start_low < start_high <= 1:
+            raise ValueError(
+                "task.parameters start range must satisfy 0 <= start_low < start_high <= 1"
+            )
+        for name in ("action_clip", "success_distance"):
+            if name in parameters:
+                parameters[name] = _finite_float(
+                    parameters[name], f"task.parameters.{name}", positive=True
+                )
+        return
+    if task_id == "language_conditioned_point_reach":
+        if "language_split" not in parameters:
+            raise ValueError(
+                "task.id=language_conditioned_point_reach requires task.parameters.language_split"
+            )
+        split = parameters["language_split"]
+        if not isinstance(split, str):
+            raise TypeError("task.parameters.language_split must be a string")
+        if split not in {"train", "heldout"}:
+            raise ValueError("task.parameters.language_split must be train or heldout")
+
+
+def _dataset_parameter_fields(dataset_type: str, task_id: str) -> set[str]:
+    if dataset_type == "lerobot":
+        return set()
+    allowed = set(_SPLIT_PARAMETER_FIELDS)
+    if dataset_type in {"memory", "mock_pusht", "generated"}:
+        if task_id == "pusht_style_point_reach":
+            allowed.update(_GENERATED_POINT_PARAMETER_FIELDS)
+        elif task_id == "rendered_visual_point_reach":
+            allowed.update(_VISUAL_DATASET_PARAMETER_FIELDS)
+    return allowed
+
+
+def _validate_dataset_parameters(dataset: dict[str, Any], *, task_id: str) -> None:
+    dataset_type = str(dataset["type"])
+    parameters = dataset["parameters"]
+    visual_only = sorted(set(parameters) & _VISUAL_DATASET_PARAMETER_FIELDS)
+    if visual_only and task_id != "rendered_visual_point_reach":
+        if len(visual_only) == 1:
+            raise ValueError(
+                f"dataset.parameters.{visual_only[0]} is only valid for "
+                "task.id=rendered_visual_point_reach"
+            )
+        raise ValueError(
+            "dataset parameters "
+            + ", ".join(visual_only)
+            + " are only valid for task.id=rendered_visual_point_reach"
+        )
+    _reject_unknown(
+        f"dataset.parameters for dataset.type={dataset_type}, task.id={task_id}",
+        parameters,
+        _dataset_parameter_fields(dataset_type, task_id),
+    )
+    if "split_seed" in parameters:
+        parameters["split_seed"] = _integer(
+            parameters["split_seed"],
+            "dataset.parameters.split_seed",
+            nonnegative=True,
+        )
+    fraction_names = ("train_fraction", "validation_fraction", "test_fraction")
+    defaults = (0.8, 0.1, 0.1)
+    fractions: list[float] = []
+    for name, default in zip(fraction_names, defaults, strict=True):
+        if name in parameters:
+            parameters[name] = _finite_float(parameters[name], f"dataset.parameters.{name}")
+        value = float(parameters.get(name, default))
+        if not 0 <= value <= 1:
+            raise ValueError(f"dataset.parameters.{name} must be between 0 and 1")
+        fractions.append(value)
+    if not math.isclose(sum(fractions), 1.0, abs_tol=1e-8):
+        raise ValueError("dataset split fractions must sum to one")
+    if "steps_per_episode" in parameters:
+        parameters["steps_per_episode"] = _positive_int(
+            parameters["steps_per_episode"],
+            "dataset.parameters.steps_per_episode",
+        )
+    if "action_gain" in parameters:
+        parameters["action_gain"] = _finite_float(
+            parameters["action_gain"],
+            "dataset.parameters.action_gain",
+            positive=True,
+        )
+    if task_id != "rendered_visual_point_reach":
+        return
+    if dataset_type not in {"memory", "mock_pusht", "generated"}:
+        raise ValueError(
+            "task.id=rendered_visual_point_reach requires a generated in-memory dataset type"
+        )
+    if "observation_mode" not in parameters:
+        raise ValueError(
+            "task.id=rendered_visual_point_reach requires dataset.parameters.observation_mode"
+        )
+    observation_mode = parameters["observation_mode"]
+    if not isinstance(observation_mode, str):
+        raise TypeError("dataset.parameters.observation_mode must be a string")
+    if observation_mode not in _VISUAL_OBSERVATION_MODES:
+        raise ValueError(
+            "dataset.parameters.observation_mode must be privileged or vision_required"
+        )
+    if "state_only" in parameters and not isinstance(parameters["state_only"], bool):
+        raise TypeError("dataset.parameters.state_only must be boolean")
+
+
+def _validate_evaluation_parameters(evaluation: dict[str, Any]) -> None:
+    parameters = evaluation["parameters"]
+    _reject_unknown("evaluation.parameters", parameters, _EVALUATION_PARAMETER_FIELDS)
+    if "bootstrap_samples" in parameters:
+        parameters["bootstrap_samples"] = _positive_int(
+            parameters["bootstrap_samples"],
+            "evaluation.parameters.bootstrap_samples",
+        )
 
 
 def _output_path(value: Any, name: str, *, allow_root: bool = False) -> str:
@@ -192,15 +376,12 @@ def _validate_cross_section_contracts(
         raise TypeError("dataset.parameters.state_only must be boolean")
     state_only = raw_state_only
     has_observation_mode = "observation_mode" in dataset_parameters
-    raw_observation_mode = dataset_parameters.get(
-        "observation_mode", "vision_required"
-    )
+    raw_observation_mode = dataset_parameters.get("observation_mode", "vision_required")
     if not isinstance(raw_observation_mode, str):
         raise TypeError("dataset.parameters.observation_mode must be a string")
     if raw_observation_mode not in _VISUAL_OBSERVATION_MODES:
         raise ValueError(
-            "dataset.parameters.observation_mode must be privileged or "
-            "vision_required"
+            "dataset.parameters.observation_mode must be privileged or vision_required"
         )
     if has_observation_mode and task_id != "rendered_visual_point_reach":
         raise ValueError(
@@ -210,22 +391,15 @@ def _validate_cross_section_contracts(
 
     if language_ablation != "none" and image_ablation != "none":
         raise ValueError("run one language or image ablation at a time")
-    if (
-        language_ablation != "none"
-        and task_id != "language_conditioned_point_reach"
-    ):
+    if language_ablation != "none" and task_id != "language_conditioned_point_reach":
         raise ValueError(
-            "evaluation.language_ablation requires "
-            "task.id=language_conditioned_point_reach"
+            "evaluation.language_ablation requires task.id=language_conditioned_point_reach"
         )
     if image_ablation != "none" and task_id != "rendered_visual_point_reach":
-        raise ValueError(
-            "evaluation.image_ablation requires task.id=rendered_visual_point_reach"
-        )
+        raise ValueError("evaluation.image_ablation requires task.id=rendered_visual_point_reach")
     if state_only and task_id != "rendered_visual_point_reach":
         raise ValueError(
-            "dataset.parameters.state_only is only valid for "
-            "task.id=rendered_visual_point_reach"
+            "dataset.parameters.state_only is only valid for task.id=rendered_visual_point_reach"
         )
 
     if policy_type == "transformer_chunk_cvae":
@@ -252,17 +426,13 @@ def _validate_cross_section_contracts(
         if policy["state_dim"] != 2:
             raise ValueError("task.id=lerobot_pusht requires policy.state_dim=2")
         if image_shape != list(LEROBOT_PUSHT_IMAGE_SHAPE):
-            raise ValueError(
-                "task.id=lerobot_pusht requires policy.image_shape=[96, 96, 3]"
-            )
+            raise ValueError("task.id=lerobot_pusht requires policy.image_shape=[96, 96, 3]")
         if dataset["repo_id"] != LEROBOT_PUSHT_REPO_ID:
             raise ValueError(
                 f"task.id=lerobot_pusht requires dataset.repo_id={LEROBOT_PUSHT_REPO_ID}"
             )
         if dataset["revision"] != LEROBOT_PUSHT_REVISION:
-            raise ValueError(
-                "task.id=lerobot_pusht requires the pinned official dataset revision"
-            )
+            raise ValueError("task.id=lerobot_pusht requires the pinned official dataset revision")
         if task["parameters"]:
             raise ValueError("task.id=lerobot_pusht does not accept task.parameters")
         if "goal" in task or "render_size" in task:
@@ -273,13 +443,9 @@ def _validate_cross_section_contracts(
 
     if task_id == "pusht_style_point_reach":
         if family != "point_reach":
-            raise ValueError(
-                "task.id=pusht_style_point_reach requires task.family=point_reach"
-            )
+            raise ValueError("task.id=pusht_style_point_reach requires task.family=point_reach")
         if policy["state_dim"] != 4:
-            raise ValueError(
-                "task.id=pusht_style_point_reach requires policy.state_dim=4"
-            )
+            raise ValueError("task.id=pusht_style_point_reach requires policy.state_dim=4")
         if image_shape is not None:
             raise ValueError("pusht_style_point_reach does not provide image observations")
         if language_ablation != "none" or image_ablation != "none":
@@ -294,30 +460,21 @@ def _validate_cross_section_contracts(
                 "task.id=language_conditioned_point_reach requires task.family=point_reach"
             )
         if policy["state_dim"] != 2:
-            raise ValueError(
-                "task.id=language_conditioned_point_reach requires policy.state_dim=2"
-            )
+            raise ValueError("task.id=language_conditioned_point_reach requires policy.state_dim=2")
         if policy["instruction_dim"] <= 0:
-            raise ValueError(
-                "language_conditioned_point_reach requires policy.instruction_dim > 0"
-            )
+            raise ValueError("language_conditioned_point_reach requires policy.instruction_dim > 0")
         if image_shape is not None:
-            raise ValueError(
-                "language_conditioned_point_reach does not provide image observations"
-            )
+            raise ValueError("language_conditioned_point_reach does not provide image observations")
         split = str(task["parameters"].get("language_split", "heldout"))
         if split not in {"train", "heldout"}:
-            raise ValueError(
-                "task.parameters.language_split must be train or heldout"
-            )
+            raise ValueError("task.parameters.language_split must be train or heldout")
         if "render_size" in task:
             raise ValueError("task.render_size is only valid for rendered visual tasks")
         return
 
     if family not in _VISUAL_FAMILIES:
         raise ValueError(
-            "rendered_visual_point_reach task.family must be all, direct_reach, "
-            "or waypoint_reach"
+            "rendered_visual_point_reach task.family must be all, direct_reach, or waypoint_reach"
         )
     dataset_parameters["observation_mode"] = raw_observation_mode
     expected_state_dim = 7 if raw_observation_mode == "privileged" else 3
@@ -331,40 +488,31 @@ def _validate_cross_section_contracts(
         raise ValueError("rendered visual task.render_size must be at least 24")
     task["render_size"] = render_size
     if policy["instruction_dim"] <= 0:
-        raise ValueError(
-            "rendered_visual_point_reach requires policy.instruction_dim > 0"
-        )
+        raise ValueError("rendered_visual_point_reach requires policy.instruction_dim > 0")
 
     if state_only:
         if image_shape is not None:
-            raise ValueError(
-                "visual state-only mode requires policy.image_shape=null"
-            )
+            raise ValueError("visual state-only mode requires policy.image_shape=null")
         if image_ablation != "state_only":
             raise ValueError(
-                "dataset.parameters.state_only=true requires "
-                "evaluation.image_ablation=state_only"
+                "dataset.parameters.state_only=true requires evaluation.image_ablation=state_only"
             )
         return
 
     if image_ablation == "state_only":
         raise ValueError(
-            "evaluation.image_ablation=state_only requires "
-            "dataset.parameters.state_only=true"
+            "evaluation.image_ablation=state_only requires dataset.parameters.state_only=true"
         )
     if image_shape is None:
-        raise ValueError(
-            "rendered visual image mode requires policy.image_shape=[H, W, 3]"
-        )
+        raise ValueError("rendered visual image mode requires policy.image_shape=[H, W, 3]")
     expected_shape = [render_size, render_size, 3]
     if image_shape != expected_shape:
         raise ValueError(
-            "policy.image_shape must match the rendered RGB observation shape "
-            f"{expected_shape}"
+            f"policy.image_shape must match the rendered RGB observation shape {expected_shape}"
         )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class ExperimentConfig:
     """Resolved v2 configuration.
 
@@ -376,12 +524,66 @@ class ExperimentConfig:
     schema_version: int
     project_name: str
     engine: str
-    policy: dict[str, Any]
-    task: dict[str, Any]
-    dataset: dict[str, Any]
-    training: dict[str, Any]
-    evaluation: dict[str, Any]
-    artifacts: dict[str, Any]
+    policy: Mapping[str, Any]
+    task: Mapping[str, Any]
+    dataset: Mapping[str, Any]
+    training: Mapping[str, Any]
+    evaluation: Mapping[str, Any]
+    artifacts: Mapping[str, Any]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        raise TypeError(
+            "ExperimentConfig cannot be constructed directly; "
+            "use ExperimentConfig.from_mapping() or ExperimentConfig.load()"
+        )
+
+    @classmethod
+    def _from_resolved(
+        cls,
+        *,
+        schema_version: int,
+        project_name: str,
+        engine: str,
+        policy: Mapping[str, Any],
+        task: Mapping[str, Any],
+        dataset: Mapping[str, Any],
+        training: Mapping[str, Any],
+        evaluation: Mapping[str, Any],
+        artifacts: Mapping[str, Any],
+    ) -> "ExperimentConfig":
+        """Create an instance only after ``from_mapping`` resolves every field."""
+
+        instance = object.__new__(cls)
+        resolved: dict[str, Any] = {
+            "schema_version": schema_version,
+            "project_name": project_name,
+            "engine": engine,
+            "policy": policy,
+            "task": task,
+            "dataset": dataset,
+            "training": training,
+            "evaluation": evaluation,
+            "artifacts": artifacts,
+        }
+        for name, value in resolved.items():
+            object.__setattr__(instance, name, value)
+        instance.__post_init__()
+        return instance
+
+    def __post_init__(self) -> None:
+        for name in (
+            "policy",
+            "task",
+            "dataset",
+            "training",
+            "evaluation",
+            "artifacts",
+        ):
+            value = getattr(self, name)
+            if not isinstance(value, Mapping):
+                raise TypeError(f"{name} must be a mapping")
+            object.__setattr__(self, name, _deep_freeze(value))
 
     @classmethod
     def from_mapping(cls, source: Mapping[str, Any]) -> "ExperimentConfig":
@@ -422,11 +624,12 @@ class ExperimentConfig:
         policy["device"] = normalize_device(str(policy.get("device", "cpu")))
         image_shape = policy.get("image_shape")
         if image_shape is not None:
-            if not isinstance(image_shape, (list, tuple)) or len(image_shape) != 3:
+            image_shape_values = _sequence(image_shape, "policy.image_shape")
+            if len(image_shape_values) != 3:
                 raise ValueError("policy.image_shape must be [height, width, channels] or null")
             policy["image_shape"] = [
                 _positive_int(part, f"policy.image_shape[{index}]")
-                for index, part in enumerate(image_shape)
+                for index, part in enumerate(image_shape_values)
             ]
             if policy["image_shape"][-1] not in {1, 3, 4}:
                 raise ValueError("policy.image_shape channel count must be 1, 3, or 4")
@@ -475,13 +678,16 @@ class ExperimentConfig:
         task["family"] = str(task.get("family", "point_reach"))
         task["max_steps"] = _positive_int(task.get("max_steps", 40), "task.max_steps")
         if "goal" in task:
-            goal = list(task["goal"])
+            goal = _sequence(task["goal"], "task.goal")
             if len(goal) != 2:
                 raise ValueError("task.goal must contain two coordinates")
-            task["goal"] = [_finite_float(value, f"task.goal[{index}]") for index, value in enumerate(goal)]
+            task["goal"] = [
+                _finite_float(value, f"task.goal[{index}]") for index, value in enumerate(goal)
+            ]
         if "render_size" in task:
             task["render_size"] = _positive_int(task["render_size"], "task.render_size")
         task["parameters"] = _mapping(task.get("parameters", {}), "task.parameters")
+        _validate_task_parameters(task)
 
         dataset = _mapping(payload.get("dataset", {}), "dataset")
         _reject_unknown("dataset", dataset, _DATASET_FIELDS)
@@ -494,14 +700,13 @@ class ExperimentConfig:
         dataset["split"] = str(dataset.get("split", "train"))
         if dataset["split"] not in {"train", "validation", "test"}:
             raise ValueError("dataset.split must be train, validation, or test")
-        dataset["seed"] = _integer(
-            dataset.get("seed", 42), "dataset.seed", nonnegative=True
-        )
+        dataset["seed"] = _integer(dataset.get("seed", 42), "dataset.seed", nonnegative=True)
         if "episode_count" in dataset:
             dataset["episode_count"] = _positive_int(
                 dataset["episode_count"], "dataset.episode_count"
             )
         dataset["parameters"] = _mapping(dataset.get("parameters", {}), "dataset.parameters")
+        _validate_dataset_parameters(dataset, task_id=task_id)
         lerobot_fields = provided_dataset_fields & _LEROBOT_DATASET_FIELDS
         if dataset["type"] != "lerobot":
             if lerobot_fields:
@@ -513,9 +718,7 @@ class ExperimentConfig:
         else:
             if dataset["parameters"]:
                 unknown = ", ".join(sorted(dataset["parameters"]))
-                raise ValueError(
-                    "unknown field(s) in LeRobot dataset parameters: " f"{unknown}"
-                )
+                raise ValueError(f"unknown field(s) in LeRobot dataset parameters: {unknown}")
             if "episode_count" in provided_dataset_fields:
                 raise ValueError(
                     "dataset.episode_count is not valid for LeRobot; use dataset.episodes"
@@ -539,9 +742,7 @@ class ExperimentConfig:
             if repo_id.count("/") != 1 or any(
                 not part.strip() for part in repo_id.split("/", maxsplit=1)
             ):
-                raise ValueError(
-                    "dataset.repo_id must be an explicit Hugging Face owner/name path"
-                )
+                raise ValueError("dataset.repo_id must be an explicit Hugging Face owner/name path")
             dataset["repo_id"] = repo_id
 
             revision = dataset.get("revision")
@@ -572,16 +773,12 @@ class ExperimentConfig:
 
         training = _mapping(payload.get("training", {}), "training")
         _reject_unknown("training", training, _TRAINING_FIELDS)
-        training["device"] = normalize_device(
-            str(training.get("device", policy["device"]))
-        )
+        training["device"] = normalize_device(str(training.get("device", policy["device"])))
         if training["device"] != policy["device"]:
             raise ValueError("training.device and policy.device must match")
         if policy_type in _NUMPY_POLICIES and training["device"] != "cpu":
             raise ValueError(f"{policy_type} is NumPy-only and requires training.device=cpu")
-        training["seed"] = _integer(
-            training.get("seed", 42), "training.seed", nonnegative=True
-        )
+        training["seed"] = _integer(training.get("seed", 42), "training.seed", nonnegative=True)
         training["batch_size"] = _positive_int(
             training.get("batch_size", 32), "training.batch_size"
         )
@@ -589,9 +786,7 @@ class ExperimentConfig:
         training["learning_rate"] = _finite_float(
             training.get("learning_rate", 1e-3), "training.learning_rate", positive=True
         )
-        training["kl_weight"] = _finite_float(
-            training.get("kl_weight", 0.0), "training.kl_weight"
-        )
+        training["kl_weight"] = _finite_float(training.get("kl_weight", 0.0), "training.kl_weight")
         if training["kl_weight"] < 0:
             raise ValueError("training.kl_weight cannot be negative")
         if policy_type in _NUMPY_POLICIES and training["kl_weight"] != 0:
@@ -616,14 +811,17 @@ class ExperimentConfig:
             evaluation.get("seed", 1000), "evaluation.seed", nonnegative=True
         )
         if "seeds" in evaluation:
+            raw_seeds = _sequence(evaluation["seeds"], "evaluation.seeds")
             seeds = [
-                _integer(value, "evaluation.seeds item", nonnegative=True)
-                for value in list(evaluation["seeds"])
+                _integer(value, f"evaluation.seeds[{index}]", nonnegative=True)
+                for index, value in enumerate(raw_seeds)
             ]
             if not seeds:
                 raise ValueError("evaluation.seeds cannot be empty")
             if len(seeds) != evaluation["episodes"]:
                 raise ValueError("evaluation.seeds must contain exactly evaluation.episodes values")
+            if len(set(seeds)) != len(seeds):
+                raise ValueError("evaluation.seeds must not contain duplicate seeds")
             evaluation["seeds"] = seeds
         for name in ("language_ablation", "image_ablation"):
             evaluation[name] = str(evaluation.get(name, "none"))
@@ -648,6 +846,7 @@ class ExperimentConfig:
         evaluation["parameters"] = _mapping(
             evaluation.get("parameters", {}), "evaluation.parameters"
         )
+        _validate_evaluation_parameters(evaluation)
         if (
             policy.get("temporal_ensemble_decay") is not None
             and evaluation["execution_mode"] != "receding_horizon"
@@ -665,9 +864,7 @@ class ExperimentConfig:
         default_checkpoint = (
             "checkpoint.json" if policy_type in _NUMPY_POLICIES else "checkpoint.pt"
         )
-        artifacts["checkpoint_name"] = str(
-            artifacts.get("checkpoint_name", default_checkpoint)
-        )
+        artifacts["checkpoint_name"] = str(artifacts.get("checkpoint_name", default_checkpoint))
         checkpoint_name = artifacts["checkpoint_name"]
         if (
             not checkpoint_name
@@ -678,9 +875,9 @@ class ExperimentConfig:
             raise ValueError("artifacts.checkpoint_name must be a plain file name")
         if policy_type in _NUMPY_POLICIES and artifacts["checkpoint_name"] != "checkpoint.json":
             raise ValueError("NumPy v2 policies require artifacts.checkpoint_name=checkpoint.json")
-        if policy_type == "transformer_chunk_cvae" and not artifacts[
-            "checkpoint_name"
-        ].endswith(".pt"):
+        if policy_type == "transformer_chunk_cvae" and not artifacts["checkpoint_name"].endswith(
+            ".pt"
+        ):
             raise ValueError("the Transformer policy requires a .pt checkpoint name")
         if "report_path" in artifacts:
             report_path = _output_path(artifacts["report_path"], "artifacts.report_path")
@@ -689,7 +886,7 @@ class ExperimentConfig:
                 raise ValueError("artifacts.report_path must be inside artifacts.output_dir")
             artifacts["report_path"] = report_path
 
-        return cls(
+        return cls._from_resolved(
             schema_version=version,
             project_name=project_name,
             engine=engine,
@@ -711,32 +908,94 @@ class ExperimentConfig:
             problem = getattr(exc, "problem", None) or "malformed YAML"
             mark = getattr(exc, "problem_mark", None)
             location = (
-                f" at line {mark.line + 1}, column {mark.column + 1}"
-                if mark is not None
-                else ""
+                f" at line {mark.line + 1}, column {mark.column + 1}" if mark is not None else ""
             )
-            raise ValueError(
-                f"invalid YAML in {source}: {problem}{location}"
-            ) from exc
+            raise ValueError(f"invalid YAML in {source}: {problem}{location}") from exc
         if not isinstance(payload, Mapping):
             raise TypeError("configuration file must contain a mapping")
         return cls.from_mapping(payload)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "schema_version": self.schema_version,
-            "project_name": self.project_name,
-            "engine": self.engine,
-            "policy": copy.deepcopy(self.policy),
-            "task": copy.deepcopy(self.task),
-            "dataset": copy.deepcopy(self.dataset),
-            "training": copy.deepcopy(self.training),
-            "evaluation": copy.deepcopy(self.evaluation),
-            "artifacts": copy.deepcopy(self.artifacts),
-        }
+        return cast(
+            dict[str, Any],
+            _deep_thaw(
+                {
+                    "schema_version": self.schema_version,
+                    "project_name": self.project_name,
+                    "engine": self.engine,
+                    "policy": self.policy,
+                    "task": self.task,
+                    "dataset": self.dataset,
+                    "training": self.training,
+                    "evaluation": self.evaluation,
+                    "artifacts": self.artifacts,
+                }
+            ),
+        )
 
     def sha256(self) -> str:
         encoded = json.dumps(
             self.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
+
+
+def experiment_config_schema_descriptor() -> dict[str, Any]:
+    """Describe the versioned public config surface for compatibility tests."""
+
+    return {
+        "contract": "ExperimentConfig",
+        "schema_version": CONFIG_SCHEMA_VERSION,
+        "root_fields": sorted(_ROOT_FIELDS),
+        "required_root_fields": [
+            "schema_version",
+            "project_name",
+            "policy",
+            "task",
+            "artifacts",
+        ],
+        "section_fields": {
+            "policy": sorted(_POLICY_FIELDS),
+            "task": sorted(_TASK_FIELDS),
+            "dataset": sorted(_DATASET_FIELDS),
+            "training": sorted(_TRAINING_FIELDS),
+            "evaluation": sorted(_EVALUATION_FIELDS),
+            "artifacts": sorted(_ARTIFACT_FIELDS),
+        },
+        "required_section_fields": {
+            "policy": ["type"],
+            "task": ["id"],
+            "dataset": [],
+            "training": [],
+            "evaluation": [],
+            "artifacts": ["output_dir"],
+        },
+        "parameter_fields": {
+            "task_by_id": {
+                task_id: sorted(fields)
+                for task_id, fields in sorted(_TASK_PARAMETER_FIELDS.items())
+            },
+            "dataset_common_split": sorted(_SPLIT_PARAMETER_FIELDS),
+            "dataset_generated_point": sorted(_GENERATED_POINT_PARAMETER_FIELDS),
+            "dataset_rendered_visual": sorted(_VISUAL_DATASET_PARAMETER_FIELDS),
+            "evaluation": sorted(_EVALUATION_PARAMETER_FIELDS),
+        },
+        "required_parameter_fields": {
+            "task.language_conditioned_point_reach": ["language_split"],
+            "dataset.rendered_visual_point_reach": ["observation_mode"],
+        },
+        "registries": {
+            "policy_types": sorted(_POLICIES),
+            "task_ids": sorted(_TASK_IDS),
+            "dataset_types": sorted(_DATASET_TYPES),
+            "execution_modes": ["open_loop_chunk", "receding_horizon"],
+            "language_ablations": [
+                "counterfactual",
+                "mask",
+                "none",
+                "shuffle",
+            ],
+            "image_ablations": ["none", "occlusion", "shuffle", "state_only"],
+            "visual_observation_modes": sorted(_VISUAL_OBSERVATION_MODES),
+        },
+    }

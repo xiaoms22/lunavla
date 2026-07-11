@@ -352,16 +352,21 @@ class Engine:
         *,
         intervention: ObservationIntervention | None = None,
     ) -> EvaluationResult:
-        self._validate_policy(policy)
         if not isinstance(env, TaskEnv):
-            raise TypeError("env must implement TaskEnv.reset() and TaskEnv.step()")
-        if intervention is not None and not isinstance(intervention, ObservationIntervention):
-            raise TypeError("intervention must implement ObservationIntervention.apply()")
-        episodes = tuple(
-            self._evaluate_episode(policy, env, seed, intervention)
-            for seed in self.config.evaluation_seeds
-        )
-        return EvaluationResult(episodes, self.config.execution_mode)
+            raise TypeError("env must implement TaskEnv.reset(), step(), and close()")
+        try:
+            self._validate_policy(policy)
+            if intervention is not None and not isinstance(
+                intervention, ObservationIntervention
+            ):
+                raise TypeError("intervention must implement ObservationIntervention.apply()")
+            episodes = tuple(
+                self._evaluate_episode(policy, env, seed, intervention)
+                for seed in self.config.evaluation_seeds
+            )
+            return EvaluationResult(episodes, self.config.execution_mode)
+        finally:
+            env.close()
 
     def save_checkpoint(
         self,

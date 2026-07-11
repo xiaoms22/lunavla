@@ -1,13 +1,31 @@
 from __future__ import annotations
 
 import copy
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 import pytest
 import yaml
 
-from lunavla.evidence_design import EvidenceDesign
+from lunavla.evidence_design import (
+    EvidenceArm,
+    EvidenceBudget,
+    EvidenceDesign,
+    EvidenceMetric,
+    EvidenceOutput,
+    EvidenceSeeds,
+)
+
+
+class _MappingSequence(dict[int, Any], Sequence[Any]):
+    """Adversarial value that satisfies both Mapping and Sequence protocols."""
+
+    def __init__(self, values: list[Any]) -> None:
+        super().__init__(enumerate(values))
+
+    def __iter__(self):  # type: ignore[override]
+        return iter(self.values())
 
 
 def _design_payload() -> dict[str, Any]:
@@ -81,6 +99,17 @@ def test_evidence_design_round_trip_freezes_every_controlled_input(tmp_path: Pat
 
 
 @pytest.mark.parametrize(
+    "contract",
+    [EvidenceDesign, EvidenceSeeds, EvidenceArm, EvidenceMetric, EvidenceBudget, EvidenceOutput],
+)
+def test_evidence_contract_values_reject_direct_dataclass_construction(
+    contract: type[object],
+) -> None:
+    with pytest.raises(TypeError, match="cannot be constructed directly.*from_mapping"):
+        contract()
+
+
+@pytest.mark.parametrize(
     ("mutate", "error_type", "message"),
     [
         (lambda value: value.update({"typo": 1}), ValueError, "unknown field"),
@@ -108,6 +137,16 @@ def test_evidence_design_round_trip_freezes_every_controlled_input(tmp_path: Pat
             lambda value: value["seeds"].update({"evaluation": [1000, 1000]}),
             ValueError,
             "evaluation values must be unique",
+        ),
+        (
+            lambda value: value["seeds"].update({"evaluation": []}),
+            ValueError,
+            "evaluation cannot be empty",
+        ),
+        (
+            lambda value: value["budget"].update({"training_steps": -1}),
+            ValueError,
+            "training_steps must be a positive integer",
         ),
         (
             lambda value: value["budget"].update({"evaluation_episodes": 3}),
@@ -139,6 +178,28 @@ def test_evidence_design_rejects_ambiguous_or_uncontrolled_values(
     payload = copy.deepcopy(_design_payload())
     mutate(payload)
     with pytest.raises(error_type, match=message):
+        EvidenceDesign.from_mapping(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "message"),
+    [
+        ("seeds.train", "seeds.train must be a sequence"),
+        ("arms", "arms must be a sequence"),
+        ("metrics", "metrics must be a sequence"),
+    ],
+)
+def test_evidence_design_rejects_mapping_sequence_hybrids(
+    field: str,
+    message: str,
+) -> None:
+    payload = _design_payload()
+    if field == "seeds.train":
+        payload["seeds"]["train"] = _MappingSequence(payload["seeds"]["train"])
+    else:
+        payload[field] = _MappingSequence(payload[field])
+
+    with pytest.raises(TypeError, match=message):
         EvidenceDesign.from_mapping(payload)
 
 

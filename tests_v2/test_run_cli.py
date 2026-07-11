@@ -59,16 +59,16 @@ def _config() -> ExperimentConfig:
 def test_evaluation_closes_external_environment_on_success_and_failure() -> None:
     class ClosableEnvironment:
         def __init__(self) -> None:
-            self.closed = False
+            self.close_calls = 0
 
         def close(self) -> None:
-            self.closed = True
+            self.close_calls += 1
 
     expected = object()
     environment = ClosableEnvironment()
     engine = type("SuccessfulEngine", (), {"evaluate": lambda *_args: expected})()
     assert _evaluate_with_cleanup(engine, object(), environment) is expected  # type: ignore[arg-type]
-    assert environment.closed is True
+    assert environment.close_calls == 1
 
     environment = ClosableEnvironment()
 
@@ -78,7 +78,7 @@ def test_evaluation_closes_external_environment_on_success_and_failure() -> None
     engine = type("FailingEngine", (), {"evaluate": fail})()
     with pytest.raises(RuntimeError, match="evaluation failed"):
         _evaluate_with_cleanup(engine, object(), environment)  # type: ignore[arg-type]
-    assert environment.closed is True
+    assert environment.close_calls == 1
 
 
 @pytest.mark.integration

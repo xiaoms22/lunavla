@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -190,8 +190,15 @@ def _sha256_file(path: Path) -> str:
 
 
 def _canonical_json(value: object) -> bytes:
+    def compatible(item: object) -> object:
+        if isinstance(item, Mapping):
+            return {str(key): compatible(nested) for key, nested in item.items()}
+        if isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
+            return [compatible(nested) for nested in item]
+        return item
+
     return json.dumps(
-        value,
+        compatible(value),
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,
@@ -512,15 +519,7 @@ def _verify_snapshot(
         if any(not isinstance(item, Mapping) for item in sample_payload):
             raise TypeError(f"rollouts.sample.json entries must be objects: {run_id}")
         rollout_samples[run_id] = [dict(item) for item in sample_payload]
-        dependency_sets.add(
-            json.dumps(
-                manifest.dependencies,
-                sort_keys=True,
-                separators=(",", ":"),
-                ensure_ascii=False,
-                allow_nan=False,
-            ).encode("utf-8")
-        )
+        dependency_sets.add(_canonical_json(manifest.dependencies))
     if len(dependency_sets) != 1:
         raise ValueError("source manifests do not share one dependency set")
     if len(non_image_pairing_hashes) != 1:
