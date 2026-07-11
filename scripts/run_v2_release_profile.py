@@ -13,7 +13,7 @@ import tarfile
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Sequence, TypedDict
 
 from lunavla.evidence import EvidenceManifest
 from lunavla.evidence_design import EvidenceDesign
@@ -119,6 +119,30 @@ class StableEvidence:
     canonical_design_path: Path
     controlled: ControlledEvidence
     metadata: dict[str, Path]
+
+
+class StableStudyRecord(TypedDict):
+    profile: str
+    design_id: str
+    canonical_design_path: str
+    canonical_design_sha256: str
+    execution_design_path: str
+    execution_design_sha256: str
+    design_sha256: str
+    evidence_manifest_path: str
+    evidence_manifest_sha256: str
+    verification_path: str
+    verification_sha256: str
+    claim_summary_path: str
+    claim_summary_sha256: str
+    full_output_path: str
+    review_snapshot_path: str
+    source_count: int
+    arm_episode_count: int
+    matrix_complete: bool
+    reduced_design: bool
+    claims: list[dict[str, Any]]
+    runs: list[dict[str, object]]
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -363,7 +387,16 @@ def alpha_quality_gate() -> None:
         (sys.executable, "scripts/check_repo_quality.py"),
         (sys.executable, "scripts/render_readme_results.py", "--check"),
         ("ruff", "check", "."),
-        ("mypy", "dataset", "model", "trainer", "lunavla", "eval_vla.py"),
+        ("ruff", "check", "scripts/run_v2_release_profile.py"),
+        (
+            "mypy",
+            "dataset",
+            "model",
+            "trainer",
+            "lunavla",
+            "scripts/run_v2_release_profile.py",
+            "eval_vla.py",
+        ),
         (sys.executable, "-m", "pytest", "-q"),
     )
     for command in commands:
@@ -1200,7 +1233,7 @@ def write_stable_archive(
     return archive
 
 
-def _stable_study_record(study: StableEvidence) -> dict[str, object]:
+def _stable_study_record(study: StableEvidence) -> StableStudyRecord:
     evidence = study.controlled
     claims = [claim.to_dict() for claim in evidence.manifest.claims]
     return {
@@ -1266,7 +1299,7 @@ def write_stable_candidate(
     claims = [
         claim
         for record in study_records
-        for claim in record["claims"]  # type: ignore[union-attr]
+        for claim in record["claims"]
     ]
     claim_ids = [claim.get("claim_id") for claim in claims if isinstance(claim, dict)]
     if claim_ids != ["instruction_following", "visual_control_contribution"]:
@@ -1383,6 +1416,82 @@ def _verify_checksum_files(path: Path, *, base: Path) -> None:
             raise RuntimeError(f"checksum mismatch for {relative!r}")
 
 
+def _release_candidate_file(value: object, *, label: str) -> Path:
+    """Resolve one normalized, real release asset without permitting path escape."""
+
+    if not isinstance(value, str) or not value:
+        raise RuntimeError(f"{label} must be a non-empty release-relative path")
+    relative = Path(value)
+    if (
+        relative.is_absolute()
+        or "\\" in value
+        or ".." in relative.parts
+        or relative.as_posix() != value
+    ):
+        raise RuntimeError(f"{label} is not a normalized release-relative path: {value!r}")
+    release_root = RELEASE_ROOT.resolve()
+    candidate = RELEASE_ROOT / relative
+    try:
+        candidate.resolve().relative_to(release_root)
+    except ValueError as exc:
+        raise RuntimeError(f"{label} escapes release-assets/: {value!r}") from exc
+    if candidate.is_symlink() or not candidate.is_file():
+        raise RuntimeError(f"{label} must name a real release asset: {value!r}")
+    return candidate
+
+
+def _verified_stable_claims(study_records: object) -> list[dict[str, Any]]:
+    """Bind candidate claims to strict EvidenceManifest and claim-summary records."""
+
+    if not isinstance(study_records, list) or len(study_records) != 2:
+        raise RuntimeError("stable evidence must contain exactly two study records")
+    verified: list[dict[str, Any]] = []
+    for index, record in enumerate(study_records):
+        if not isinstance(record, dict):
+            raise RuntimeError(f"stable evidence study {index} must be a mapping")
+        manifest_path = _release_candidate_file(
+            record.get("evidence_manifest_path"),
+            label=f"stable evidence study {index} manifest",
+        )
+        summary_path = _release_candidate_file(
+            record.get("claim_summary_path"),
+            label=f"stable evidence study {index} claim summary",
+        )
+        manifest = EvidenceManifest.load(manifest_path)
+        manifest_claims = [claim.to_dict() for claim in manifest.claims]
+        if record.get("claims") != manifest_claims:
+            raise RuntimeError(
+                f"stable evidence study {index} claims differ from its EvidenceManifest"
+            )
+        if (
+            record.get("design_id") != manifest.design_id
+            or record.get("design_sha256") != manifest.design_sha256
+        ):
+            raise RuntimeError(
+                f"stable evidence study {index} design differs from its EvidenceManifest"
+            )
+        try:
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"stable evidence study {index} claim summary is invalid JSON"
+            ) from exc
+        expected_summary = {
+            "schema_version": 1,
+            "profile": record.get("profile"),
+            "design_id": manifest.design_id,
+            "design_sha256": manifest.design_sha256,
+            "claim_allowed": any(claim.allowed for claim in manifest.claims),
+            "claims": manifest_claims,
+        }
+        if summary != expected_summary:
+            raise RuntimeError(
+                f"stable evidence study {index} claim summary differs from its EvidenceManifest"
+            )
+        verified.extend(manifest_claims)
+    return verified
+
+
 def verify_stable_asset_set(expected_sha: str) -> None:
     """Recompute every top-level asset binding after candidate assembly."""
 
@@ -1442,6 +1551,9 @@ def verify_stable_asset_set(expected_sha: str) -> None:
     failed = [name for name, passed in release_contract.items() if not passed]
     if failed:
         raise RuntimeError("stable candidate contract failed: " + ", ".join(failed))
+    verified_claims = _verified_stable_claims(study_records)
+    if claims != verified_claims:
+        raise RuntimeError("stable candidate claims differ from verified EvidenceManifest claims")
 
     hash_records = [
         *payload["distributions"],
@@ -1483,10 +1595,15 @@ def verify_stable_asset_set(expected_sha: str) -> None:
                     "sha256": study[hash_field],
                 }
             )
-    for record in hash_records:
-        path = RELEASE_ROOT / record["path"]
-        if not path.is_file() or path.is_symlink() or sha256_file(path) != record["sha256"]:
-            raise RuntimeError(f"stable candidate asset hash mismatch: {record['path']}")
+    for index, record in enumerate(hash_records):
+        if not isinstance(record, dict):
+            raise RuntimeError(f"stable candidate hash record {index} must be a mapping")
+        path = _release_candidate_file(
+            record.get("path"),
+            label=f"stable candidate hash record {index}",
+        )
+        if sha256_file(path) != record.get("sha256"):
+            raise RuntimeError(f"stable candidate asset hash mismatch: {record.get('path')}")
 
     _verify_checksum_files(
         RELEASE_ROOT / payload["assets"]["evidence_files_sha256"]["path"],

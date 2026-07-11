@@ -30,6 +30,8 @@ def test_fast_ci_maintains_main_and_v1x_without_collecting_v2_tests() -> None:
     workflow_text = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "requirements-v2" not in workflow_text
     assert "--extra v2" not in workflow_text
+    assert "ruff check scripts/run_v2_release_profile.py" in workflow_text
+    assert "mypy dataset model trainer lunavla scripts/run_v2_release_profile.py" in workflow_text
 
 
 def test_v2_cpu_ci_targets_main_and_v2_without_renaming_required_checks() -> None:
@@ -57,6 +59,11 @@ def test_v2_cpu_ci_targets_main_and_v2_without_renaming_required_checks() -> Non
         if step.get("uses") == "actions/setup-python@v5"
     }
     assert setup_versions == {"3.12"}
+    contract_commands = "\n".join(
+        str(step.get("run", "")) for step in jobs["contracts"]["steps"]
+    )
+    assert "ruff check scripts/run_v2_release_profile.py" in contract_commands
+    assert "mypy lunavla scripts/run_v2_release_profile.py" in contract_commands
 
 
 def test_v2_cpu_jobs_keep_dependency_profiles_and_test_suites_separate() -> None:

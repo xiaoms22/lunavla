@@ -43,8 +43,9 @@ jobs:
       - name: Run static checks
         run: |
           uv run --no-sync ruff check lunavla tests_v2
-          uv run --no-sync mypy lunavla
-          uv run --no-sync python -m compileall -q lunavla
+          uv run --no-sync ruff check scripts/run_v2_release_profile.py
+          uv run --no-sync mypy lunavla scripts/run_v2_release_profile.py
+          uv run --no-sync python -m compileall -q lunavla scripts/run_v2_release_profile.py
       - name: Run dependency-light v2 tests
         run: uv run --no-sync pytest tests_v2 -m "not torch and not lerobot"
 

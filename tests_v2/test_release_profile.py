@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from lunavla.evidence import ClaimDecision, EvidenceManifest, EvidenceSource
 from scripts.run_v2_release_profile import (
     EVIDENCE_ARCHIVE_NAMES,
     RC_ARCHIVE_NAME,
@@ -701,6 +702,33 @@ def _fake_stable_study(
     return SimpleNamespace(controlled=controlled, metadata=metadata)
 
 
+def _write_stable_test_manifest(
+    path: Path,
+    *,
+    profile: str,
+    claim_id: str,
+) -> EvidenceManifest:
+    claim = ClaimDecision.from_checks(
+        claim_id=claim_id,
+        checks={"effect_established": False},
+        allowed_statement=f"Controlled evidence establishes {claim_id}.",
+        denied_statement=f"{claim_id} has not yet been established.",
+    )
+    manifest = EvidenceManifest(
+        schema_version=1,
+        design_id=f"{profile}-design",
+        design_sha256="d" * 64,
+        reduced_design=False,
+        matrix_complete=True,
+        integrity_checks=(("clean_source", True),),
+        sources=(EvidenceSource(f"{profile}-seed-11", "b" * 64),),
+        statistics=(),
+        claims=(claim,),
+    )
+    manifest.write(path)
+    return manifest
+
+
 def test_stable_candidate_binds_960_matrix_tag_and_current_claims(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -943,9 +971,32 @@ def test_stable_asset_consistency_detects_tampering(
             path = release_root / f"{profile}-{name}.json"
             path.write_text("{}\n", encoding="utf-8")
             metadata[name] = path
+        manifest = _write_stable_test_manifest(
+            metadata["manifest"],
+            profile=profile,
+            claim_id=claim_id,
+        )
+        manifest_claims = [claim.to_dict() for claim in manifest.claims]
+        metadata["claims"].write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "profile": profile,
+                    "design_id": manifest.design_id,
+                    "design_sha256": manifest.design_sha256,
+                    "claim_allowed": False,
+                    "claims": manifest_claims,
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
         study_records.append(
             {
                 "profile": profile,
+                "design_id": manifest.design_id,
+                "design_sha256": manifest.design_sha256,
                 "source_count": source_count,
                 "arm_episode_count": episodes,
                 "matrix_complete": True,
@@ -960,13 +1011,7 @@ def test_stable_asset_consistency_detects_tampering(
                 "verification_sha256": sha256_file(metadata["verification"]),
                 "claim_summary_path": metadata["claims"].name,
                 "claim_summary_sha256": sha256_file(metadata["claims"]),
-                "claims": [
-                    {
-                        "claim_id": claim_id,
-                        "allowed": False,
-                        "statement": f"{claim_id} has not yet been established.",
-                    }
-                ],
+                "claims": manifest_claims,
             }
         )
     evidence_checksums = release_root / "stable-evidence-files.SHA256SUMS"
@@ -1035,6 +1080,20 @@ def test_stable_asset_consistency_detects_tampering(
     }
     candidate = release_root / "release-candidate.json"
     candidate.write_text(json.dumps(payload) + "\n", encoding="utf-8")
+    release.write_checksums()
+    release.verify_stable_asset_set("a" * 40)
+
+    original_candidate = candidate.read_text(encoding="utf-8")
+    tampered = json.loads(original_candidate)
+    tampered["claims"][0]["allowed"] = True
+    tampered["claims"][0]["statement"] = "Fabricated modality-effect success."
+    tampered["modality_effect_claims"] = True
+    candidate.write_text(json.dumps(tampered) + "\n", encoding="utf-8")
+    release.write_checksums()
+    with pytest.raises(RuntimeError, match="claims differ from verified EvidenceManifest"):
+        release.verify_stable_asset_set("a" * 40)
+
+    candidate.write_text(original_candidate, encoding="utf-8")
     release.write_checksums()
     release.verify_stable_asset_set("a" * 40)
     (release_root / "sbom.json").write_text('{"tampered":true}\n', encoding="utf-8")
