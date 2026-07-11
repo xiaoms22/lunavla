@@ -5,10 +5,11 @@
 | Feature/config contracts | Implemented and CPU-tested | No real embodiment mapping yet |
 | v2 migration | Implemented and golden-tested | Unknown physical metadata remains explicit |
 | Data QA/replay | Implemented on deterministic fixtures | No real dataset download |
-| Policy/normalization contracts | Implemented and CPU-tested | No ACT/Diffusion/SmolVLA body yet |
-| Engine/checkpoint/manifest | Revision 2 implemented for NumPy compatibility policy | No neural policy comparison |
+| Policy/normalization contracts | Implemented and CPU-tested | External adapters remain gated |
+| Engine/checkpoint/manifest | Revision 2 implemented for NumPy compatibility and native ACT | No policy comparison |
+| Native ACT | CPU E2E, masked loss, checkpoint/resume, temporal ensemble | No performance claim |
 | Fake PushT/LIBERO | Implemented as fixtures | Connectivity and lifecycle only |
-| ACT/Diffusion/SmolVLA | Sequential Alpha 2 PRs planned | Not current capability |
+| Diffusion/SmolVLA | Sequential Alpha 2 PRs planned | Not current capability |
 | Real PushT/LIBERO subset | Planned Beta 2 | No benchmark statement |
 | Prompt/state diagnostics | Planned Beta 1 | No modality or routing claim |
 

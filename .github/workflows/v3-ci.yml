@@ -94,6 +94,7 @@ jobs:
           uv run --no-sync pytest tests_v3
           uv run --no-sync lunavla-v3 validate-config configs/v3/fake_pusht_alpha.yaml
           uv run --no-sync lunavla-v3 validate-config configs/v3/fake_libero_alpha.yaml
+          uv run --no-sync lunavla-v3 validate-config configs/v3/act_fake_libero_cpu.yaml
 
   v2-compat:
     name: v3-v2-compat

@@ -15,9 +15,11 @@ Implemented in this Alpha:
 - train-split-only normalization statistics with stable hashes;
 - explicit optimizer, scheduler, precision, clipping, and resume configuration defaults;
 - schema-4 revision-2 checkpoint directories and manifests; revision 1 remains read-only.
+- native `act_v3` action-query CVAE Transformer through the same registry and Engine, with one
+  ordered RGB camera, state, instruction, masked chunks, temporal ensembling, and exact CPU resume.
 
 The fake LIBERO fixture tests data shape and lifecycle only. Alpha 1 does not download real LeRobot
-or LIBERO data, implement ACT/Diffusion/SmolVLA policy bodies, or establish language, image,
+or LIBERO data, implement Diffusion/SmolVLA policy bodies, or establish language, image,
 state-route, PushT, or LIBERO performance.
 
 - [Direction](v3_overview.md)

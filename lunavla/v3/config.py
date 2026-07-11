@@ -34,13 +34,22 @@ _SECTION_FIELDS = {
     "diagnostics": {"enabled"},
     "artifacts": {"output_dir", "checkpoint_name"},
 }
-_POLICIES = {"numpy_linear_chunk", "numpy_bc_mlp", "transformer_chunk", "transformer_chunk_cvae", "act"}
+_POLICIES = {
+    "numpy_linear_chunk", "numpy_bc_mlp", "transformer_chunk", "transformer_chunk_cvae",
+    "act", "act_v3",
+}
 _TASKS = {"fake_pusht", "fake_libero", "pusht_style_point_reach", "language_conditioned_point_reach", "rendered_visual_point_reach", "lerobot_pusht"}
 _DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat"}
 _EXECUTION = {"open_loop_chunk", "receding_horizon"}
 _NUMPY_PARAMETER_FIELDS = {
     "state_dim", "instruction_dim", "action_dim", "chunk_size", "hidden_dim",
     "state_feature", "unused_modalities", "history", "horizon", "execution_steps",
+}
+_ACT_PARAMETER_FIELDS = {
+    "state_feature", "camera_feature", "instruction_dim", "chunk_size", "history",
+    "horizon", "execution_steps", "d_model", "nhead", "num_encoder_layers",
+    "num_decoder_layers", "dim_feedforward", "latent_dim", "dropout", "kl_weight",
+    "sample_latent_during_training", "temporal_ensemble_decay",
 }
 _TRAINING_DEFAULTS: Mapping[str, Any] = {
     "optimizer": {"type": "sgd", "parameters": {}},
@@ -186,23 +195,46 @@ class ExperimentConfig:
                 policy["parameters"]["legacy"], "policy.parameters.legacy"
             )
         else:
-            if not policy["type"].startswith("numpy_"):
+            if not (policy["type"].startswith("numpy_") or policy["type"] == "act_v3"):
                 raise ValueError(
                     f"policy.type {policy['type']!r} is migration-only in v3 Alpha 1"
                 )
-            allowed_policy = _NUMPY_PARAMETER_FIELDS if policy["type"].startswith("numpy_") else set()
+            allowed_policy = (
+                _NUMPY_PARAMETER_FIELDS
+                if policy["type"].startswith("numpy_")
+                else _ACT_PARAMETER_FIELDS
+            )
             _reject_unknown(policy["parameters"], allowed_policy, "policy.parameters")
-            for name in ("state_dim", "instruction_dim", "action_dim", "chunk_size"):
+            required_parameters = (
+                ("state_dim", "instruction_dim", "action_dim", "chunk_size")
+                if policy["type"].startswith("numpy_")
+                else (
+                    "state_feature", "instruction_dim", "chunk_size", "d_model", "nhead",
+                    "num_encoder_layers", "num_decoder_layers", "dim_feedforward",
+                    "latent_dim", "dropout", "kl_weight",
+                )
+            )
+            for name in required_parameters:
                 if name not in policy["parameters"]:
                     raise ValueError(f"policy.parameters.{name} is required")
-            for name in ("state_dim", "action_dim", "chunk_size"):
+            positive_integer_parameters = ["chunk_size"]
+            if policy["type"].startswith("numpy_"):
+                positive_integer_parameters.extend(["state_dim", "action_dim"])
+            else:
+                positive_integer_parameters.extend(
+                    [
+                        "d_model", "nhead", "num_encoder_layers", "num_decoder_layers",
+                        "dim_feedforward", "latent_dim",
+                    ]
+                )
+            for name in positive_integer_parameters:
                 policy["parameters"][name] = _integer(
                     policy["parameters"][name], f"policy.parameters.{name}", positive=True
                 )
             policy["parameters"]["instruction_dim"] = _integer(
                 policy["parameters"]["instruction_dim"], "policy.parameters.instruction_dim"
             )
-            if "hidden_dim" in policy["parameters"]:
+            if policy["type"].startswith("numpy_") and "hidden_dim" in policy["parameters"]:
                 policy["parameters"]["hidden_dim"] = _integer(
                     policy["parameters"]["hidden_dim"], "policy.parameters.hidden_dim", positive=True
                 )
@@ -231,15 +263,47 @@ class ExperimentConfig:
             if not isinstance(state_feature, str) or not state_feature:
                 raise ValueError("policy.parameters.state_feature must be a non-empty string")
             policy["parameters"]["state_feature"] = state_feature
-            unused = policy["parameters"].get("unused_modalities", [])
-            if isinstance(unused, (str, bytes, Mapping)) or not isinstance(unused, Sequence):
-                raise TypeError("policy.parameters.unused_modalities must be a sequence")
-            unused_values = list(unused)
-            if any(item not in {"image", "instruction"} for item in unused_values):
-                raise ValueError("unused_modalities supports only image and instruction")
-            if len(unused_values) != len(set(unused_values)):
-                raise ValueError("unused_modalities cannot contain duplicates")
-            policy["parameters"]["unused_modalities"] = unused_values
+            if policy["type"] == "act_v3":
+                camera_feature = policy["parameters"].get("camera_feature")
+                if camera_feature is not None and (
+                    not isinstance(camera_feature, str) or not camera_feature
+                ):
+                    raise ValueError("policy.parameters.camera_feature must be non-empty or null")
+                policy["parameters"]["camera_feature"] = camera_feature
+                if policy["parameters"]["d_model"] % policy["parameters"]["nhead"]:
+                    raise ValueError("act_v3 d_model must be divisible by nhead")
+                for name in ("dropout", "kl_weight"):
+                    value = policy["parameters"][name]
+                    if isinstance(value, bool) or not isinstance(value, (int, float)):
+                        raise TypeError(f"policy.parameters.{name} must be numeric")
+                    value = float(value)
+                    if not math.isfinite(value) or value < 0:
+                        raise ValueError(f"policy.parameters.{name} must be finite and non-negative")
+                    if name == "dropout" and value >= 1:
+                        raise ValueError("policy.parameters.dropout must be below one")
+                    policy["parameters"][name] = value
+                sample_latent = policy["parameters"].get(
+                    "sample_latent_during_training", True
+                )
+                if not isinstance(sample_latent, bool):
+                    raise TypeError("sample_latent_during_training must be boolean")
+                policy["parameters"]["sample_latent_during_training"] = sample_latent
+                decay = policy["parameters"].get("temporal_ensemble_decay")
+                if decay is not None:
+                    decay = _positive_float(decay, "policy.parameters.temporal_ensemble_decay")
+                policy["parameters"]["temporal_ensemble_decay"] = decay
+            if policy["type"].startswith("numpy_"):
+                unused = policy["parameters"].get("unused_modalities", [])
+                if isinstance(unused, (str, bytes, Mapping)) or not isinstance(
+                    unused, Sequence
+                ):
+                    raise TypeError("policy.parameters.unused_modalities must be a sequence")
+                unused_values = list(unused)
+                if any(item not in {"image", "instruction"} for item in unused_values):
+                    raise ValueError("unused_modalities supports only image and instruction")
+                if len(unused_values) != len(set(unused_values)):
+                    raise ValueError("unused_modalities cannot contain duplicates")
+                policy["parameters"]["unused_modalities"] = unused_values
         task = sections["task"]
         if task["id"] not in _TASKS:
             raise ValueError(f"unsupported task.id {task['id']!r}")
@@ -299,12 +363,29 @@ class ExperimentConfig:
             action_features = feature_schema.by_role("action")
             if state_feature_name not in state_features:
                 raise ValueError("policy state_feature is not declared by FeatureSchema")
-            if state_features[state_feature_name].shape != (policy["parameters"]["state_dim"],):
+            if policy["type"].startswith("numpy_") and state_features[state_feature_name].shape != (
+                policy["parameters"]["state_dim"],
+            ):
                 raise ValueError("policy state_dim conflicts with FeatureSchema")
             if len(action_features) != 1:
                 raise ValueError("runnable policies require exactly one action feature")
-            if action_features[0].shape != (policy["parameters"]["action_dim"],):
+            if policy["type"].startswith("numpy_") and action_features[0].shape != (
+                policy["parameters"]["action_dim"],
+            ):
                 raise ValueError("policy action_dim conflicts with FeatureSchema")
+            if policy["type"] == "act_v3":
+                camera_features = {item.name: item for item in feature_schema.by_role("image")}
+                camera_feature = policy["parameters"]["camera_feature"]
+                if camera_feature is not None and camera_feature not in camera_features:
+                    raise ValueError("act_v3 camera_feature is not declared by FeatureSchema")
+                if camera_feature is not None:
+                    camera_shape = camera_features[camera_feature].shape
+                    if len(camera_shape) != 3 or camera_shape[-1] != 3:
+                        raise ValueError("act_v3 Alpha 2 requires an HWC RGB camera feature")
+                if camera_feature is None and camera_features:
+                    raise ValueError("act_v3 cannot silently discard declared image features")
+                if len(camera_features) > 1:
+                    raise ValueError("act_v3 Alpha 2 supports exactly zero or one camera")
 
         training = sections["training"]
         training["device"] = normalize_device(training["device"])
@@ -370,6 +451,22 @@ class ExperimentConfig:
             raise ValueError("NumPy compatibility policies require a constant scheduler")
         if policy["type"].startswith("numpy_") and training["precision"] != "float32":
             raise ValueError("NumPy compatibility policies require float32 precision")
+        if policy["type"] == "act_v3" and optimizer["type"] != "adam":
+            raise ValueError("act_v3 requires optimizer.type=adam")
+        if policy["type"] == "act_v3" and optimizer["parameters"]:
+            raise ValueError("act_v3 Alpha 2 requires empty optimizer.parameters")
+        if policy["type"] == "act_v3" and scheduler["type"] != "constant":
+            raise ValueError("act_v3 Alpha 2 requires scheduler.type=constant")
+        if policy["type"] == "act_v3" and scheduler["parameters"]:
+            raise ValueError("act_v3 Alpha 2 requires empty scheduler.parameters")
+        if policy["type"] == "act_v3" and training["precision"] != "float32":
+            raise ValueError("act_v3 Alpha 2 supports float32 precision only")
+        if (
+            policy["type"] == "act_v3"
+            and policy["parameters"].get("temporal_ensemble_decay") is not None
+            and sections["evaluation"]["execution_mode"] != "receding_horizon"
+        ):
+            raise ValueError("act_v3 temporal ensembling requires receding_horizon")
 
         evaluation = sections["evaluation"]
         if evaluation["execution_mode"] not in _EXECUTION:

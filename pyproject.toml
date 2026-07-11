@@ -20,6 +20,10 @@ v2-core = [
   "torch==2.11.*",
   "torchvision==0.26.*",
 ]
+v3-act = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+]
 v2 = [
   "torch==2.11.*",
   "torchvision==0.26.*",

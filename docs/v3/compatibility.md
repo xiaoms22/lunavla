@@ -14,5 +14,9 @@
   and training-state files.
 - Alpha 1 configs load with explicit Alpha 2 defaults for optimizer, scheduler, precision,
   gradient clipping, and disabled resume.
+- `act_v3` is a new policy id. v2 Transformer checkpoints stay read-only and are never relabeled as
+  `act_v3`; users must train a native v3 checkpoint.
+- the optional `v3-act` profile contains Torch dependencies and does not enter the v1.x or NumPy
+  quickstart.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
   contracts.
