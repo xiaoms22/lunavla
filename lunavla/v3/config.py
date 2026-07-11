@@ -17,10 +17,12 @@ from .contracts import EmbodimentSpec, FeatureSchema
 
 
 CONFIG_SCHEMA_VERSION = 3
-_ROOT = {
+CONFIG_CONTRACT_REVISION = 2
+_ROOT_V1 = {
     "schema_version", "project_name", "engine", "policy", "task", "dataset", "embodiment",
     "features", "training", "evaluation", "diagnostics", "artifacts",
 }
+_ROOT_V2 = _ROOT_V1 | {"contract_revision", "prompt", "routing"}
 _SECTION_FIELDS = {
     "policy": {"type", "parameters"},
     "task": {"id", "parameters"},
@@ -81,6 +83,12 @@ _RESERVED_ARTIFACT_NAMES = {
     "resolved_config.json",
     "rollouts",
 }
+_PROMPT_FIELDS = {
+    "enabled", "renderer_id", "renderer_version", "assistant_target", "neutral_token",
+    "camera_order", "public_slots",
+}
+_ROUTING_FIELDS = {"mode", "state_features"}
+_STATE_ROUTES = {"none", "expert_only", "prompt_only", "dual"}
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
@@ -131,6 +139,21 @@ def _checkpoint_name(value: Any) -> str:
     return name
 
 
+def _finite_json_mapping(value: Any, name: str) -> dict[str, Any]:
+    mapping = _mapping(value, name)
+    try:
+        encoded = json.dumps(
+            mapping,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must contain finite JSON values") from exc
+    return json.loads(encoded)
+
+
 def _freeze(value: Any) -> Any:
     if isinstance(value, Mapping):
         return MappingProxyType({str(key): _freeze(item) for key, item in value.items()})
@@ -150,6 +173,7 @@ def _thaw(value: Any) -> Any:
 @dataclass(frozen=True, init=False)
 class ExperimentConfig:
     schema_version: int
+    contract_revision: int
     project_name: str
     engine: str
     policy: Mapping[str, Any]
@@ -160,6 +184,8 @@ class ExperimentConfig:
     training: Mapping[str, Any]
     evaluation: Mapping[str, Any]
     diagnostics: Mapping[str, Any]
+    prompt: Mapping[str, Any]
+    routing: Mapping[str, Any]
     artifacts: Mapping[str, Any]
 
     def __init__(self, **_: Any) -> None:
@@ -168,15 +194,23 @@ class ExperimentConfig:
     @classmethod
     def from_mapping(cls, source: Mapping[str, Any]) -> "ExperimentConfig":
         root = _mapping(source, "config")
-        _reject_unknown(root, _ROOT, "config")
-        missing = sorted(_ROOT - set(root))
-        if missing:
-            raise ValueError("missing config field(s): " + ", ".join(missing))
         version = root["schema_version"]
         if isinstance(version, bool) or not isinstance(version, int):
             raise TypeError("schema_version must be an integer")
         if version != CONFIG_SCHEMA_VERSION:
             raise ValueError(f"schema_version must be {CONFIG_SCHEMA_VERSION}")
+        raw_revision = root.get("contract_revision", 1)
+        if isinstance(raw_revision, bool) or not isinstance(raw_revision, int):
+            raise TypeError("contract_revision must be an integer")
+        if raw_revision not in {1, CONFIG_CONTRACT_REVISION}:
+            raise ValueError(
+                f"contract_revision must be 1 or {CONFIG_CONTRACT_REVISION}"
+            )
+        allowed_root = _ROOT_V1 if raw_revision == 1 else _ROOT_V2
+        _reject_unknown(root, allowed_root, "config")
+        missing = sorted(allowed_root - set(root))
+        if missing:
+            raise ValueError("missing config field(s): " + ", ".join(missing))
         project_name = root["project_name"]
         if not isinstance(project_name, str) or not project_name.strip():
             raise ValueError("project_name must be a non-empty string")
@@ -729,6 +763,97 @@ class ExperimentConfig:
         diagnostics = sections["diagnostics"]
         if not isinstance(diagnostics["enabled"], bool):
             raise TypeError("diagnostics.enabled must be boolean")
+
+        state_names = tuple(item.name for item in feature_schema.by_role("state"))
+        parameters = policy["parameters"]
+        policy_parameters = dict(parameters.get("legacy", parameters))
+        expected_state = (str(policy_parameters.get("state_feature", "state.proprioception")),)
+        if raw_revision == 1:
+            prompt = {
+                "enabled": False,
+                "renderer_id": "lunavla.canonical_json",
+                "renderer_version": 1,
+                "assistant_target": "action_chunk",
+                "neutral_token": "[MASKED]",
+                "camera_order": [],
+                "public_slots": {},
+            }
+            routing = {"mode": "expert_only", "state_features": list(expected_state)}
+        else:
+            prompt = _mapping(root["prompt"], "prompt")
+            routing = _mapping(root["routing"], "routing")
+            _reject_unknown(prompt, _PROMPT_FIELDS, "prompt")
+            _reject_unknown(routing, _ROUTING_FIELDS, "routing")
+            missing_prompt = sorted(_PROMPT_FIELDS - set(prompt))
+            missing_routing = sorted(_ROUTING_FIELDS - set(routing))
+            if missing_prompt:
+                raise ValueError("missing field(s) in prompt: " + ", ".join(missing_prompt))
+            if missing_routing:
+                raise ValueError("missing field(s) in routing: " + ", ".join(missing_routing))
+        if not isinstance(prompt["enabled"], bool):
+            raise TypeError("prompt.enabled must be boolean")
+        if prompt["renderer_id"] != "lunavla.canonical_json":
+            raise ValueError("prompt.renderer_id must be lunavla.canonical_json")
+        renderer_version = prompt["renderer_version"]
+        if isinstance(renderer_version, bool) or renderer_version != 1:
+            raise ValueError("prompt.renderer_version must be integer 1")
+        if prompt["assistant_target"] != "action_chunk":
+            raise ValueError("prompt.assistant_target must be action_chunk")
+        if not isinstance(prompt["neutral_token"], str) or not prompt["neutral_token"].strip():
+            raise ValueError("prompt.neutral_token must be a non-empty string")
+        prompt["neutral_token"] = prompt["neutral_token"].strip()
+        cameras = prompt["camera_order"]
+        if isinstance(cameras, (str, bytes, Mapping)) or not isinstance(cameras, Sequence):
+            raise TypeError("prompt.camera_order must be a sequence")
+        camera_values = list(cameras)
+        if any(not isinstance(item, str) or not item for item in camera_values):
+            raise ValueError("prompt.camera_order must contain non-empty strings")
+        if len(camera_values) != len(set(camera_values)):
+            raise ValueError("prompt.camera_order cannot contain duplicates")
+        prompt["camera_order"] = camera_values
+        prompt["public_slots"] = _finite_json_mapping(prompt["public_slots"], "prompt.public_slots")
+        mode = routing["mode"]
+        if mode not in _STATE_ROUTES:
+            raise ValueError(f"unsupported routing.mode {mode!r}")
+        route_features = routing["state_features"]
+        if isinstance(route_features, (str, bytes, Mapping)) or not isinstance(route_features, Sequence):
+            raise TypeError("routing.state_features must be a sequence")
+        route_values = list(route_features)
+        routing["state_features"] = route_values
+        if tuple(route_values) != expected_state:
+            raise ValueError("routing.state_features must exactly match policy state order")
+        if any(item not in state_names for item in route_values):
+            raise ValueError("routing.state_features must reference declared state features")
+
+        expected_cameras: tuple[str, ...] = ()
+        if policy["type"] == "act_v3" and policy_parameters.get("camera_feature") is not None:
+            expected_cameras = (str(policy_parameters["camera_feature"]),)
+        elif policy["type"] in {"diffusion_v3", "lerobot_smolvla"}:
+            expected_cameras = tuple(str(item) for item in policy_parameters["camera_features"])
+        elif "legacy" in parameters and policy_parameters.get("image_shape") is not None:
+            expected_cameras = ("camera.primary",)
+        if raw_revision == CONFIG_CONTRACT_REVISION and tuple(camera_values) != expected_cameras:
+            raise ValueError("prompt.camera_order must exactly match policy camera order")
+        consumes_instruction = False
+        if policy["type"] == "lerobot_smolvla":
+            consumes_instruction = True
+        elif policy["type"] != "diffusion_v3":
+            consumes_instruction = int(policy_parameters.get("instruction_dim", 0)) > 0
+        if mode in {"prompt_only", "dual"} and not consumes_instruction:
+            raise ValueError("prompt state routing requires an instruction-consuming policy")
+        if mode in {"prompt_only", "dual"} and not prompt["enabled"]:
+            raise ValueError("prompt state routing requires prompt.enabled=true")
+        if policy["type"] == "diffusion_v3" and (prompt["enabled"] or mode not in {"none", "expert_only"}):
+            raise ValueError("diffusion_v3 does not support prompt diagnostics")
+        if diagnostics["enabled"]:
+            if raw_revision != CONFIG_CONTRACT_REVISION:
+                raise ValueError("diagnostics require config contract_revision=2")
+            if not prompt["enabled"]:
+                raise ValueError("diagnostics require prompt.enabled=true")
+            if evaluation["execution_mode"] != "receding_horizon":
+                raise ValueError("prompt/state diagnostics require receding_horizon")
+            if policy["type"] == "lerobot_smolvla" and policy_parameters.get("conformance_only") is True:
+                raise ValueError("conformance-only SmolVLA cannot run diagnostic training")
         artifacts = sections["artifacts"]
         if not isinstance(artifacts["output_dir"], str) or not artifacts["output_dir"].strip():
             raise ValueError("artifacts.output_dir must be a non-empty string")
@@ -738,6 +863,7 @@ class ExperimentConfig:
         instance = object.__new__(cls)
         values = {
             "schema_version": version,
+            "contract_revision": raw_revision,
             "project_name": project_name.strip(),
             "engine": "lunavla_v3",
             "policy": policy,
@@ -748,6 +874,8 @@ class ExperimentConfig:
             "training": training,
             "evaluation": evaluation,
             "diagnostics": diagnostics,
+            "prompt": prompt,
+            "routing": routing,
             "artifacts": artifacts,
         }
         for name, value in values.items():
@@ -765,10 +893,15 @@ class ExperimentConfig:
         return cls.from_mapping(source)
 
     def to_dict(self) -> dict[str, Any]:
-        return {name: _thaw(getattr(self, name)) for name in (
+        result = {name: _thaw(getattr(self, name)) for name in (
             "schema_version", "project_name", "engine", "policy", "task", "dataset", "embodiment",
             "features", "training", "evaluation", "diagnostics", "artifacts",
         )}
+        if self.contract_revision == CONFIG_CONTRACT_REVISION:
+            result["contract_revision"] = self.contract_revision
+            result["prompt"] = _thaw(self.prompt)
+            result["routing"] = _thaw(self.routing)
+        return result
 
     def sha256(self) -> str:
         encoded = json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"), allow_nan=False)
