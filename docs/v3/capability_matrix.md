@@ -12,8 +12,9 @@
 | Fake PushT/LIBERO | Implemented as fixtures | Connectivity and lifecycle only |
 | SmolVLA adapter | Public-API conformance fixture and pinned model identity | Pretrained, optimizer, resume, and inference gates closed |
 | Real PushT/LIBERO subset | Planned Beta 2 | No benchmark statement |
-| Prompt/state diagnostics | Canonical renderer, four routes, five prompt arms, donor/pair hashes, verified report | Reduced fixture only; no modality or routing claim |
-| Diagnostic evidence | EvidenceManifest v2, per-pair CSV, static HTML, tamper detection | `claim_allowed=false`; no multi-seed conclusion |
+| Prompt/state diagnostics | Canonical train/eval/deploy renderer, four routes, five prompt arms, typed donor/pair hashes | 40 reduced NumPy pairs only; no modality or routing claim |
+| Image diagnostic smoke | ACT control/image-shuffle, step-wise image donors, four synthetic thumbnails | Four reduced pairs; no visual-contribution claim |
+| Diagnostic evidence | EvidenceManifest v2, normalized cell contracts, gate reasons, per-pair CSV, verified HTML | `claim_allowed=false`; dirty/mixed inputs are inspectable but not release-eligible |
 
 An input field or working adapter does not establish that the corresponding modality improves
 behavior. Such claims remain closed until a predeclared paired multi-seed design passes.

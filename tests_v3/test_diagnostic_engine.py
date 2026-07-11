@@ -14,6 +14,7 @@ from lunavla.v3 import (
 )
 from lunavla.v3.engine import EngineV3, dataset_for_config
 from lunavla.v3.fake_tasks import FakePointEnvV3
+from model.policy_base import ActionChunk
 
 
 def _stats(config: ExperimentConfig) -> NormalizationStatsV1:
@@ -72,6 +73,20 @@ def test_shuffle_requires_deranged_same_split_donor() -> None:
             _stats(config),
             intervention=arm,
             donor_instructions={recipient: (recipient, "donor instruction")},
+        ).route_observation(canonical)
+
+
+def test_image_shuffle_requires_a_matching_donor_step() -> None:
+    from lunavla.v3 import InterventionSpecV1
+
+    config = ExperimentConfig.load("configs/v3/diagnostic_act_image.yaml")
+    canonical = dataset_for_config(config).episodes[0].transitions[0].observation
+    arm = InterventionSpecV1(
+        "image_shuffle", "image", "shuffle", "rollout", {}
+    )
+    with pytest.raises(ValueError, match="missing.*donor step"):
+        DiagnosticRouterV1(
+            config, _stats(config), intervention=arm
         ).route_observation(canonical)
 
 
@@ -151,3 +166,145 @@ def test_diagnostic_prediction_failure_records_stage_and_closes_once() -> None:
     assert captured.value.stage == "predict"
     assert captured.value.origin == "policy"
     assert env.closed
+
+
+class _ConstantPolicy:
+    def __init__(self, engine: EngineV3) -> None:
+        self.spec = engine._policy_spec()
+
+    def reset(self, seed: int) -> None:
+        del seed
+
+    def predict_chunk(self, sample: object) -> ActionChunk:
+        del sample
+        return ActionChunk(np.zeros((1, 2), dtype=np.float32), np.asarray([True]))
+
+
+class _CountingEnv(FakePointEnvV3):
+    close_calls = 0
+
+    def close(self) -> None:
+        self.close_calls += 1
+        super().close()
+
+
+def _diagnostic_engine() -> tuple[ExperimentConfig, EngineV3]:
+    config = ExperimentConfig.load("configs/v3/diagnostic_fake_libero.yaml")
+    engine = EngineV3(config)
+    engine.diagnostic_router = DiagnosticRouterV1(config, _stats(config))
+    return config, engine
+
+
+def test_render_failure_is_classified_and_environment_closes_once() -> None:
+    config, engine = _diagnostic_engine()
+
+    class BrokenRouter:
+        def route_observation(self, observation: object, *, phase: str) -> object:
+            del observation, phase
+            raise RuntimeError("render failed")
+
+    engine.diagnostic_router = BrokenRouter()  # type: ignore[assignment]
+    env = _CountingEnv("fake_libero", 2, "region_instruction_v1")
+    with pytest.raises(DiagnosticExecutionError) as captured:
+        engine.evaluate(_ConstantPolicy(engine), env)  # type: ignore[arg-type]
+    assert (captured.value.stage, captured.value.origin) == ("render", "adapter")
+    assert env.close_calls == 1
+
+
+def test_environment_and_policy_reset_failures_close_once() -> None:
+    _, engine = _diagnostic_engine()
+
+    class BrokenResetEnv(_CountingEnv):
+        def reset(self, *, seed: int | None = None) -> object:
+            del seed
+            raise RuntimeError("environment reset failed")
+
+    env = BrokenResetEnv("fake_libero", 2, "region_instruction_v1")
+    with pytest.raises(DiagnosticExecutionError) as captured:
+        engine.evaluate(_ConstantPolicy(engine), env)  # type: ignore[arg-type]
+    assert (captured.value.stage, captured.value.origin) == (
+        "reset",
+        "environment",
+    )
+    assert env.close_calls == 1
+
+    class BrokenResetPolicy(_ConstantPolicy):
+        def reset(self, seed: int) -> None:
+            del seed
+            raise RuntimeError("policy reset failed")
+
+    policy_env = _CountingEnv("fake_libero", 2, "region_instruction_v1")
+    with pytest.raises(DiagnosticExecutionError) as captured:
+        engine.evaluate(BrokenResetPolicy(engine), policy_env)  # type: ignore[arg-type]
+    assert (captured.value.stage, captured.value.origin) == ("reset", "policy")
+    assert policy_env.close_calls == 1
+
+
+def test_preprocess_failure_is_classified_and_environment_closes_once() -> None:
+    _, engine = _diagnostic_engine()
+
+    class BrokenSpec:
+        @property
+        def history(self) -> int:
+            raise RuntimeError("preprocess failed")
+
+    policy = _ConstantPolicy(engine)
+    policy.spec = BrokenSpec()  # type: ignore[assignment]
+    env = _CountingEnv("fake_libero", 2, "region_instruction_v1")
+    with pytest.raises(DiagnosticExecutionError) as captured:
+        engine.evaluate(policy, env)  # type: ignore[arg-type]
+    assert (captured.value.stage, captured.value.origin) == (
+        "preprocess",
+        "engine",
+    )
+    assert env.close_calls == 1
+
+
+def test_step_and_trace_failures_are_classified_and_close_once() -> None:
+    config, engine = _diagnostic_engine()
+
+    class BrokenStepEnv(_CountingEnv):
+        def step(self, action: np.ndarray) -> object:
+            del action
+            raise RuntimeError("step failed")
+
+    step_env = BrokenStepEnv("fake_libero", 2, "region_instruction_v1")
+    with pytest.raises(DiagnosticExecutionError) as captured:
+        engine.evaluate(_ConstantPolicy(engine), step_env)  # type: ignore[arg-type]
+    assert (captured.value.stage, captured.value.origin) == ("step", "environment")
+    assert step_env.close_calls == 1
+
+    trace_env = _CountingEnv("fake_libero", 2, "region_instruction_v1")
+
+    def broken_trace(*values: object) -> None:
+        del values
+        raise RuntimeError("trace failed")
+
+    with pytest.raises(DiagnosticExecutionError) as captured:
+        engine.evaluate(
+            _ConstantPolicy(engine), trace_env, trace_callback=broken_trace  # type: ignore[arg-type]
+        )
+    assert (captured.value.stage, captured.value.origin) == ("trace", "engine")
+    assert trace_env.close_calls == 1
+
+
+def test_postprocess_failure_is_classified_and_closes_once() -> None:
+    _, engine = _diagnostic_engine()
+
+    class BrokenChunk:
+        @property
+        def values(self) -> object:
+            raise RuntimeError("postprocess failed")
+
+        valid_mask = np.asarray([True])
+
+    class BrokenPostprocessPolicy(_ConstantPolicy):
+        def predict_chunk(self, sample: object) -> object:
+            del sample
+            return BrokenChunk()
+
+    env = _CountingEnv("fake_libero", 2, "region_instruction_v1")
+    with pytest.raises(DiagnosticExecutionError) as captured:
+        engine.evaluate(BrokenPostprocessPolicy(engine), env)  # type: ignore[arg-type]
+    assert (captured.value.stage, captured.value.origin) == ("postprocess", "engine")
+    assert env.close_calls == 1

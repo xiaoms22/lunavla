@@ -49,6 +49,9 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "diagnostic-run" in workflow
     assert "diagnostic-verify" in workflow
     assert "diagnostic-report" in workflow
+    assert "generate_v3_diagnostic_image_fixtures.py --check" in workflow
+    assert "diagnostic_image_ci_design.yaml" in workflow
+    assert "outputs/v3/diagnostic-image-ci" in workflow
 
 
 def test_smolvla_gpu_workflow_is_manual_self_hosted_and_fail_closed() -> None:

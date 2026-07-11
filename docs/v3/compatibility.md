@@ -37,5 +37,9 @@
 - diagnostic runs use schema-4 revision-3 manifests and EvidenceManifest v2. Revision-1 and
   revision-2 runs remain verifiable. Reduced or incomplete studies always fail closed, and the
   Beta 1 framework does not relabel old runs as controlled evidence.
+- the revision-3/V2 diagnostic formats are still Draft contracts. They now bind canonical
+  train/eval/deploy preprocessing parity, normalized cell contracts, typed instruction/image
+  donors, gate reasons, and optional synthetic-thumbnail hashes without changing revision-1/2
+  artifact readers.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
   contracts.

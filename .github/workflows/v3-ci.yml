@@ -30,9 +30,13 @@ jobs:
       - name: Static and contract checks
         run: |
           uv run --no-sync ruff check lunavla/v3 tests_v3 scripts/check_v3_alpha.py
-          uv run --no-sync mypy lunavla/v3 scripts/check_v3_alpha.py
-          uv run --no-sync python -m compileall -q lunavla/v3 scripts/check_v3_alpha.py
+          uv run --no-sync ruff check scripts/generate_v3_diagnostic_image_fixtures.py
+          uv run --no-sync mypy lunavla/v3 scripts/check_v3_alpha.py \
+            scripts/generate_v3_diagnostic_image_fixtures.py
+          uv run --no-sync python -m compileall -q lunavla/v3 scripts/check_v3_alpha.py \
+            scripts/generate_v3_diagnostic_image_fixtures.py
           uv run --no-sync python scripts/check_v3_alpha.py
+          uv run --no-sync python scripts/generate_v3_diagnostic_image_fixtures.py --check
           uv run --no-sync pytest tests_v3/test_contracts.py tests_v3/test_config_migration.py
 
   data:
@@ -143,6 +147,11 @@ jobs:
           uv run --no-sync lunavla-v3 diagnostic-verify outputs/v3/diagnostic-ci
           uv run --no-sync lunavla-v3 diagnostic-report \
             outputs/v3/diagnostic-ci --out outputs/v3/diagnostic-ci-report
+          uv run --no-sync lunavla-v3 diagnostic-run \
+            configs/v3/diagnostic_image_ci_design.yaml --overwrite
+          uv run --no-sync lunavla-v3 diagnostic-verify outputs/v3/diagnostic-image-ci
+          uv run --no-sync lunavla-v3 diagnostic-report \
+            outputs/v3/diagnostic-image-ci --out outputs/v3/diagnostic-image-ci-report
 
   diffusion-cpu:
     name: v3-diffusion-cpu

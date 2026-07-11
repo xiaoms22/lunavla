@@ -131,13 +131,15 @@ def test_route_intervention_and_design_contracts_are_strict() -> None:
 
 def test_failure_taxonomy_requires_evidence_provenance() -> None:
     record = FailureRecordV1(
-        "execution", "environment_timeout", "timeout_v1", "automatic", True
+        "execution", "environment_timeout", "timeout_v1", "automatic", None
     )
     assert FailureRecordV1.from_mapping(record.to_dict()) == record
     with pytest.raises(ValueError, match="failure layer"):
         FailureRecordV1("model", "unknown", "rule", "automatic")
     with pytest.raises(ValueError, match="provenance"):
         FailureRecordV1("state", "leak", "sentinel_v1", "guessed")
+    with pytest.raises(ValueError, match="cannot assign primary_cause"):
+        FailureRecordV1("state", "leak", "sentinel_v1", "automatic", True)
 
 
 def test_donor_contract_rejects_self_cross_split_duplicate_and_equal_content() -> None:
@@ -172,9 +174,7 @@ def test_parity_is_recomputed_and_trace_cannot_invent_primary_cause() -> None:
     )
     with pytest.raises(ValueError, match="drift"):
         PromptParityManifestV1(tuple(drifted))
-    failure = FailureRecordV1(
-        "execution", "timeout", "max_steps_v1", "automatic", True
-    )
+    failure = FailureRecordV1("execution", "timeout", "human_review_v1", "human", True)
     with pytest.raises(ValueError, match="primary_cause"):
         DiagnosticTraceRowV1(
             "1" * 64, 1, 2, "episode", "expert_only", "control", "prompt", 0,

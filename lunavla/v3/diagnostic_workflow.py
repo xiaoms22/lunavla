@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import html
+import io
 import json
 import shutil
 import uuid
@@ -12,6 +13,7 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 import yaml
+from PIL import Image
 
 from .artifacts import (
     ArtifactHashRecordV1,
@@ -44,6 +46,7 @@ from .normalization import NormalizationStatsV1
 
 
 _ALLOWED_WORDING = "诊断框架已在确定性 fixture 上运行并通过完整性验证"
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> Path:
@@ -69,6 +72,14 @@ def _sha_mapping(value: Mapping[str, Any]) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+def _normalized_cell_mapping(config: ExperimentConfig) -> dict[str, Any]:
+    payload = config.to_dict()
+    payload["training"]["seed"] = "<design-train-seed>"
+    payload["routing"]["mode"] = "<design-route>"
+    payload["artifacts"]["output_dir"] = "<design-output>"
+    return payload
+
+
 def _pair_id(train_seed: int, evaluation_seed: int, route: str, arm: str) -> str:
     return _sha_mapping(
         {
@@ -88,13 +99,26 @@ def _load_design(path: str | Path) -> DiagnosticDesignV1:
 
 
 def _resolve_base_config(design_path: Path, design: DiagnosticDesignV1) -> Path:
-    candidate = Path(design.base_config)
-    if candidate.is_file():
-        return candidate
-    relative = design_path.parent / candidate
-    if relative.is_file():
+    relative = (design_path.resolve().parent / design.base_config).resolve()
+    repository = (_REPOSITORY_ROOT / design.base_config).resolve()
+    if relative.is_relative_to(design_path.resolve().parent) and relative.is_file():
         return relative
+    if repository.is_relative_to(_REPOSITORY_ROOT) and repository.is_file():
+        return repository
     raise FileNotFoundError(f"diagnostic base config does not exist: {design.base_config}")
+
+
+def _resolve_output(design_path: Path, design: DiagnosticDesignV1) -> Path:
+    resolved_design = design_path.resolve()
+    root = (
+        _REPOSITORY_ROOT
+        if resolved_design.is_relative_to(_REPOSITORY_ROOT)
+        else resolved_design.parent
+    )
+    output = (root / design.output_dir).resolve()
+    if not output.is_relative_to(root):
+        raise ValueError("diagnostic output escapes its allowed root")
+    return output
 
 
 def _instruction_entries(
@@ -186,6 +210,9 @@ def _image_donor_bank(
                 values.append({name: np.array(observation.images[name], copy=True) for name in cameras})
                 transition = env.step(np.zeros(2, dtype=np.float32))
                 observation = transition.next_observation
+            values.append(
+                {name: np.array(observation.images[name], copy=True) for name in cameras}
+            )
             trajectories[key] = values
         finally:
             env.close()
@@ -209,26 +236,111 @@ def _image_donor_bank(
     return DonorBankV1("image", "evaluation", donor_seed, tuple(records)), runtime
 
 
+def synthetic_thumbnail_payloads(
+    config: ExperimentConfig,
+    seeds: Sequence[int],
+    donor_images: Mapping[
+        tuple[str, int], tuple[str, Mapping[str, np.ndarray[Any, Any]]]
+    ],
+) -> dict[str, bytes]:
+    cameras = tuple(config.prompt["camera_order"])
+    if len(cameras) != 1:
+        raise ValueError("Beta 1 synthetic thumbnails require exactly one camera")
+    camera = cameras[0]
+    variant = str(config.dataset["parameters"].get("instruction_variant", "constant_v1"))
+    payloads: dict[str, bytes] = {}
+    for seed in seeds:
+        env = FakePointEnvV3(
+            str(config.task["id"]), int(config.evaluation["max_steps"]), variant
+        )
+        try:
+            observation = env.reset(seed=seed)
+        finally:
+            env.close()
+        key = typed_episode_key(observation.episode_id)
+        if (key, 0) not in donor_images:
+            raise ValueError("synthetic thumbnail is missing an image donor")
+        _, shuffled = donor_images[(key, 0)]
+        for arm, array in (
+            ("control", observation.images[camera]),
+            ("image_shuffle", shuffled[camera]),
+        ):
+            value = np.asarray(array)
+            if value.dtype != np.uint8 or value.shape != (16, 16, 3):
+                raise ValueError("synthetic thumbnail must be 16x16 RGB uint8")
+            stream = io.BytesIO()
+            Image.fromarray(value, mode="RGB").save(
+                stream, format="PNG", optimize=False, compress_level=9
+            )
+            payloads[f"seed-{seed}-{arm}.png"] = stream.getvalue()
+    return payloads
+
+
+def _write_synthetic_thumbnails(
+    output: Path,
+    config: ExperimentConfig,
+    seeds: Sequence[int],
+    donor_images: Mapping[
+        tuple[str, int], tuple[str, Mapping[str, np.ndarray[Any, Any]]]
+    ],
+) -> Path:
+    directory = output / "thumbnails"
+    directory.mkdir(parents=True, exist_ok=True)
+    records: list[dict[str, Any]] = []
+    for filename, payload in sorted(
+        synthetic_thumbnail_payloads(config, seeds, donor_images).items()
+    ):
+        target = directory / filename
+        target.write_bytes(payload)
+        parts = filename.removesuffix(".png").split("-", 2)
+        seed = int(parts[1])
+        arm = parts[2]
+        records.append(
+            {
+                "path": f"thumbnails/{filename}",
+                "sha256": hashlib.sha256(payload).hexdigest(),
+                "seed": seed,
+                "arm": arm,
+                "step_index": 0,
+                "shape": [16, 16, 3],
+                "dtype": "uint8",
+                "synthetic": True,
+                "metadata_allowed": False,
+            }
+        )
+    return _write_json(
+        output / "thumbnails.json",
+        {"schema_version": 1, "records": records},
+    )
+
+
 @dataclass(frozen=True)
 class EvidenceManifestV2:
     design_sha256: str
     base_config_sha256: str
+    base_config_file_sha256: str
+    cell_contract_sha256: str
     source_manifests: tuple[ArtifactHashRecordV1, ...]
     matrix_sha256: str
     aggregate_sha256: str
     per_pair_sha256: str
+    thumbnail_manifest_sha256: str | None
     expected_pairs: int
     observed_pairs: int
     homogeneous: bool
     matrix_complete: bool
     reduced_design: bool
     claim_allowed: bool
-    allowed_wording: str
+    framework_statement_allowed: bool
+    release_eligible: bool
+    gate_reasons: tuple[str, ...]
+    allowed_wording: str | None
 
     def __post_init__(self) -> None:
         for name in (
-            "design_sha256", "base_config_sha256", "matrix_sha256",
-            "aggregate_sha256", "per_pair_sha256",
+            "design_sha256", "base_config_sha256", "base_config_file_sha256",
+            "cell_contract_sha256", "matrix_sha256", "aggregate_sha256",
+            "per_pair_sha256",
         ):
             value = getattr(self, name)
             if (
@@ -237,6 +349,11 @@ class EvidenceManifestV2:
                 or any(item not in "0123456789abcdef" for item in value)
             ):
                 raise ValueError(f"{name} must be a lowercase SHA-256")
+        if self.thumbnail_manifest_sha256 is not None and (
+            len(self.thumbnail_manifest_sha256) != 64
+            or any(item not in "0123456789abcdef" for item in self.thumbnail_manifest_sha256)
+        ):
+            raise ValueError("thumbnail_manifest_sha256 must be null or SHA-256")
         sources = tuple(self.source_manifests)
         if not sources:
             raise ValueError("evidence requires source manifests")
@@ -249,7 +366,8 @@ class EvidenceManifestV2:
         if self.observed_pairs > self.expected_pairs:
             raise ValueError("observed_pairs cannot exceed expected_pairs")
         for name in (
-            "homogeneous", "matrix_complete", "reduced_design", "claim_allowed"
+            "homogeneous", "matrix_complete", "reduced_design", "claim_allowed",
+            "framework_statement_allowed", "release_eligible",
         ):
             if not isinstance(getattr(self, name), bool):
                 raise TypeError(f"{name} must be boolean")
@@ -257,9 +375,20 @@ class EvidenceManifestV2:
             raise ValueError("Beta 1 evidence cannot open scientific claims")
         if self.matrix_complete != (self.observed_pairs == self.expected_pairs):
             raise ValueError("matrix_complete conflicts with pair counts")
-        if self.allowed_wording != _ALLOWED_WORDING:
-            raise ValueError("unexpected Beta 1 allowed wording")
+        reasons = tuple(self.gate_reasons)
+        allowed_reasons = {
+            "reduced_design", "dirty_source", "mixed_sha", "mixed_dependency",
+            "config_drift", "incomplete_matrix", "parity_failure",
+            "beta1_framework_only",
+        }
+        if not reasons or len(reasons) != len(set(reasons)) or not set(reasons) <= allowed_reasons:
+            raise ValueError("invalid evidence gate_reasons")
+        if self.framework_statement_allowed != (self.allowed_wording == _ALLOWED_WORDING):
+            raise ValueError("framework statement flag conflicts with allowed wording")
+        if self.release_eligible and not self.framework_statement_allowed:
+            raise ValueError("release eligibility requires a framework statement")
         object.__setattr__(self, "source_manifests", sources)
+        object.__setattr__(self, "gate_reasons", reasons)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -268,16 +397,22 @@ class EvidenceManifestV2:
             "format": "lunavla_v3_diagnostic_evidence",
             "design_sha256": self.design_sha256,
             "base_config_sha256": self.base_config_sha256,
+            "base_config_file_sha256": self.base_config_file_sha256,
+            "cell_contract_sha256": self.cell_contract_sha256,
             "source_manifests": [item.to_dict() for item in self.source_manifests],
             "matrix_sha256": self.matrix_sha256,
             "aggregate_sha256": self.aggregate_sha256,
             "per_pair_sha256": self.per_pair_sha256,
+            "thumbnail_manifest_sha256": self.thumbnail_manifest_sha256,
             "expected_pairs": self.expected_pairs,
             "observed_pairs": self.observed_pairs,
             "homogeneous": self.homogeneous,
             "matrix_complete": self.matrix_complete,
             "reduced_design": self.reduced_design,
             "claim_allowed": self.claim_allowed,
+            "framework_statement_allowed": self.framework_statement_allowed,
+            "release_eligible": self.release_eligible,
+            "gate_reasons": list(self.gate_reasons),
             "allowed_wording": self.allowed_wording,
         }
 
@@ -285,10 +420,13 @@ class EvidenceManifestV2:
     def from_mapping(cls, value: Mapping[str, Any]) -> "EvidenceManifestV2":
         fields = {
             "schema_version", "contract_revision", "format", "design_sha256",
-            "base_config_sha256", "source_manifests", "matrix_sha256",
+            "base_config_sha256", "base_config_file_sha256",
+            "cell_contract_sha256", "source_manifests", "matrix_sha256",
             "aggregate_sha256", "per_pair_sha256", "expected_pairs",
+            "thumbnail_manifest_sha256",
             "observed_pairs", "homogeneous", "matrix_complete", "reduced_design",
-            "claim_allowed", "allowed_wording",
+            "claim_allowed", "framework_statement_allowed", "release_eligible",
+            "gate_reasons", "allowed_wording",
         }
         if set(value) != fields:
             raise ValueError("invalid EvidenceManifestV2 fields")
@@ -304,18 +442,24 @@ class EvidenceManifestV2:
         return cls(
             design_sha256=value["design_sha256"],
             base_config_sha256=value["base_config_sha256"],
+            base_config_file_sha256=value["base_config_file_sha256"],
+            cell_contract_sha256=value["cell_contract_sha256"],
             source_manifests=tuple(
                 ArtifactHashRecordV1.from_mapping(item) for item in sources
             ),
             matrix_sha256=value["matrix_sha256"],
             aggregate_sha256=value["aggregate_sha256"],
             per_pair_sha256=value["per_pair_sha256"],
+            thumbnail_manifest_sha256=value["thumbnail_manifest_sha256"],
             expected_pairs=value["expected_pairs"],
             observed_pairs=value["observed_pairs"],
             homogeneous=value["homogeneous"],
             matrix_complete=value["matrix_complete"],
             reduced_design=value["reduced_design"],
             claim_allowed=value["claim_allowed"],
+            framework_statement_allowed=value["framework_statement_allowed"],
+            release_eligible=value["release_eligible"],
+            gate_reasons=tuple(value["gate_reasons"]),
             allowed_wording=value["allowed_wording"],
         )
 
@@ -453,7 +597,7 @@ def _diagnostic_cell(
             donor_hash = (
                 donor_hashes.get(
                     (
-                        arm.kind,
+                        "instruction" if arm.kind == "prompt" else "image",
                         episode_id,
                         transition.observation.step_index if arm.kind == "image" else None,
                     )
@@ -553,6 +697,9 @@ def _diagnostic_cell(
             "metadata_allowlist": ["diagnostic"],
         },
     )
+    cell_contract_path = _write_json(
+        output / "cell_contract.json", _normalized_cell_mapping(config)
+    )
     metrics_path = _write_json(
         output / "metrics.json",
         {
@@ -576,6 +723,7 @@ def _diagnostic_cell(
         intervention_set_sha256=sha256_file(interventions_path),
         donor_bank_sha256=sha256_file(donor_path),
         parity_manifest_sha256=sha256_file(parity_path),
+        cell_contract_sha256=sha256_file(cell_contract_path),
         failure_trace_sha256=sha256_file(trace_path),
         input_consumption_sha256=sha256_file(consumption_path),
         camera_order=tuple(config.prompt["camera_order"]),
@@ -606,6 +754,17 @@ def _execute_diagnostic(
     donor_banks = {"instruction": instruction_bank, "image": image_bank}
     output.mkdir(parents=True, exist_ok=False)
     _write_json(output / "resolved_design.json", design.to_dict())
+    base_config_path = _write_json(output / "base_config.json", base.to_dict())
+    root_cell_contract_path = _write_json(
+        output / "cell_contract.json", _normalized_cell_mapping(base)
+    )
+    thumbnail_manifest_path = (
+        _write_synthetic_thumbnails(
+            output, base, design.evaluation_seeds, donor_images
+        )
+        if {item.kind for item in design.interventions} == {"image"}
+        else None
+    )
     source_records: list[ArtifactHashRecordV1] = []
     all_pairs: list[dict[str, Any]] = []
     all_metrics: list[dict[str, Any]] = []
@@ -677,25 +836,65 @@ def _execute_diagnostic(
         )
         writer.writeheader()
         writer.writerows(sorted(all_pairs, key=lambda item: str(item["pair_id"])))
+    sha_homogeneous = len({item.git_sha for item in source_manifests}) == 1
+    dependency_homogeneous = (
+        len({item.dependency_lock_sha256 for item in source_manifests}) == 1
+    )
+    config_homogeneous = (
+        len({item.cell_contract_sha256 for item in source_manifests}) == 1
+    )
     homogeneous = (
-        len({item.git_sha for item in source_manifests}) == 1
-        and len({item.dependency_lock_sha256 for item in source_manifests}) == 1
+        sha_homogeneous
+        and dependency_homogeneous
+        and config_homogeneous
         and len({item.policy_id for item in source_manifests}) == 1
+    )
+    parity_ok = all(item.parity_verified for item in source_manifests)
+    dirty = any(item.git_dirty for item in source_manifests)
+    gate_reasons = ["beta1_framework_only"]
+    if design.reduced_design:
+        gate_reasons.append("reduced_design")
+    if dirty:
+        gate_reasons.append("dirty_source")
+    if not sha_homogeneous:
+        gate_reasons.append("mixed_sha")
+    if not dependency_homogeneous:
+        gate_reasons.append("mixed_dependency")
+    if not config_homogeneous:
+        gate_reasons.append("config_drift")
+    if not matrix_complete:
+        gate_reasons.append("incomplete_matrix")
+    if not parity_ok:
+        gate_reasons.append("parity_failure")
+    framework_statement_allowed = (
+        matrix_complete and homogeneous and parity_ok and not dirty
     )
     evidence = EvidenceManifestV2(
         design_sha256=sha256_file(output / "resolved_design.json"),
         base_config_sha256=base.sha256(),
+        base_config_file_sha256=sha256_file(base_config_path),
+        cell_contract_sha256=sha256_file(root_cell_contract_path),
         source_manifests=tuple(source_records),
         matrix_sha256=sha256_file(matrix_path),
         aggregate_sha256=sha256_file(aggregate_path),
         per_pair_sha256=sha256_file(pair_csv),
+        thumbnail_manifest_sha256=(
+            None
+            if thumbnail_manifest_path is None
+            else sha256_file(thumbnail_manifest_path)
+        ),
         expected_pairs=expected,
         observed_pairs=len(pair_ids),
         homogeneous=homogeneous,
         matrix_complete=matrix_complete,
         reduced_design=design.reduced_design,
         claim_allowed=False,
-        allowed_wording=_ALLOWED_WORDING,
+        framework_statement_allowed=framework_statement_allowed,
+        release_eligible=framework_statement_allowed,
+        gate_reasons=tuple(sorted(gate_reasons)),
+        allowed_wording=(
+            _ALLOWED_WORDING if framework_statement_allowed else None
+        ),
     )
     evidence.save(output / "evidence_manifest.json")
     verify_diagnostic_output(output)
@@ -703,9 +902,9 @@ def _execute_diagnostic(
 
 
 def run_diagnostic(design_file: str | Path, *, overwrite: bool = False) -> Path:
-    design_path = Path(design_file)
+    design_path = Path(design_file).resolve()
     design = _load_design(design_path)
-    output = Path(design.output_dir)
+    output = _resolve_output(design_path, design)
     if output.exists() and not output.is_dir():
         raise FileExistsError(f"diagnostic output is not a directory: {output}")
     if output.exists() and any(output.iterdir()) and not overwrite:
@@ -757,6 +956,8 @@ def verify_diagnostic_output(path: str | Path) -> dict[str, Any]:
     )
     checks = {
         "resolved_design.json": evidence.design_sha256,
+        "base_config.json": evidence.base_config_file_sha256,
+        "cell_contract.json": evidence.cell_contract_sha256,
         "matrix.json": evidence.matrix_sha256,
         "aggregate.json": evidence.aggregate_sha256,
         "per_pair.csv": evidence.per_pair_sha256,
@@ -765,7 +966,70 @@ def verify_diagnostic_output(path: str | Path) -> dict[str, Any]:
         candidate = (root / name).resolve()
         if not candidate.is_relative_to(root) or sha256_file(candidate) != expected:
             raise ValueError(f"diagnostic artifact hash mismatch: {name}")
+    design = DiagnosticDesignV1.from_mapping(
+        json.loads((root / "resolved_design.json").read_text(encoding="utf-8"))
+    )
+    base_config = ExperimentConfig.from_mapping(
+        json.loads((root / "base_config.json").read_text(encoding="utf-8"))
+    )
+    if base_config.sha256() != evidence.base_config_sha256:
+        raise ValueError("base config semantic hash mismatch")
+    if json.loads((root / "cell_contract.json").read_text(encoding="utf-8")) != (
+        _normalized_cell_mapping(base_config)
+    ):
+        raise ValueError("base config normalized cell contract drifted")
+    image_suite = {item.kind for item in design.interventions} == {"image"}
+    if image_suite != (evidence.thumbnail_manifest_sha256 is not None):
+        raise ValueError("thumbnail manifest presence does not match diagnostic suite")
+    if evidence.thumbnail_manifest_sha256 is not None:
+        thumbnail_manifest = root / "thumbnails.json"
+        if sha256_file(thumbnail_manifest) != evidence.thumbnail_manifest_sha256:
+            raise ValueError("diagnostic artifact hash mismatch: thumbnails.json")
+        thumbnail_payload = json.loads(thumbnail_manifest.read_text(encoding="utf-8"))
+        if set(thumbnail_payload) != {"schema_version", "records"} or thumbnail_payload[
+            "schema_version"
+        ] != 1:
+            raise ValueError("invalid synthetic thumbnail manifest")
+        records = thumbnail_payload["records"]
+        expected_thumbnails = {
+            (seed, arm)
+            for seed in design.evaluation_seeds
+            for arm in ("control", "image_shuffle")
+        }
+        observed_thumbnails: set[tuple[int, str]] = set()
+        for record in records:
+            if set(record) != {
+                "path", "sha256", "seed", "arm", "step_index", "shape", "dtype",
+                "synthetic", "metadata_allowed",
+            }:
+                raise ValueError("invalid synthetic thumbnail record")
+            relative = Path(record["path"])
+            candidate = (root / relative).resolve()
+            if (
+                not candidate.is_relative_to(root / "thumbnails")
+                or sha256_file(candidate) != record["sha256"]
+            ):
+                raise ValueError("synthetic thumbnail hash or containment mismatch")
+            with Image.open(candidate) as image:
+                image.load()
+                if image.mode != "RGB" or image.size != (16, 16) or image.info:
+                    raise ValueError("synthetic thumbnail format or metadata is invalid")
+            identity = (int(record["seed"]), str(record["arm"]))
+            if (
+                identity in observed_thumbnails
+                or record["step_index"] != 0
+                or record["shape"] != [16, 16, 3]
+                or record["dtype"] != "uint8"
+                or record["synthetic"] is not True
+                or record["metadata_allowed"] is not False
+            ):
+                raise ValueError("synthetic thumbnail metadata is invalid")
+            observed_thumbnails.add(identity)
+        if observed_thumbnails != expected_thumbnails:
+            raise ValueError("synthetic thumbnail matrix is incomplete")
     manifests: list[RunManifestV4R3] = []
+    observed_pair_ids: set[str] = set()
+    recomputed_pairs: dict[str, dict[str, Any]] = {}
     for record in evidence.source_manifests:
         candidate = (root / record.path).resolve()
         if not candidate.is_relative_to(root) or sha256_file(candidate) != record.sha256:
@@ -774,25 +1038,166 @@ def verify_diagnostic_output(path: str | Path) -> dict[str, Any]:
         parsed = run_manifest_from_mapping(verified)
         if not isinstance(parsed, RunManifestV4R3):
             raise ValueError("diagnostic evidence requires run manifest revision 3")
+        parity = PromptParityManifestV1.from_mapping(
+            json.loads((candidate.parent / "parity.json").read_text(encoding="utf-8"))
+        )
+        if parsed.parity_verified != parity.verified:
+            raise ValueError("run manifest parity flag does not recompute")
+        cell_config = ExperimentConfig.from_mapping(
+            json.loads((candidate.parent / "resolved_config.json").read_text(encoding="utf-8"))
+        )
+        expected_cell = _normalized_cell_mapping(cell_config)
+        actual_cell = json.loads(
+            (candidate.parent / "cell_contract.json").read_text(encoding="utf-8")
+        )
+        if actual_cell != expected_cell:
+            raise ValueError("diagnostic normalized cell contract drifted")
+        pairs_payload = json.loads(
+            (candidate.parent / "pairs.json").read_text(encoding="utf-8")
+        )
+        trace_rows = [
+            DiagnosticTraceRowV1.from_mapping(json.loads(line))
+            for line in (candidate.parent / "trace.jsonl").read_text(encoding="utf-8").splitlines()
+            if line
+        ]
+        by_pair: dict[str, list[DiagnosticTraceRowV1]] = {}
+        for row in trace_rows:
+            by_pair.setdefault(row.pair_id, []).append(row)
+        interventions = {item.arm_id: item for item in design.interventions}
+        banks_payload = json.loads(
+            (candidate.parent / "donor_bank.json").read_text(encoding="utf-8")
+        )
+        banks = {
+            name: DonorBankV1.from_mapping(value) for name, value in banks_payload.items()
+        }
+        donor_records = {
+            (bank.modality, item.recipient_id, item.step_index): item
+            for bank in banks.values()
+            for item in bank.records
+        }
+        for pair in pairs_payload["pairs"]:
+            pair_id = str(pair["pair_id"])
+            if pair_id in observed_pair_ids:
+                raise ValueError("diagnostic matrix contains duplicate pair IDs")
+            observed_pair_ids.add(pair_id)
+            rows = sorted(by_pair.get(pair_id, ()), key=lambda item: item.step_id)
+            if not rows or [item.step_id for item in rows] != list(range(len(rows))):
+                raise ValueError("diagnostic trace steps are missing or duplicated")
+            arm = interventions[str(pair["arm"])]
+            for row in rows:
+                if row.route != pair["route"] or row.arm != pair["arm"]:
+                    raise ValueError("trace route/arm does not match pair metadata")
+                if arm.kind == "prompt":
+                    changed = row.canonical_prompt_sha256 != row.effective_prompt_sha256
+                    if (arm.operator == "control") == changed:
+                        raise ValueError("prompt intervention did not affect every expected step")
+                elif row.canonical_prompt_sha256 != row.effective_prompt_sha256:
+                    raise ValueError("image intervention unexpectedly changed prompt bytes")
+                if arm.operator == "shuffle":
+                    if row.donor_id is None or row.donor_content_sha256 is None:
+                        raise ValueError("shuffle trace is missing donor provenance")
+                    donor_key = (
+                        "instruction" if arm.kind == "prompt" else "image",
+                        row.episode_id,
+                        row.step_id if arm.kind == "image" else None,
+                    )
+                    donor_record = donor_records.get(donor_key)
+                    if (
+                        donor_record is None
+                        or donor_record.donor_id != row.donor_id
+                        or donor_record.donor_content_sha256
+                        != row.donor_content_sha256
+                    ):
+                        raise ValueError("shuffle donor hash does not match donor bank")
+                elif row.donor_id is not None or row.donor_content_sha256 is not None:
+                    raise ValueError("non-shuffle trace unexpectedly declares a donor")
+            recomputed_pairs[pair_id] = {
+                "pair_id": pair_id,
+                "train_seed": pair["train_seed"],
+                "evaluation_seed": pair["evaluation_seed"],
+                "route": pair["route"],
+                "arm": pair["arm"],
+                "total_reward": float(sum(item.reward for item in rows)),
+                "success": bool(rows[-1].success),
+                "steps": len(rows),
+            }
         manifests.append(parsed)
     matrix = json.loads((root / "matrix.json").read_text(encoding="utf-8"))
     pair_ids = matrix.get("pair_ids")
+    expected_pair_ids = {
+        _pair_id(train_seed, evaluation_seed, route.mode, arm.arm_id)
+        for train_seed in design.train_seeds
+        for route in design.routes
+        for arm in design.interventions
+        for evaluation_seed in design.evaluation_seeds
+    }
     complete = (
         isinstance(pair_ids, list)
         and len(pair_ids) == evidence.expected_pairs
         and len(pair_ids) == len(set(pair_ids))
         and evidence.observed_pairs == evidence.expected_pairs
         and evidence.matrix_complete
+        and set(pair_ids) == expected_pair_ids == observed_pair_ids
     )
     if not complete:
         raise ValueError("diagnostic matrix is incomplete or contains duplicate pairs")
+    with (root / "per_pair.csv").open(encoding="utf-8", newline="") as stream:
+        csv_rows = {row["pair_id"]: row for row in csv.DictReader(stream)}
+    if set(csv_rows) != set(recomputed_pairs):
+        raise ValueError("per-pair CSV does not match trace pairs")
+    for pair_id, expected_row in recomputed_pairs.items():
+        csv_row = csv_rows[pair_id]
+        if (
+            int(csv_row["train_seed"]) != expected_row["train_seed"]
+            or int(csv_row["evaluation_seed"]) != expected_row["evaluation_seed"]
+            or csv_row["route"] != expected_row["route"]
+            or csv_row["arm"] != expected_row["arm"]
+            or abs(float(csv_row["total_reward"]) - expected_row["total_reward"]) > 1e-9
+            or (csv_row["success"] == "True") != expected_row["success"]
+            or int(csv_row["steps"]) != expected_row["steps"]
+        ):
+            raise ValueError("per-pair CSV metrics do not recompute from traces")
+    sha_homogeneous = len({item.git_sha for item in manifests}) == 1
+    dependency_homogeneous = len({item.dependency_lock_sha256 for item in manifests}) == 1
+    config_homogeneous = all(
+        item.cell_contract_sha256 == evidence.cell_contract_sha256
+        for item in manifests
+    )
     homogeneous = (
-        len({item.git_sha for item in manifests}) == 1
-        and len({item.dependency_lock_sha256 for item in manifests}) == 1
+        sha_homogeneous
+        and dependency_homogeneous
+        and config_homogeneous
         and len({item.policy_id for item in manifests}) == 1
     )
     if homogeneous != evidence.homogeneous:
         raise ValueError("diagnostic homogeneity result does not match source manifests")
+    parity_ok = all(item.parity_verified for item in manifests)
+    dirty = any(item.git_dirty for item in manifests)
+    reasons = ["beta1_framework_only"]
+    if design.reduced_design:
+        reasons.append("reduced_design")
+    if dirty:
+        reasons.append("dirty_source")
+    if not sha_homogeneous:
+        reasons.append("mixed_sha")
+    if not dependency_homogeneous:
+        reasons.append("mixed_dependency")
+    if not config_homogeneous:
+        reasons.append("config_drift")
+    if not complete:
+        reasons.append("incomplete_matrix")
+    if not parity_ok:
+        reasons.append("parity_failure")
+    if tuple(sorted(reasons)) != evidence.gate_reasons:
+        raise ValueError("evidence gate reasons do not match recomputed sources")
+    statement_allowed = complete and homogeneous and parity_ok and not dirty
+    if (
+        evidence.framework_statement_allowed != statement_allowed
+        or evidence.release_eligible != statement_allowed
+        or evidence.allowed_wording
+        != (_ALLOWED_WORDING if statement_allowed else None)
+    ):
+        raise ValueError("evidence release/statement gates do not recompute")
     if evidence.claim_allowed:
         raise ValueError("Beta 1 diagnostic evidence cannot allow scientific claims")
     return evidence.to_dict()
@@ -806,15 +1211,89 @@ def write_diagnostic_report(path: str | Path, output: str | Path) -> Path:
         raise FileExistsError(f"diagnostic report directory already exists: {target}")
     target.mkdir(parents=True, exist_ok=True)
     aggregate = json.loads((source / "aggregate.json").read_text(encoding="utf-8"))
-    _write_json(target / "summary.json", {"evidence": evidence, "aggregate": aggregate})
+    trace_rows = [
+        DiagnosticTraceRowV1.from_mapping(json.loads(line))
+        for trace in sorted(source.glob("runs/*/*/trace.jsonl"))
+        for line in trace.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
+    failure_counts: dict[str, int] = {}
+    origin_counts: dict[str, int] = {}
+    for row in trace_rows:
+        for failure in row.failures:
+            key = f"{failure.layer}/{failure.provenance}/{failure.label}"
+            failure_counts[key] = failure_counts.get(key, 0) + 1
+        if row.error_origin is not None:
+            origin_counts[row.error_origin] = origin_counts.get(row.error_origin, 0) + 1
+    parity_count = sum(
+        PromptParityManifestV1.from_mapping(
+            json.loads(path.read_text(encoding="utf-8"))
+        ).verified
+        for path in source.glob("runs/*/*/parity.json")
+    )
+    thumbnail_records: list[dict[str, Any]] = []
+    if (source / "thumbnails.json").is_file():
+        thumbnail_payload = json.loads(
+            (source / "thumbnails.json").read_text(encoding="utf-8")
+        )
+        thumbnail_records = list(thumbnail_payload["records"])
+        thumbnail_target = target / "thumbnails"
+        thumbnail_target.mkdir(exist_ok=True)
+        for record in thumbnail_records:
+            shutil.copy2(source / record["path"], thumbnail_target / Path(record["path"]).name)
+    summary = {
+        "evidence": evidence,
+        "aggregate": aggregate,
+        "parity_verified_cells": parity_count,
+        "failure_counts": failure_counts,
+        "error_origin_counts": origin_counts,
+        "thumbnails": thumbnail_records,
+    }
+    _write_json(target / "summary.json", summary)
     shutil.copy2(source / "per_pair.csv", target / "per_pair.csv")
-    wording = html.escape(str(evidence["allowed_wording"]))
+    with (source / "per_pair.csv").open(encoding="utf-8", newline="") as stream:
+        pair_rows = list(csv.DictReader(stream))
+    wording = html.escape(
+        str(evidence["allowed_wording"])
+        if evidence["allowed_wording"] is not None
+        else "Framework statement unavailable; inspect gate reasons."
+    )
+    gates = "".join(
+        f"<li>{html.escape(str(item))}</li>" for item in evidence["gate_reasons"]
+    )
+    failures = "".join(
+        f"<tr><td>{html.escape(key)}</td><td>{count}</td></tr>"
+        for key, count in sorted(failure_counts.items())
+    ) or "<tr><td>none</td><td>0</td></tr>"
+    pairs = "".join(
+        "<tr>"
+        + "".join(
+            f"<td>{html.escape(str(row[name]))}</td>"
+            for name in ("train_seed", "evaluation_seed", "route", "arm", "success", "steps")
+        )
+        + "</tr>"
+        for row in pair_rows
+    )
+    thumbnails = "".join(
+        f'<figure><img src="thumbnails/{html.escape(Path(record["path"]).name)}" '
+        f'width="128" height="128" alt="synthetic {html.escape(record["arm"])} '
+        f'seed {record["seed"]}"><figcaption>seed {record["seed"]}: '
+        f'{html.escape(record["arm"])}</figcaption></figure>'
+        for record in thumbnail_records
+    )
     body = (
         "<!doctype html><html lang=\"zh-CN\"><meta charset=\"utf-8\">"
         "<title>LunaVLA v3 diagnostic report</title>"
         f"<h1>LunaVLA v3 diagnostic report</h1><p>{wording}</p>"
         f"<p>Pairs: {evidence['observed_pairs']} / {evidence['expected_pairs']}</p>"
-        "<p>Scientific claims allowed: false</p></html>\n"
+        f"<p>Parity verified cells: {parity_count}</p>"
+        "<p>Scientific claims allowed: false</p>"
+        f"<h2>Gate reasons</h2><ul>{gates}</ul>"
+        f"<h2>Failure taxonomy</h2><table><tr><th>layer/provenance/label</th>"
+        f"<th>count</th></tr>{failures}</table>"
+        "<h2>Per-pair results</h2><table><tr><th>train seed</th><th>eval seed</th>"
+        f"<th>route</th><th>arm</th><th>success</th><th>steps</th></tr>{pairs}</table>"
+        f"<h2>Synthetic thumbnails</h2>{thumbnails}</html>\n"
     )
     (target / "index.html").write_text(body, encoding="utf-8")
     return target
