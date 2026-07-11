@@ -146,7 +146,7 @@ jobs:
             "$RUNNER_TEMP/stable-integration/integration-attestation-bundle.jsonl"
           test "$(find "$RUNNER_TEMP/stable-integration" -type f | wc -l)" -eq 2
       - name: Upload same-workflow integration inputs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: stable-integration-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/stable-integration/
@@ -268,7 +268,7 @@ jobs:
             release-assets/SHA256SUMS
       - name: Upload non-stable release candidate
         if: ${{ inputs.profile != 'stable' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lunavla-v2-${{ inputs.profile }}-${{ inputs.expected_sha }}
           path: |
@@ -278,7 +278,7 @@ jobs:
           retention-days: 30
       - name: Upload stable release candidate
         if: ${{ inputs.profile == 'stable' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lunavla-v2-stable-${{ inputs.expected_sha }}
           path: release-assets/

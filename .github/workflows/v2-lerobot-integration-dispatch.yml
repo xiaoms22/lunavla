@@ -152,7 +152,7 @@ jobs:
           subject-path: ${{ runner.temp }}/lunavla-lerobot-integration/integration_manifest.json
 
       - name: Upload integration manifest only
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: v2-lerobot-integration-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/lunavla-lerobot-integration/integration_manifest.json
