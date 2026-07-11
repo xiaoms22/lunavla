@@ -8,6 +8,8 @@ from typing import Any
 from lunavla.v3.artifacts import sha256_file
 from lunavla.v3 import (
     DiagnosticDesignV1,
+    DonorBankV1,
+    DonorRecordV1,
     EmbodimentSpec,
     EpisodeRecordV3,
     EvidenceManifestV2,
@@ -71,6 +73,8 @@ PUBLIC_TYPES = {
     "StateRouteSpecV1": StateRouteSpecV1,
     "InterventionSpecV1": InterventionSpecV1,
     "DiagnosticDesignV1": DiagnosticDesignV1,
+    "DonorRecordV1": DonorRecordV1,
+    "DonorBankV1": DonorBankV1,
     "FailureRecordV1": FailureRecordV1,
     "EvidenceManifestV2": EvidenceManifestV2,
 }

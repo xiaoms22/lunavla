@@ -21,6 +21,7 @@ dataset:
   parameters:
     episode_count: 6
     steps_per_episode: 4
+    instruction_variant: region_instruction_v1
 embodiment:
   id: lunavla_fake_libero
   task_id: fake_libero

@@ -11,7 +11,7 @@ routes:
   - schema_version: 1
     mode: prompt_only
     state_features: [state.proprioception]
-prompt_arms:
+interventions:
   - schema_version: 1
     arm_id: control
     kind: prompt
