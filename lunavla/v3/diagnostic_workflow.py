@@ -154,6 +154,12 @@ class EvidenceManifestV2:
             raise ValueError("evidence requires source manifests")
         if len({item.path for item in sources}) != len(sources):
             raise ValueError("source manifest paths must be unique")
+        for name in ("expected_pairs", "observed_pairs"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                raise ValueError(f"{name} must be a positive integer")
+        if self.observed_pairs > self.expected_pairs:
+            raise ValueError("observed_pairs cannot exceed expected_pairs")
         for name in (
             "homogeneous", "matrix_complete", "reduced_design", "claim_allowed"
         ):
@@ -161,6 +167,8 @@ class EvidenceManifestV2:
                 raise TypeError(f"{name} must be boolean")
         if self.claim_allowed:
             raise ValueError("Beta 1 evidence cannot open scientific claims")
+        if self.matrix_complete != (self.observed_pairs == self.expected_pairs):
+            raise ValueError("matrix_complete conflicts with pair counts")
         if self.allowed_wording != _ALLOWED_WORDING:
             raise ValueError("unexpected Beta 1 allowed wording")
         object.__setattr__(self, "source_manifests", sources)

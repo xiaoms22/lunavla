@@ -349,7 +349,7 @@ class ObservationV3:
             raise ValueError("image/state names must be non-empty strings")
         object.__setattr__(self, "images", images)
         object.__setattr__(self, "state", state)
-        object.__setattr__(self, "instruction", self.instruction.strip() if self.instruction else None)
+        object.__setattr__(self, "instruction", self.instruction if self.instruction is not None else None)
         object.__setattr__(self, "timestamp_s", timestamp)
         object.__setattr__(self, "step_index", int(self.step_index))
         object.__setattr__(self, "metadata", _freeze_json(self.metadata, "metadata"))
