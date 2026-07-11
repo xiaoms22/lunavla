@@ -9,7 +9,7 @@ Provide all three inputs:
 - `source_ref`: a branch, tag, or commit in this repository; pull-request refs are rejected;
 - `expected_sha`: the immutable 40-character lowercase commit SHA that `source_ref` must
   resolve to;
-- `profile`: `alpha`, `language`, `vision`, or `stable`.
+- `profile`: `alpha`, `language`, `vision`, `rc`, or `stable`.
 
 The dispatcher validates inputs before checkout, disables persisted Git credentials, verifies
 the checked-out commit and clean worktree, installs the hashed Linux CPU release environment,
@@ -23,6 +23,7 @@ The selected revision supplies this script and all release logic. Treat `source_
 execution: review it first and copy its immutable SHA from GitHub. A moving branch that no
 longer resolves to `expected_sha` fails before any source script runs.
 
-Successful runs attest and upload `release-assets/` plus `outputs/`. The dispatcher does not
+Successful runs attest distributions, evidence archives, `SHA256SUMS`, SBOM, release candidate,
+and environment requirements, then upload `release-assets/` plus `outputs/`. The dispatcher does not
 create a tag, GitHub Release, PyPI upload, or self-hosted job; those remain separate protected
 release decisions.
