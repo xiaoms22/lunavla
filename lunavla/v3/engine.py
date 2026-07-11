@@ -189,6 +189,10 @@ class EngineV3:
                 raise
 
             return diffusion_policy_spec(self.config)
+        if self.config.policy["type"] == "lerobot_smolvla":
+            from .smolvla_adapter import smolvla_policy_spec
+
+            return smolvla_policy_spec(self.config)
         parameters = dict(self.config.policy["parameters"])
         raw = dict(parameters.get("legacy", parameters))
         state_feature = str(raw.get("state_feature", "state.proprioception"))
@@ -291,6 +295,10 @@ class EngineV3:
                 raise
 
             register_diffusion_policy(registry)
+        elif self.config.policy["type"] == "lerobot_smolvla":
+            from .smolvla_adapter import register_smolvla_policy
+
+            register_smolvla_policy(registry)
         else:
             registry.register(
                 self.config.policy["type"], self._create_bridge, self._restore_bridge

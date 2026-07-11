@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "docs/v3/public_api_contract.json"
 LOCK_ALIAS = ROOT / "requirements-v3-core-cpu.lock"
 DIFFUSION_LOCK = ROOT / "requirements-v3-diffusion-cpu.lock"
+SMOLVLA_LOCK = ROOT / "requirements-v3-smolvla-cpu.lock"
 PUBLIC_TYPES = {
     "FeatureSpec": FeatureSpec,
     "FeatureSchema": FeatureSchema,
@@ -48,7 +49,7 @@ PUBLIC_TYPES = {
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-alpha.2-diffusion",
+        "release_stage": "v3.0.0-alpha.2-smolvla-adapter",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()
@@ -81,6 +82,21 @@ def main() -> int:
     forbidden = ("nvidia-", "nvidia_", "nccl==", "triton==")
     if any(item in diffusion_lock for item in forbidden):
         raise SystemExit("v3 Diffusion CPU lock contains an accelerator-only package")
+    smolvla_lock = SMOLVLA_LOCK.read_text(encoding="utf-8").lower()
+    smolvla_required = {
+        "accelerate==1.14.0",
+        "lerobot==0.6.0",
+        "numpy==2.2.6",
+        "torch==2.11.0+cpu",
+        "torchvision==0.26.0+cpu",
+        "transformers==5.5.4",
+        "sha256:b38a564fbc441d98380576863bf68635dde5fc2c42ddc2a39d0486640dc9e9a8",
+    }
+    missing = sorted(item for item in smolvla_required if item not in smolvla_lock)
+    if missing:
+        raise SystemExit(f"v3 SmolVLA CPU lock is stale; missing {missing}")
+    if any(item in smolvla_lock for item in forbidden):
+        raise SystemExit("v3 SmolVLA CPU lock contains an accelerator-only package")
     print("v3 alpha contracts, configs, and CPU lock are valid")
     return 0
 

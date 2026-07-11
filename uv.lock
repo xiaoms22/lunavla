@@ -1062,15 +1062,24 @@ v3-diffusion = [
     { name = "torchvision" },
     { name = "transformers" },
 ]
+v3-smolvla = [
+    { name = "accelerate" },
+    { name = "lerobot" },
+    { name = "torch" },
+    { name = "torchvision" },
+    { name = "transformers" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "accelerate", marker = "extra == 'v3-diffusion'", specifier = "==1.14.0" },
+    { name = "accelerate", marker = "extra == 'v3-smolvla'", specifier = "==1.14.0" },
     { name = "build", marker = "extra == 'release'", specifier = ">=1.2,<2" },
     { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=7.6,<8" },
     { name = "cyclonedx-bom", marker = "extra == 'release'", specifier = ">=7,<8" },
     { name = "diffusers", marker = "extra == 'v3-diffusion'", specifier = "==0.35.2" },
     { name = "gym-pusht", marker = "extra == 'v2-integration'", specifier = "==0.1.6" },
+    { name = "lerobot", marker = "extra == 'v3-smolvla'", specifier = "==0.6.0" },
     { name = "lerobot", extras = ["dataset"], marker = "extra == 'v2'", specifier = "==0.6.*" },
     { name = "lerobot", extras = ["dataset", "pusht"], marker = "extra == 'v2-integration'", specifier = "==0.6.*" },
     { name = "lerobot", extras = ["diffusion"], marker = "extra == 'v3-diffusion'", specifier = "==0.6.0" },
@@ -1086,16 +1095,19 @@ requires-dist = [
     { name = "torch", marker = "extra == 'v2-integration'", specifier = "==2.11.*" },
     { name = "torch", marker = "extra == 'v3-act'", specifier = "==2.11.*" },
     { name = "torch", marker = "extra == 'v3-diffusion'", specifier = "==2.11.*" },
+    { name = "torch", marker = "extra == 'v3-smolvla'", specifier = "==2.11.*" },
     { name = "torchvision", marker = "extra == 'v2'", specifier = "==0.26.*" },
     { name = "torchvision", marker = "extra == 'v2-core'", specifier = "==0.26.*" },
     { name = "torchvision", marker = "extra == 'v2-integration'", specifier = "==0.26.*" },
     { name = "torchvision", marker = "extra == 'v3-act'", specifier = "==0.26.*" },
     { name = "torchvision", marker = "extra == 'v3-diffusion'", specifier = "==0.26.*" },
+    { name = "torchvision", marker = "extra == 'v3-smolvla'", specifier = "==0.26.*" },
     { name = "transformers", marker = "extra == 'v3-diffusion'", specifier = "==5.5.4" },
+    { name = "transformers", marker = "extra == 'v3-smolvla'", specifier = "==5.5.4" },
     { name = "twine", marker = "extra == 'release'", specifier = ">=6,<7" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.12" },
 ]
-provides-extras = ["v2-core", "v3-act", "v3-diffusion", "v2", "v2-integration", "dev", "release"]
+provides-extras = ["v2-core", "v3-act", "v3-diffusion", "v3-smolvla", "v2", "v2-integration", "dev", "release"]
 
 [[package]]
 name = "lxml"

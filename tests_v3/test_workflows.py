@@ -21,6 +21,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-diffusion-cpu",
         "v3-v2-compat",
         "v3-secret-scan",
+        "v3-smolvla-adapter",
     }
 
 
@@ -41,3 +42,18 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "uv pip sync requirements-v3-diffusion-cpu.lock" in workflow
     assert 'metadata.version("lerobot") == "0.6.0"' in workflow
     assert "validate-config configs/v3/diffusion_fake_libero_cpu.yaml" in workflow
+    assert "uv pip sync requirements-v3-smolvla-cpu.lock" in workflow
+    assert "validate-config configs/v3/smolvla_conformance_cpu.yaml" in workflow
+
+
+def test_smolvla_gpu_workflow_is_manual_self_hosted_and_fail_closed() -> None:
+    path = Path(".github/workflows/v3-smolvla-gpu.yml")
+    payload = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    assert set(payload["on"]) == {"workflow_dispatch"}
+    job = payload["jobs"]["smolvla-gpu-gate"]
+    assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
+    workflow = path.read_text(encoding="utf-8")
+    assert '"license_status: verified" in config' in workflow
+    assert '"pretrained_enabled: true" in config' in workflow
+    assert "nvidia-smi" in workflow
+    assert "from_pretrained" not in workflow

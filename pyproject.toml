@@ -32,6 +32,13 @@ v3-diffusion = [
   "transformers==5.5.4",
   "accelerate==1.14.0",
 ]
+v3-smolvla = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+  "lerobot==0.6.0",
+  "transformers==5.5.4",
+  "accelerate==1.14.0",
+]
 v2 = [
   "torch==2.11.*",
   "torchvision==0.26.*",

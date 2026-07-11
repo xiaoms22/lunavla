@@ -1,0 +1,66 @@
+name: V3 SmolVLA GPU Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact source SHA to audit
+        required: true
+        type: string
+      license_evidence_url:
+        description: Public evidence for the model-weight license
+        required: true
+        type: string
+      enable_pretrained_gate:
+        description: Confirm that the repository gate was reviewed and enabled
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v3-smolvla-gpu-${{ inputs.expected_sha }}
+  cancel-in-progress: false
+
+jobs:
+  smolvla-gpu-gate:
+    name: v3-smolvla-gpu-gate
+    if: ${{ inputs.enable_pretrained_gate }}
+    runs-on: [self-hosted, linux, x64, gpu]
+    environment: v3-smolvla-license-review
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_sha }}
+      - name: Verify immutable source and public license evidence
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          LICENSE_EVIDENCE_URL: ${{ inputs.license_evidence_url }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          case "$LICENSE_EVIDENCE_URL" in
+            https://*) ;;
+            *) echo "license_evidence_url must be public HTTPS evidence" >&2; exit 1 ;;
+          esac
+      - name: Refuse execution while the repository gate is closed
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          config = Path("configs/v3/smolvla_conformance_cpu.yaml").read_text(encoding="utf-8")
+          assert "license_status: verified" in config, "model-weight license is unverified"
+          assert "pretrained_enabled: true" in config, "pretrained gate remains closed"
+          assert "conformance_only: false" in config, "adapter remains conformance-only"
+          PY
+      - name: Verify an eligible NVIDIA runner before any weight access
+        run: |
+          nvidia-smi
+          python - <<'PY'
+          import torch
+
+          assert torch.cuda.is_available()
+          assert torch.cuda.device_count() == 1
+          PY
