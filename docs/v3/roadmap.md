@@ -14,11 +14,15 @@
    processor conformance, pinned upstream identity, and fail-closed pretrained/optimizer gates.
    Actual weights, optimizer, resume, and inference remain blocked until the model-weight license
    and a single GPU are verified.
-6. **Beta 1 — planned:** prompt rendering parity, declared state routes, paired interventions, and
+6. **Alpha 2 release gate — infrastructure implemented, external gates closed:** strict license,
+   GPU validation and release-candidate contracts; CUDA 12.8 and release CPU locks; a default-
+   branch-compatible two-phase dispatcher; signed-tag and draft-prerelease verification. The
+   package version `3.0.0a2` is reserved for the future gate-opening PR and no weight is accessed.
+7. **Beta 1 — planned:** prompt rendering parity, declared state routes, paired interventions, and
    language/vision/state/action/execution failure reports.
-7. **Beta 2 — planned:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as
+8. **Beta 2 — planned:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as
    a diagnostic subset rather than a full benchmark.
-8. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
+9. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
    signed assets, SBOM, provenance, and checksums.
 
 No release requires a target success rate. Negative or neutral evidence remains publishable; an

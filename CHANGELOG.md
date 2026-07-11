@@ -2,6 +2,19 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
+## v3.0.0-alpha.2 — release gate pending
+
+### Added
+
+- Added versioned model-weight license review, single-GPU validation, and Alpha 2 release-candidate contracts.
+- Added hash-locked Linux CUDA 12.8 and release CPU profiles plus a two-phase default-branch dispatcher for pre-tag GPU evidence and signed-tag finalization.
+- Added a dormant official SmolVLA loader, optimizer, checkpoint and restore path that is reachable only after a separate reviewed gate-opening change.
+
+### Boundaries
+
+- The model-weight license remains unverified, the pretrained gate remains disabled, and no qualifying self-hosted runner is registered.
+- Package version `3.0.0a2` is reserved for the future gate-opening PR; no v3 tag, release, weight download, PyPI publication, or performance claim is created by this infrastructure change.
+
 ## v2.0.0 — 2026-07-11
 
 ### Added
