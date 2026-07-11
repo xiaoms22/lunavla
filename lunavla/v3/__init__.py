@@ -49,9 +49,19 @@ from .data import (
     split_episode_ids,
 )
 from .engine import EngineV3, run_alpha
+from .release_contracts import (
+    ALPHA2_PACKAGE_VERSION,
+    ALPHA2_TAG,
+    Alpha2ReleaseCandidateV1,
+    GpuValidationManifestV1,
+    LicenseReviewV1,
+)
 
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
+    "ALPHA2_PACKAGE_VERSION",
+    "ALPHA2_TAG",
+    "Alpha2ReleaseCandidateV1",
     "ArtifactHashRecordV1",
     "CheckpointEnvelopeV4",
     "CheckpointEnvelopeV4R2",
@@ -67,6 +77,8 @@ __all__ = [
     "FeatureSpec",
     "FeatureNormalizationV1",
     "InMemoryDatasetSourceV3",
+    "GpuValidationManifestV1",
+    "LicenseReviewV1",
     "ObservationV3",
     "ModelSourceContractV1",
     "NormalizationStatsV1",
