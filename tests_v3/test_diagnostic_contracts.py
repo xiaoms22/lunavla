@@ -7,6 +7,7 @@ import pytest
 from lunavla.v3 import (
     DiagnosticDesignV1,
     ExperimentConfig,
+    FailureRecordV1,
     InterventionSpecV1,
     PromptSpecV1,
     StateRouteSpecV1,
@@ -98,6 +99,17 @@ def test_route_intervention_and_design_contracts_are_strict() -> None:
         DiagnosticDesignV1(
             **{**design.__dict__, "base_config": "../secret.yaml"}
         )
+
+
+def test_failure_taxonomy_requires_evidence_provenance() -> None:
+    record = FailureRecordV1(
+        "execution", "environment_timeout", "timeout_v1", "automatic", True
+    )
+    assert FailureRecordV1.from_mapping(record.to_dict()) == record
+    with pytest.raises(ValueError, match="failure layer"):
+        FailureRecordV1("model", "unknown", "rule", "automatic")
+    with pytest.raises(ValueError, match="provenance"):
+        FailureRecordV1("state", "leak", "sentinel_v1", "guessed")
 
 
 def test_config_revision_one_hash_is_stable_and_revision_two_is_strict() -> None:

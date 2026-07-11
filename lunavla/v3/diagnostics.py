@@ -27,6 +27,8 @@ _SUPPORTED_OPERATORS = {
     "data": {"control"},
     "execution": {"receding_horizon"},
 }
+_FAILURE_LAYERS = {"language", "vision", "state", "action", "execution"}
+_FAILURE_PROVENANCE = {"automatic", "human"}
 
 
 def _string(value: object, name: str) -> str:
@@ -319,6 +321,53 @@ class InterventionSpecV1:
 
     def sha256(self) -> str:
         return _stable_hash(self.to_dict())
+
+
+@dataclass(frozen=True)
+class FailureRecordV1:
+    layer: str
+    label: str
+    rule_id: str
+    provenance: str
+    primary_cause: bool | None = None
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if isinstance(self.schema_version, bool) or self.schema_version != 1:
+            raise ValueError("FailureRecordV1 schema_version must be integer 1")
+        if self.layer not in _FAILURE_LAYERS:
+            raise ValueError(f"unsupported failure layer {self.layer!r}")
+        label = _string(self.label, "failure label")
+        rule_id = _string(self.rule_id, "failure rule_id")
+        if self.provenance not in _FAILURE_PROVENANCE:
+            raise ValueError(f"unsupported failure provenance {self.provenance!r}")
+        if self.primary_cause is not None and not isinstance(self.primary_cause, bool):
+            raise TypeError("primary_cause must be boolean or null")
+        object.__setattr__(self, "label", label)
+        object.__setattr__(self, "rule_id", rule_id)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "layer": self.layer,
+            "label": self.label,
+            "rule_id": self.rule_id,
+            "provenance": self.provenance,
+            "primary_cause": self.primary_cause,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "FailureRecordV1":
+        return cls(
+            **_exact(
+                value,
+                {
+                    "schema_version", "layer", "label", "rule_id", "provenance",
+                    "primary_cause",
+                },
+                "FailureRecordV1",
+            )
+        )
 
 
 @dataclass(frozen=True)

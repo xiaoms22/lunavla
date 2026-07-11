@@ -429,6 +429,102 @@ class RunManifestV4R2:
         return _write_json(Path(path), self.to_dict())
 
 
+@dataclass(frozen=True)
+class RunManifestV4R3:
+    git_sha: str
+    git_dirty: bool
+    config_sha256: str
+    feature_schema_sha256: str
+    data_audit_sha256: str
+    checkpoint_envelope_sha256: str
+    metrics_sha256: str
+    policy_spec_sha256: str
+    normalization_sha256: str
+    dependency_lock_sha256: str
+    model_source_sha256: str
+    runtime_sha256: str
+    prompt_contract_sha256: str
+    route_contract_sha256: str
+    diagnostic_design_sha256: str
+    pair_set_sha256: str
+    intervention_set_sha256: str
+    donor_bank_sha256: str
+    failure_trace_sha256: str
+    input_consumption_sha256: str
+    policy_id: str
+    task_id: str
+    device: str
+    camera_order: tuple[str, ...]
+    train_seed: int
+    evaluation_seeds: tuple[int, ...]
+    deterministic: bool
+    parity_verified: bool
+    complete: bool
+    claim_allowed: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": 4,
+            "contract_revision": 3,
+            **{
+                name: getattr(self, name)
+                for name in self.__dataclass_fields__
+                if name not in {"camera_order", "evaluation_seeds"}
+            },
+            "camera_order": list(self.camera_order),
+            "evaluation_seeds": list(self.evaluation_seeds),
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "RunManifestV4R3":
+        fields = set(cls.__dataclass_fields__) | {"schema_version", "contract_revision"}
+        payload = _exact_mapping(value, fields, "run manifest revision 3")
+        _integer(payload.pop("schema_version"), "manifest schema_version", 4)
+        _integer(payload.pop("contract_revision"), "manifest contract_revision", 3)
+        if not isinstance(payload["git_sha"], str) or not _HEX_40.fullmatch(payload["git_sha"]):
+            raise ValueError("manifest git_sha must be a full lowercase commit SHA")
+        for name in (
+            "git_dirty", "deterministic", "parity_verified", "complete", "claim_allowed"
+        ):
+            if not isinstance(payload[name], bool):
+                raise TypeError(f"manifest {name} must be boolean")
+        for name in (
+            "config_sha256", "feature_schema_sha256", "data_audit_sha256",
+            "checkpoint_envelope_sha256", "metrics_sha256", "policy_spec_sha256",
+            "normalization_sha256", "dependency_lock_sha256", "model_source_sha256",
+            "runtime_sha256", "prompt_contract_sha256", "route_contract_sha256",
+            "diagnostic_design_sha256", "pair_set_sha256", "intervention_set_sha256",
+            "donor_bank_sha256", "failure_trace_sha256", "input_consumption_sha256",
+        ):
+            payload[name] = _sha256(payload[name], name)
+        for name in ("policy_id", "task_id", "device"):
+            if not isinstance(payload[name], str) or not payload[name]:
+                raise ValueError(f"manifest {name} must be a non-empty string")
+        cameras = payload["camera_order"]
+        if isinstance(cameras, (str, bytes, Mapping)) or not isinstance(cameras, list):
+            raise TypeError("manifest camera_order must be a list")
+        payload["camera_order"] = tuple(cameras)
+        if any(not isinstance(item, str) or not item for item in payload["camera_order"]):
+            raise ValueError("manifest camera_order contains an invalid feature")
+        payload["train_seed"] = _integer(payload["train_seed"], "manifest train_seed")
+        seeds = payload["evaluation_seeds"]
+        if isinstance(seeds, (str, bytes, Mapping)) or not isinstance(seeds, list):
+            raise TypeError("manifest evaluation_seeds must be a list")
+        payload["evaluation_seeds"] = tuple(
+            _integer(item, "manifest evaluation seed") for item in seeds
+        )
+        if not payload["evaluation_seeds"] or len(payload["evaluation_seeds"]) != len(
+            set(payload["evaluation_seeds"])
+        ):
+            raise ValueError("manifest evaluation_seeds must be non-empty and unique")
+        if payload["claim_allowed"]:
+            raise ValueError("Beta 1 diagnostic run manifests cannot allow claims")
+        return cls(**payload)
+
+    def save(self, path: str | Path) -> Path:
+        return _write_json(Path(path), self.to_dict())
+
+
 def checkpoint_envelope_from_mapping(
     value: Mapping[str, Any],
 ) -> CheckpointEnvelopeV4 | CheckpointEnvelopeV4R2:
@@ -442,12 +538,14 @@ def checkpoint_envelope_from_mapping(
 
 def run_manifest_from_mapping(
     value: Mapping[str, Any],
-) -> RunManifestV4 | RunManifestV4R2:
+) -> RunManifestV4 | RunManifestV4R2 | RunManifestV4R3:
     revision = value.get("contract_revision")
     if revision == 1:
         return RunManifestV4.from_mapping(value)
     if revision == 2:
         return RunManifestV4R2.from_mapping(value)
+    if revision == 3:
+        return RunManifestV4R3.from_mapping(value)
     raise ValueError(f"unsupported manifest contract_revision {revision!r}")
 
 
@@ -486,7 +584,7 @@ def verify_run_directory(path: str | Path) -> dict[str, Any]:
         "data_audit.json": manifest.data_audit_sha256,
         "metrics.json": manifest.metrics_sha256,
     }
-    if isinstance(manifest, RunManifestV4R2):
+    if isinstance(manifest, (RunManifestV4R2, RunManifestV4R3)):
         checks.update(
             {
                 "policy_spec.json": manifest.policy_spec_sha256,
@@ -497,6 +595,19 @@ def verify_run_directory(path: str | Path) -> dict[str, Any]:
             }
         )
         envelope_path = _contained_relative_file(root, "checkpoint/checkpoint.v3.json")
+        if isinstance(manifest, RunManifestV4R3):
+            checks.update(
+                {
+                    "prompt_contract.json": manifest.prompt_contract_sha256,
+                    "route_contract.json": manifest.route_contract_sha256,
+                    "diagnostic_design.json": manifest.diagnostic_design_sha256,
+                    "pairs.json": manifest.pair_set_sha256,
+                    "interventions.json": manifest.intervention_set_sha256,
+                    "donor_bank.json": manifest.donor_bank_sha256,
+                    "trace.jsonl": manifest.failure_trace_sha256,
+                    "input_consumption.json": manifest.input_consumption_sha256,
+                }
+            )
     else:
         checks["checkpoint.v3.json"] = manifest.checkpoint_envelope_sha256
         envelope_path = _contained_file(root, "checkpoint.v3.json")
@@ -510,7 +621,7 @@ def verify_run_directory(path: str | Path) -> dict[str, Any]:
         json.loads(envelope_path.read_text(encoding="utf-8"))
     )
     if isinstance(envelope, CheckpointEnvelopeV4R2):
-        if not isinstance(manifest, RunManifestV4R2):
+        if not isinstance(manifest, (RunManifestV4R2, RunManifestV4R3)):
             raise ValueError("checkpoint and manifest contract revisions do not match")
         checkpoint_root = envelope_path.parent
         verify_checkpoint_directory(checkpoint_root)
