@@ -46,14 +46,42 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "validate-config configs/v3/smolvla_conformance_cpu.yaml" in workflow
 
 
-def test_smolvla_gpu_workflow_is_manual_self_hosted_and_fail_closed() -> None:
-    path = Path(".github/workflows/v3-smolvla-gpu.yml")
+def test_smolvla_release_dispatcher_is_manual_self_hosted_and_fail_closed() -> None:
+    path = Path(".github/workflows/v3-alpha2-release-dispatch.yml")
     payload = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     assert set(payload["on"]) == {"workflow_dispatch"}
-    job = payload["jobs"]["smolvla-gpu-gate"]
-    assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu"]
+    assert set(payload["on"]["workflow_dispatch"]["inputs"]) == {
+        "phase",
+        "source_ref",
+        "expected_sha",
+        "expected_license_review_sha256",
+        "enable_pretrained_gate",
+        "gpu_run_id",
+        "tag",
+    }
+    job = payload["jobs"]["gpu-gate"]
+    assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu", "lunavla-v3"]
     workflow = path.read_text(encoding="utf-8")
-    assert '"license_status: verified" in config' in workflow
-    assert '"pretrained_enabled: true" in config' in workflow
+    assert "validate-license" in workflow
+    assert "--enable-pretrained-gate" in workflow
+    assert "requirements-v3-smolvla-gpu-cu128.lock" in workflow
+    assert "requirements-v3-release-cpu.lock" in workflow
+    assert "gpu-validation-manifest.json" in workflow
+    assert "actions/attest-build-provenance@v2" in workflow
+    assert "git verify-tag" in workflow
+    assert "verification']['verified'] is True" in workflow
+    assert "gh release create" in workflow and "--draft --prerelease" in workflow
     assert "nvidia-smi" in workflow
-    assert "from_pretrained" not in workflow
+
+
+def test_gpu_and_release_locks_pin_authoritative_platforms() -> None:
+    gpu = Path("requirements-v3-smolvla-gpu-cu128.lock").read_text(encoding="utf-8")
+    assert "torch==2.11.0+cu128" in gpu
+    assert "torchvision==0.26.0+cu128" in gpu
+    assert "nvidia-cuda-runtime-cu12==12.8.90" in gpu
+    assert "triton==3.6.0" in gpu
+    release = Path("requirements-v3-release-cpu.lock").read_text(encoding="utf-8")
+    assert "torch==2.11.0+cpu" in release
+    assert "torchvision==0.26.0+cpu" in release
+    assert "cyclonedx-bom==7" in release
+    assert "nvidia-" not in release and "triton==" not in release
