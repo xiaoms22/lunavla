@@ -35,6 +35,10 @@ _POLICIES = {"numpy_linear_chunk", "numpy_bc_mlp", "transformer_chunk", "transfo
 _TASKS = {"fake_pusht", "fake_libero", "pusht_style_point_reach", "language_conditioned_point_reach", "rendered_visual_point_reach", "lerobot_pusht"}
 _DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat"}
 _EXECUTION = {"open_loop_chunk", "receding_horizon"}
+_NUMPY_PARAMETER_FIELDS = {
+    "state_dim", "instruction_dim", "action_dim", "chunk_size", "hidden_dim",
+    "state_feature", "unused_modalities",
+}
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
@@ -133,10 +137,42 @@ class ExperimentConfig:
         if policy["type"] not in _POLICIES:
             raise ValueError(f"unsupported policy.type {policy['type']!r}")
         policy["parameters"] = _mapping(policy["parameters"], "policy.parameters")
+        if set(policy["parameters"]) != {"legacy"}:
+            allowed_policy = _NUMPY_PARAMETER_FIELDS if policy["type"].startswith("numpy_") else set()
+            _reject_unknown(policy["parameters"], allowed_policy, "policy.parameters")
+            for name in ("state_dim", "instruction_dim", "action_dim", "chunk_size"):
+                if name not in policy["parameters"]:
+                    raise ValueError(f"policy.parameters.{name} is required")
+            for name in ("state_dim", "action_dim", "chunk_size"):
+                policy["parameters"][name] = _integer(
+                    policy["parameters"][name], f"policy.parameters.{name}", positive=True
+                )
+            policy["parameters"]["instruction_dim"] = _integer(
+                policy["parameters"]["instruction_dim"], "policy.parameters.instruction_dim"
+            )
+            if "hidden_dim" in policy["parameters"]:
+                policy["parameters"]["hidden_dim"] = _integer(
+                    policy["parameters"]["hidden_dim"], "policy.parameters.hidden_dim", positive=True
+                )
+            state_feature = policy["parameters"].get("state_feature", "state.proprioception")
+            if not isinstance(state_feature, str) or not state_feature:
+                raise ValueError("policy.parameters.state_feature must be a non-empty string")
+            policy["parameters"]["state_feature"] = state_feature
+            unused = policy["parameters"].get("unused_modalities", [])
+            if isinstance(unused, (str, bytes, Mapping)) or not isinstance(unused, Sequence):
+                raise TypeError("policy.parameters.unused_modalities must be a sequence")
+            unused_values = list(unused)
+            if any(item not in {"image", "instruction"} for item in unused_values):
+                raise ValueError("unused_modalities supports only image and instruction")
+            if len(unused_values) != len(set(unused_values)):
+                raise ValueError("unused_modalities cannot contain duplicates")
+            policy["parameters"]["unused_modalities"] = unused_values
         task = sections["task"]
         if task["id"] not in _TASKS:
             raise ValueError(f"unsupported task.id {task['id']!r}")
         task["parameters"] = _mapping(task["parameters"], "task.parameters")
+        if set(task["parameters"]) != {"legacy"}:
+            _reject_unknown(task["parameters"], set(), "task.parameters")
         dataset = sections["dataset"]
         if dataset["type"] not in _DATASETS:
             raise ValueError(f"unsupported dataset.type {dataset['type']!r}")
@@ -144,6 +180,19 @@ class ExperimentConfig:
             raise ValueError("dataset.split must be train, validation, or test")
         dataset["seed"] = _integer(dataset["seed"], "dataset.seed")
         dataset["parameters"] = _mapping(dataset["parameters"], "dataset.parameters")
+        if dataset["type"] == "v2_compat":
+            _reject_unknown(dataset["parameters"], {"legacy"}, "dataset.parameters")
+            if "legacy" not in dataset["parameters"]:
+                raise ValueError("v2_compat dataset requires dataset.parameters.legacy")
+        else:
+            _reject_unknown(
+                dataset["parameters"], {"episode_count", "steps_per_episode"}, "dataset.parameters"
+            )
+            for name in ("episode_count", "steps_per_episode"):
+                if name in dataset["parameters"]:
+                    dataset["parameters"][name] = _integer(
+                        dataset["parameters"][name], f"dataset.parameters.{name}", positive=True
+                    )
 
         feature_schema = FeatureSchema.from_mapping(_mapping(root["features"], "features"))
         embodiment_section = sections["embodiment"]

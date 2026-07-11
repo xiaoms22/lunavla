@@ -1,0 +1,70 @@
+schema_version: 3
+project_name: lunavla-v3-fake-pusht-alpha
+engine: lunavla_v3
+policy:
+  type: numpy_linear_chunk
+  parameters:
+    state_dim: 4
+    instruction_dim: 0
+    action_dim: 2
+    chunk_size: 1
+    state_feature: state.proprioception
+task:
+  id: fake_pusht
+  parameters: {}
+dataset:
+  type: fake_pusht
+  split: train
+  seed: 42
+  parameters:
+    episode_count: 6
+    steps_per_episode: 5
+embodiment:
+  id: lunavla_fake_point
+  task_id: fake_pusht
+  control_rate_hz: 10.0
+  camera_mapping: {}
+  state_mapping:
+    state: state.proprioception
+  action_mapping:
+    action: action.primary
+features:
+  schema_version: 1
+  items:
+    - name: state.proprioception
+      role: state
+      dtype: float32
+      shape: [4]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: none
+      source_key: state
+      required_by: [numpy_linear_chunk]
+    - name: action.primary
+      role: action
+      dtype: float32
+      shape: [2]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: none
+      source_key: action
+      required_by: [numpy_linear_chunk]
+training:
+  device: cpu
+  seed: 11
+  batch_size: 8
+  steps: 20
+  learning_rate: 0.04
+evaluation:
+  execution_mode: receding_horizon
+  episodes: 3
+  seed: 1000
+  seeds: [1000, 1001, 1002]
+  max_steps: 12
+diagnostics:
+  enabled: false
+artifacts:
+  output_dir: outputs/v3/fake-pusht-alpha
+  checkpoint_name: policy.json
