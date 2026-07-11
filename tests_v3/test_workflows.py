@@ -18,6 +18,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-contracts",
         "v3-data",
         "v3-engine-cpu",
+        "v3-diagnostics-cpu",
         "v3-diffusion-cpu",
         "v3-v2-compat",
         "v3-secret-scan",
@@ -44,6 +45,10 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "validate-config configs/v3/diffusion_fake_libero_cpu.yaml" in workflow
     assert "uv pip sync requirements-v3-smolvla-cpu.lock" in workflow
     assert "validate-config configs/v3/smolvla_conformance_cpu.yaml" in workflow
+    assert "uv pip sync requirements-v3-core-cpu.lock" in workflow
+    assert "diagnostic-run" in workflow
+    assert "diagnostic-verify" in workflow
+    assert "diagnostic-report" in workflow
 
 
 def test_v31_smolvla_dispatcher_is_manual_self_hosted_and_fail_closed() -> None:
