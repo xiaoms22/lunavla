@@ -5,6 +5,7 @@ import pytest
 
 from lunavla.v3 import (
     DiagnosticRouterV1,
+    DiagnosticExecutionError,
     ExperimentConfig,
     FeatureNormalizationV1,
     NormalizationStatsV1,
@@ -127,3 +128,26 @@ def test_act_v3_uses_the_same_diagnostic_route_and_renderer() -> None:
         policy, FakePointEnvV3("fake_libero", 2, "region_instruction_v1")
     )
     assert metrics["episodes"] == 1
+
+
+def test_diagnostic_prediction_failure_records_stage_and_closes_once() -> None:
+    config = ExperimentConfig.load("configs/v3/diagnostic_fake_libero.yaml")
+    engine = EngineV3(config)
+    engine.diagnostic_router = DiagnosticRouterV1(config, _stats(config))
+    env = FakePointEnvV3("fake_libero", 2, "region_instruction_v1")
+
+    class BrokenPolicy:
+        spec = engine._policy_spec()
+
+        def reset(self, seed: int) -> None:
+            del seed
+
+        def predict_chunk(self, sample: object) -> object:
+            del sample
+            raise RuntimeError("prediction failed")
+
+    with pytest.raises(DiagnosticExecutionError, match="prediction failed") as captured:
+        engine.evaluate(BrokenPolicy(), env)  # type: ignore[arg-type]
+    assert captured.value.stage == "predict"
+    assert captured.value.origin == "policy"
+    assert env.closed

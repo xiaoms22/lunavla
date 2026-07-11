@@ -6,14 +6,22 @@ The v3 namespace is deliberately separate from the frozen top-level v2 API.
 from .config import CONFIG_CONTRACT_REVISION, CONFIG_SCHEMA_VERSION, ExperimentConfig
 from .diagnostics import (
     DiagnosticDesignV1,
+    DiagnosticTraceRowV1,
     DonorBankV1,
     DonorRecordV1,
     FailureRecordV1,
     InterventionSpecV1,
     PromptSpecV1,
+    PromptParityManifestV1,
+    PromptParityRecordV1,
     StateRouteSpecV1,
 )
-from .diagnostic_engine import DiagnosticRouterV1, RoutedObservationV1, typed_episode_key
+from .diagnostic_engine import (
+    DiagnosticExecutionError,
+    DiagnosticRouterV1,
+    RoutedObservationV1,
+    typed_episode_key,
+)
 from .diagnostic_workflow import (
     EvidenceManifestV2,
     run_diagnostic,
@@ -77,7 +85,9 @@ __all__ = [
     "DatasetBundle",
     "DatasetSourceV3",
     "DiagnosticDesignV1",
+    "DiagnosticExecutionError",
     "DiagnosticRouterV1",
+    "DiagnosticTraceRowV1",
     "DonorBankV1",
     "DonorRecordV1",
     "EmbodimentSpec",
@@ -100,6 +110,8 @@ __all__ = [
     "PolicySampleV3",
     "PolicySpecV3",
     "PromptSpecV1",
+    "PromptParityManifestV1",
+    "PromptParityRecordV1",
     "RunManifestV4",
     "RunManifestV4R2",
     "RunManifestV4R3",
