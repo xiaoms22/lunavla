@@ -24,6 +24,14 @@ v3-act = [
   "torch==2.11.*",
   "torchvision==0.26.*",
 ]
+v3-diffusion = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+  "lerobot[diffusion]==0.6.0",
+  "diffusers==0.35.2",
+  "transformers==5.5.4",
+  "accelerate==1.14.0",
+]
 v2 = [
   "torch==2.11.*",
   "torchvision==0.26.*",

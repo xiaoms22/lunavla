@@ -1,0 +1,117 @@
+schema_version: 3
+project_name: lunavla-v3-diffusion-fake-libero-cpu
+engine: lunavla_v3
+policy:
+  type: diffusion_v3
+  parameters:
+    state_feature: state.proprioception
+    camera_features: [camera.primary]
+    unused_modalities: [instruction]
+    history: 2
+    chunk_size: 4
+    horizon: 8
+    execution_steps: 4
+    n_action_steps: 4
+    noise_scheduler_type: DDIM
+    num_train_timesteps: 16
+    num_inference_steps: 8
+    prediction_type: epsilon
+    do_mask_loss_for_padding: true
+    noise_seed: 202611
+    down_dims: [32, 64, 128]
+    kernel_size: 3
+    n_groups: 8
+    diffusion_step_embed_dim: 32
+    spatial_softmax_num_keypoints: 8
+    vision_backbone: resnet18
+    use_group_norm: true
+    use_separate_rgb_encoder_per_camera: true
+    pretrained_backbone_weights: null
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: true
+    clip_sample_range: 1.0
+task:
+  id: fake_libero
+  parameters: {}
+dataset:
+  type: fake_libero
+  split: train
+  seed: 42
+  parameters:
+    episode_count: 6
+    steps_per_episode: 10
+embodiment:
+  id: lunavla_fake_libero
+  task_id: fake_libero
+  control_rate_hz: 10.0
+  camera_mapping:
+    image: camera.primary
+  state_mapping:
+    state: state.proprioception
+  action_mapping:
+    action: action.primary
+features:
+  schema_version: 1
+  items:
+    - name: camera.primary
+      role: image
+      dtype: uint8
+      shape: [16, 16, 3]
+      unit: pixel
+      frame: sim_camera
+      rate_hz: 10.0
+      normalization: none
+      source_key: image
+      required_by: [diffusion_v3]
+    - name: state.proprioception
+      role: state
+      dtype: float32
+      shape: [4]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: minmax
+      source_key: state
+      required_by: [diffusion_v3]
+    - name: action.primary
+      role: action
+      dtype: float32
+      shape: [2]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: minmax
+      source_key: action
+      required_by: [diffusion_v3]
+training:
+  device: cpu
+  seed: 11
+  batch_size: 2
+  steps: 2
+  learning_rate: 0.0003
+  optimizer:
+    type: adamw
+    parameters:
+      weight_decay: 0.000001
+      betas: [0.95, 0.999]
+      eps: 0.00000001
+  scheduler:
+    type: constant
+    parameters: {}
+  precision: float32
+  gradient_clip_norm: 10.0
+  resume:
+    enabled: false
+    checkpoint: null
+    strict: true
+evaluation:
+  execution_mode: open_loop_chunk
+  episodes: 2
+  seed: 1000
+  seeds: [1000, 1001]
+  max_steps: 8
+diagnostics:
+  enabled: false
+artifacts:
+  output_dir: outputs/v3/diffusion-fake-libero-cpu
+  checkpoint_name: diffusion_v3

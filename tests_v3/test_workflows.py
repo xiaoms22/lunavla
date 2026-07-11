@@ -18,6 +18,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-contracts",
         "v3-data",
         "v3-engine-cpu",
+        "v3-diffusion-cpu",
         "v3-v2-compat",
         "v3-secret-scan",
     }
@@ -37,3 +38,6 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert 'torchvision.__version__ == "0.26.0+cpu"' in workflow
     assert "forbidden_cpu_packages(installed)" in workflow
     assert "validate-config configs/v3/act_fake_libero_cpu.yaml" in workflow
+    assert "uv pip sync requirements-v3-diffusion-cpu.lock" in workflow
+    assert 'metadata.version("lerobot") == "0.6.0"' in workflow
+    assert "validate-config configs/v3/diffusion_fake_libero_cpu.yaml" in workflow

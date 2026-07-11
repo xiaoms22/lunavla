@@ -178,6 +178,17 @@ class EngineV3:
                 raise
 
             return act_policy_spec(self.config)
+        if self.config.policy["type"] == "diffusion_v3":
+            try:
+                from .diffusion_policy import diffusion_policy_spec
+            except ModuleNotFoundError as exc:
+                if exc.name in {"torch", "lerobot", "diffusers"}:
+                    raise RuntimeError(
+                        "diffusion_v3 requires the v3-diffusion dependency profile"
+                    ) from exc
+                raise
+
+            return diffusion_policy_spec(self.config)
         parameters = dict(self.config.policy["parameters"])
         raw = dict(parameters.get("legacy", parameters))
         state_feature = str(raw.get("state_feature", "state.proprioception"))
@@ -269,6 +280,17 @@ class EngineV3:
                 raise
 
             register_act_policy(registry)
+        elif self.config.policy["type"] == "diffusion_v3":
+            try:
+                from .diffusion_policy import register_diffusion_policy
+            except ModuleNotFoundError as exc:
+                if exc.name in {"torch", "lerobot", "diffusers"}:
+                    raise RuntimeError(
+                        "diffusion_v3 requires the v3-diffusion dependency profile"
+                    ) from exc
+                raise
+
+            register_diffusion_policy(registry)
         else:
             registry.register(
                 self.config.policy["type"], self._create_bridge, self._restore_bridge
@@ -335,7 +357,10 @@ class EngineV3:
         normalization = fit_normalization_stats(episodes, self.config.feature_schema)
         spec = self._policy_spec()
         policy = self.registry.create(self.config, spec, normalization)
-        samples = self._samples(episodes, history=spec.history, chunk_size=spec.chunk_size)
+        supervision_steps = spec.horizon if spec.policy_id == "diffusion_v3" else spec.chunk_size
+        samples = self._samples(
+            episodes, history=spec.history, chunk_size=supervision_steps
+        )
         rng = np.random.default_rng(self.config.training["seed"])
         results: list[TrainStepResultV3] = []
         policy.reset(self.config.training["seed"])
@@ -488,7 +513,11 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
     normalization_path = _write_json(
         output / "normalization.json", engine.normalization.to_dict()
     )
-    lock_source = Path("requirements-v3-core-cpu.lock")
+    lock_source = Path(
+        "requirements-v3-diffusion-cpu.lock"
+        if engine.policy_spec.policy_id == "diffusion_v3"
+        else "requirements-v3-core-cpu.lock"
+    )
     dependency_lock_path = _write_json(
         output / "dependency_lock.json",
         {"path": lock_source.name, "sha256": sha256_file(lock_source)},
@@ -539,13 +568,23 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
     training_state = _write_json(
         checkpoint_root / "training_state.json", dict(engine.training_state)
     )
-    checkpoint_files = (
-        checkpoint,
-        checkpoint_policy_spec,
-        checkpoint_normalization,
-        checkpoint_dependency,
-        processor,
-        training_state,
+    checkpoint_files = tuple(
+        sorted(
+            {
+                checkpoint,
+                checkpoint_policy_spec,
+                checkpoint_normalization,
+                checkpoint_dependency,
+                processor,
+                training_state,
+                *(
+                    path
+                    for path in (policy_root / checkpoint_name).rglob("*")
+                    if path.is_file()
+                ),
+            },
+            key=lambda path: path.relative_to(checkpoint_root).as_posix(),
+        )
     )
     envelope = CheckpointEnvelopeV4R2(
         policy_id=engine.policy_spec.policy_id,
