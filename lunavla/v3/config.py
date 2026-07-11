@@ -36,7 +36,7 @@ _SECTION_FIELDS = {
 }
 _POLICIES = {
     "numpy_linear_chunk", "numpy_bc_mlp", "transformer_chunk", "transformer_chunk_cvae",
-    "act", "act_v3",
+    "act", "act_v3", "diffusion_v3",
 }
 _TASKS = {"fake_pusht", "fake_libero", "pusht_style_point_reach", "language_conditioned_point_reach", "rendered_visual_point_reach", "lerobot_pusht"}
 _DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat"}
@@ -50,6 +50,15 @@ _ACT_PARAMETER_FIELDS = {
     "horizon", "execution_steps", "d_model", "nhead", "num_encoder_layers",
     "num_decoder_layers", "dim_feedforward", "latent_dim", "dropout", "kl_weight",
     "sample_latent_during_training", "temporal_ensemble_decay",
+}
+_DIFFUSION_PARAMETER_FIELDS = {
+    "state_feature", "camera_features", "unused_modalities", "chunk_size", "history",
+    "horizon", "execution_steps", "n_action_steps", "noise_scheduler_type",
+    "num_train_timesteps", "num_inference_steps", "prediction_type",
+    "do_mask_loss_for_padding", "noise_seed", "down_dims", "kernel_size", "n_groups",
+    "diffusion_step_embed_dim", "spatial_softmax_num_keypoints", "vision_backbone",
+    "use_group_norm", "use_separate_rgb_encoder_per_camera", "pretrained_backbone_weights",
+    "beta_schedule", "clip_sample", "clip_sample_range",
 }
 _TRAINING_DEFAULTS: Mapping[str, Any] = {
     "optimizer": {"type": "sgd", "parameters": {}},
@@ -195,32 +204,42 @@ class ExperimentConfig:
                 policy["parameters"]["legacy"], "policy.parameters.legacy"
             )
         else:
-            if not (policy["type"].startswith("numpy_") or policy["type"] == "act_v3"):
+            if not (
+                policy["type"].startswith("numpy_")
+                or policy["type"] in {"act_v3", "diffusion_v3"}
+            ):
                 raise ValueError(
                     f"policy.type {policy['type']!r} is migration-only in v3 Alpha 1"
                 )
-            allowed_policy = (
-                _NUMPY_PARAMETER_FIELDS
-                if policy["type"].startswith("numpy_")
-                else _ACT_PARAMETER_FIELDS
-            )
+            allowed_policy = _NUMPY_PARAMETER_FIELDS
+            if policy["type"] == "act_v3":
+                allowed_policy = _ACT_PARAMETER_FIELDS
+            elif policy["type"] == "diffusion_v3":
+                allowed_policy = _DIFFUSION_PARAMETER_FIELDS
             _reject_unknown(policy["parameters"], allowed_policy, "policy.parameters")
-            required_parameters = (
-                ("state_dim", "instruction_dim", "action_dim", "chunk_size")
-                if policy["type"].startswith("numpy_")
-                else (
+            required_parameters: tuple[str, ...]
+            if policy["type"].startswith("numpy_"):
+                required_parameters = ("state_dim", "instruction_dim", "action_dim", "chunk_size")
+            elif policy["type"] == "act_v3":
+                required_parameters = (
                     "state_feature", "instruction_dim", "chunk_size", "d_model", "nhead",
                     "num_encoder_layers", "num_decoder_layers", "dim_feedforward",
                     "latent_dim", "dropout", "kl_weight",
                 )
-            )
+            else:
+                required_parameters = (
+                    "state_feature", "camera_features", "chunk_size", "history", "horizon",
+                    "execution_steps", "n_action_steps", "noise_scheduler_type",
+                    "num_train_timesteps", "num_inference_steps", "prediction_type",
+                    "do_mask_loss_for_padding", "noise_seed", "down_dims",
+                )
             for name in required_parameters:
                 if name not in policy["parameters"]:
                     raise ValueError(f"policy.parameters.{name} is required")
             positive_integer_parameters = ["chunk_size"]
             if policy["type"].startswith("numpy_"):
                 positive_integer_parameters.extend(["state_dim", "action_dim"])
-            else:
+            elif policy["type"] == "act_v3":
                 positive_integer_parameters.extend(
                     [
                         "d_model", "nhead", "num_encoder_layers", "num_decoder_layers",
@@ -231,9 +250,10 @@ class ExperimentConfig:
                 policy["parameters"][name] = _integer(
                     policy["parameters"][name], f"policy.parameters.{name}", positive=True
                 )
-            policy["parameters"]["instruction_dim"] = _integer(
-                policy["parameters"]["instruction_dim"], "policy.parameters.instruction_dim"
-            )
+            if "instruction_dim" in policy["parameters"]:
+                policy["parameters"]["instruction_dim"] = _integer(
+                    policy["parameters"]["instruction_dim"], "policy.parameters.instruction_dim"
+                )
             if policy["type"].startswith("numpy_") and "hidden_dim" in policy["parameters"]:
                 policy["parameters"]["hidden_dim"] = _integer(
                     policy["parameters"]["hidden_dim"], "policy.parameters.hidden_dim", positive=True
@@ -292,6 +312,89 @@ class ExperimentConfig:
                 if decay is not None:
                     decay = _positive_float(decay, "policy.parameters.temporal_ensemble_decay")
                 policy["parameters"]["temporal_ensemble_decay"] = decay
+            if policy["type"] == "diffusion_v3":
+                parameters = policy["parameters"]
+                cameras = parameters["camera_features"]
+                if isinstance(cameras, (str, bytes, Mapping)) or not isinstance(cameras, Sequence):
+                    raise TypeError("policy.parameters.camera_features must be a sequence")
+                camera_values = list(cameras)
+                if not camera_values or any(
+                    not isinstance(item, str) or not item for item in camera_values
+                ):
+                    raise ValueError("diffusion_v3 requires non-empty camera feature names")
+                if len(camera_values) != len(set(camera_values)):
+                    raise ValueError("diffusion_v3 camera_features cannot contain duplicates")
+                parameters["camera_features"] = camera_values
+                for name in (
+                    "n_action_steps", "num_train_timesteps", "num_inference_steps",
+                    "noise_seed", "kernel_size", "n_groups", "diffusion_step_embed_dim",
+                    "spatial_softmax_num_keypoints",
+                ):
+                    default = {
+                        "kernel_size": 3,
+                        "n_groups": 8,
+                        "diffusion_step_embed_dim": 32,
+                        "spatial_softmax_num_keypoints": 8,
+                    }.get(name)
+                    if name not in parameters and default is not None:
+                        parameters[name] = default
+                    parameters[name] = _integer(
+                        parameters[name], f"policy.parameters.{name}", positive=name != "noise_seed"
+                    )
+                if parameters["chunk_size"] != parameters["n_action_steps"]:
+                    raise ValueError("diffusion_v3 chunk_size must equal n_action_steps")
+                if parameters["n_action_steps"] != parameters["execution_steps"]:
+                    raise ValueError("diffusion_v3 n_action_steps must equal execution_steps")
+                if parameters["n_action_steps"] > parameters["horizon"] - parameters["history"] + 1:
+                    raise ValueError("diffusion_v3 n_action_steps exceeds the usable horizon")
+                if parameters["noise_scheduler_type"] != "DDIM":
+                    raise ValueError("diffusion_v3 Alpha 2 requires the DDIM scheduler")
+                if parameters["prediction_type"] not in {"epsilon", "sample"}:
+                    raise ValueError("diffusion_v3 prediction_type must be epsilon or sample")
+                if parameters["num_inference_steps"] > parameters["num_train_timesteps"]:
+                    raise ValueError("diffusion inference steps cannot exceed training timesteps")
+                for name in (
+                    "do_mask_loss_for_padding", "use_group_norm",
+                    "use_separate_rgb_encoder_per_camera", "clip_sample",
+                ):
+                    parameters.setdefault(name, name != "use_group_norm")
+                    if not isinstance(parameters[name], bool):
+                        raise TypeError(f"policy.parameters.{name} must be boolean")
+                down_dims = parameters["down_dims"]
+                if isinstance(down_dims, (str, bytes, Mapping)) or not isinstance(
+                    down_dims, Sequence
+                ):
+                    raise TypeError("policy.parameters.down_dims must be a sequence")
+                parameters["down_dims"] = [
+                    _integer(item, "policy.parameters.down_dims item", positive=True)
+                    for item in down_dims
+                ]
+                if not parameters["down_dims"]:
+                    raise ValueError("policy.parameters.down_dims cannot be empty")
+                factor = 2 ** len(parameters["down_dims"])
+                if parameters["horizon"] % factor:
+                    raise ValueError("diffusion_v3 horizon must match the U-Net downsampling factor")
+                for name, default in (
+                    ("vision_backbone", "resnet18"),
+                    ("pretrained_backbone_weights", None),
+                    ("beta_schedule", "squaredcos_cap_v2"),
+                ):
+                    parameters.setdefault(name, default)
+                if parameters["vision_backbone"] != "resnet18":
+                    raise ValueError("diffusion_v3 Alpha 2 requires vision_backbone=resnet18")
+                if parameters["pretrained_backbone_weights"] is not None:
+                    raise ValueError("diffusion_v3 smoke must not download backbone weights")
+                if parameters["beta_schedule"] not in {"linear", "squaredcos_cap_v2"}:
+                    raise ValueError("unsupported diffusion beta_schedule")
+                clip_range = parameters.get("clip_sample_range", 1.0)
+                parameters["clip_sample_range"] = _positive_float(
+                    clip_range, "policy.parameters.clip_sample_range"
+                )
+                unused = parameters.get("unused_modalities")
+                if unused != ["instruction"]:
+                    raise ValueError(
+                        "diffusion_v3 must explicitly declare unused_modalities=[instruction]"
+                    )
             if policy["type"].startswith("numpy_"):
                 unused = policy["parameters"].get("unused_modalities", [])
                 if isinstance(unused, (str, bytes, Mapping)) or not isinstance(
@@ -386,6 +489,17 @@ class ExperimentConfig:
                     raise ValueError("act_v3 cannot silently discard declared image features")
                 if len(camera_features) > 1:
                     raise ValueError("act_v3 Alpha 2 supports exactly zero or one camera")
+            if policy["type"] == "diffusion_v3":
+                camera_features = {item.name: item for item in feature_schema.by_role("image")}
+                configured = tuple(policy["parameters"]["camera_features"])
+                if configured != tuple(camera_features):
+                    raise ValueError(
+                        "diffusion_v3 camera_features must exactly match FeatureSchema order"
+                    )
+                for name in configured:
+                    shape = camera_features[name].shape
+                    if len(shape) != 3 or shape[-1] != 3:
+                        raise ValueError("diffusion_v3 requires HWC RGB camera features")
 
         training = sections["training"]
         training["device"] = normalize_device(training["device"])
@@ -461,6 +575,44 @@ class ExperimentConfig:
             raise ValueError("act_v3 Alpha 2 requires empty scheduler.parameters")
         if policy["type"] == "act_v3" and training["precision"] != "float32":
             raise ValueError("act_v3 Alpha 2 supports float32 precision only")
+        if policy["type"] == "diffusion_v3" and optimizer["type"] != "adamw":
+            raise ValueError("diffusion_v3 requires optimizer.type=adamw")
+        if policy["type"] == "diffusion_v3":
+            _reject_unknown(
+                optimizer["parameters"], {"weight_decay", "betas", "eps"},
+                "training.optimizer.parameters for diffusion_v3",
+            )
+            weight_decay = optimizer["parameters"].get("weight_decay", 1e-6)
+            if (
+                isinstance(weight_decay, bool)
+                or not isinstance(weight_decay, (int, float))
+                or not math.isfinite(float(weight_decay))
+                or float(weight_decay) < 0
+            ):
+                raise ValueError("diffusion_v3 optimizer weight_decay must be finite and non-negative")
+            optimizer["parameters"]["weight_decay"] = float(weight_decay)
+            optimizer["parameters"]["eps"] = _positive_float(
+                optimizer["parameters"].get("eps", 1e-8),
+                "diffusion_v3 optimizer eps",
+            )
+            betas = optimizer["parameters"].get("betas", [0.95, 0.999])
+            if isinstance(betas, (str, bytes, Mapping)) or not isinstance(betas, Sequence):
+                raise TypeError("diffusion_v3 optimizer betas must be a sequence")
+            if len(betas) != 2 or any(
+                isinstance(item, bool)
+                or not isinstance(item, (int, float))
+                or not math.isfinite(float(item))
+                or not 0 <= float(item) < 1
+                for item in betas
+            ):
+                raise ValueError("diffusion_v3 optimizer betas must contain two values in [0, 1)")
+            optimizer["parameters"]["betas"] = [float(item) for item in betas]
+        if policy["type"] == "diffusion_v3" and scheduler["type"] != "constant":
+            raise ValueError("diffusion_v3 Alpha 2 requires scheduler.type=constant")
+        if policy["type"] == "diffusion_v3" and scheduler["parameters"]:
+            raise ValueError("diffusion_v3 Alpha 2 requires empty scheduler.parameters")
+        if policy["type"] == "diffusion_v3" and training["precision"] != "float32":
+            raise ValueError("diffusion_v3 Alpha 2 supports float32 precision only")
         if (
             policy["type"] == "act_v3"
             and policy["parameters"].get("temporal_ensemble_decay") is not None

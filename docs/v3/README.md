@@ -17,10 +17,13 @@ Implemented in this Alpha:
 - schema-4 revision-2 checkpoint directories and manifests; revision 1 remains read-only.
 - native `act_v3` action-query CVAE Transformer through the same registry and Engine, with one
   ordered RGB camera, state, instruction, masked chunks, temporal ensembling, and exact CPU resume.
+- `diffusion_v3`, an adapter over the public LeRobot 0.6.0 Diffusion Policy and processor APIs,
+  with train-only normalization, DDIM noise control, padding masks, `save_pretrained()` artifacts,
+  exact CPU optimizer/RNG resume, and a hash-locked CPU dependency profile.
 
-The fake LIBERO fixture tests data shape and lifecycle only. Alpha 1 does not download real LeRobot
-or LIBERO data, implement Diffusion/SmolVLA policy bodies, or establish language, image,
-state-route, PushT, or LIBERO performance.
+The fake LIBERO fixture tests data shape and lifecycle only. This branch does not download real
+LeRobot or LIBERO data, implement SmolVLA weights, or establish language, image, state-route,
+PushT, LIBERO, ACT, or Diffusion performance.
 
 - [Direction](v3_overview.md)
 - [Roadmap](roadmap.md)

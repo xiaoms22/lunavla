@@ -18,5 +18,11 @@
   `act_v3`; users must train a native v3 checkpoint.
 - the optional `v3-act` profile contains Torch dependencies and does not enter the v1.x or NumPy
   quickstart.
+- `diffusion_v3` consumes image and state but not instruction; the config must explicitly declare
+  `unused_modalities: [instruction]`. Its optional profile pins LeRobot 0.6.0, Diffusers 0.35.2,
+  Transformers 5.5.4, and Accelerate 1.14.0 without entering the v1.x/NumPy quickstart.
+- Diffusion checkpoints contain upstream `save_pretrained()` model and processor artifacts plus
+  strict optimizer and RNG state. Scheduler, inference-step, normalization, processor, or lock
+  drift fails restore or run verification.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
   contracts.
