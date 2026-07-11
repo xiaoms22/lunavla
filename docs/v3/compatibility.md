@@ -14,6 +14,9 @@
   and training-state files.
 - Alpha 1 configs load with explicit Alpha 2 contract defaults for optimizer, scheduler, precision,
   gradient clipping, and disabled resume.
+- ExperimentConfig schema 3 revision 1 retains its previous resolved serialization and hash.
+  Revision 2 adds strict root-level `prompt` and `routing` sections; diagnostic execution requires
+  revision 2, an instruction-consuming policy, and receding-horizon evaluation.
 - `act_v3` is a new policy id. v2 Transformer checkpoints stay read-only and are never relabeled as
   `act_v3`; users must train a native v3 checkpoint.
 - the optional `v3-act` profile contains Torch dependencies and does not enter the v1.x or NumPy
@@ -31,5 +34,8 @@
 - Alpha 3 uses package `3.0.0a3` and a hosted CPU code-only release. The SmolVLA GPU workflow moves
   to v3.1 and continues to fail closed. Historical v2 manifests retain their original package
   identity; v2 release tooling rejects a v3 package rather than relabeling old assets.
-- v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 3
-  contracts.
+- diagnostic runs use schema-4 revision-3 manifests and EvidenceManifest v2. Revision-1 and
+  revision-2 runs remain verifiable. Reduced or incomplete studies always fail closed, and the
+  Beta 1 framework does not relabel old runs as controlled evidence.
+- v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 3 or
+  Beta 1 diagnostic contracts.

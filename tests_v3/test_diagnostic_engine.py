@@ -85,3 +85,39 @@ def test_diagnostic_engine_trains_and_evaluates_sanitized_views() -> None:
         policy, FakePointEnvV3("fake_libero", config.evaluation["max_steps"])
     )
     assert metrics["episodes"] == 2
+
+
+@pytest.mark.torch
+def test_act_v3_uses_the_same_diagnostic_route_and_renderer() -> None:
+    payload = ExperimentConfig.load("configs/v3/act_fake_libero_cpu.yaml").to_dict()
+    payload["contract_revision"] = 2
+    payload["training"]["steps"] = 1
+    payload["evaluation"]["episodes"] = 1
+    payload["evaluation"]["seeds"] = [1000]
+    payload["diagnostics"]["enabled"] = True
+    payload["prompt"] = {
+        "enabled": True,
+        "renderer_id": "lunavla.canonical_json",
+        "renderer_version": 1,
+        "assistant_target": "action_chunk",
+        "neutral_token": "[MASKED]",
+        "camera_order": ["camera.primary"],
+        "public_slots": {"task_family": "fake_libero"},
+    }
+    payload["routing"] = {
+        "mode": "expert_only",
+        "state_features": ["state.proprioception"],
+    }
+    config = ExperimentConfig.from_mapping(payload)
+    bundle = dataset_for_config(config)
+    engine = EngineV3(config)
+    policy, losses = engine.train(bundle.source("train"))
+    assert len(losses) == 1 and np.isfinite(losses[0])
+    assert engine.diagnostic_router is not None
+    routed = engine.diagnostic_router.route_observation(
+        bundle.select("test")[0].transitions[0].observation
+    )
+    assert tuple(routed.observation.images) == ("camera.primary",)
+    assert routed.observation.instruction == routed.prompt_spec.rendered_text
+    metrics = engine.evaluate(policy, FakePointEnvV3("fake_libero", 2))
+    assert metrics["episodes"] == 1

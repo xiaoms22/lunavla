@@ -54,6 +54,13 @@ def test_prompt_render_is_byte_stable_unicode_and_tamper_evident() -> None:
         PromptSpecV1.from_mapping(tampered)
 
 
+def test_observation_preserves_prompt_bytes_including_terminal_lf() -> None:
+    from lunavla.v3 import ObservationV3
+
+    observation = ObservationV3({}, {"state.proprioception": [0.0]}, "prompt\n", 0, "ep", 0)
+    assert observation.instruction == "prompt\n"
+
+
 def test_layout_drift_changes_only_render_layout_identity() -> None:
     arguments = {
         "raw_instruction": "move",

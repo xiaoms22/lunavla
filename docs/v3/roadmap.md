@@ -14,11 +14,14 @@
    processor conformance, pinned upstream identity, and fail-closed pretrained/optimizer gates.
    Actual weights, optimizer, resume, and inference remain blocked until the model-weight license
    and a single GPU are verified.
-6. **Alpha 3 code-only release — candidate implementation:** package `3.0.0a3`, hosted CPU checks,
-   signed assets and a conformance-only SmolVLA status. No weight or GPU is required. The original
+6. **Alpha 3 code-only release — published prerelease:** package `3.0.0a3`, hosted CPU checks,
+   reproducible signed assets and a conformance-only SmolVLA status. No weight or GPU is required. The original
    license/GPU validation contracts move intact to the future v3.1 track.
-7. **Beta 1 — staged Draft:** prompt rendering parity, declared state routes, paired interventions, and
-   language/vision/state/action/execution failure reports.
+7. **Beta 1 — implemented in an unmerged Draft PR:** canonical prompt parity, declared state
+   routes, same-split donors, step-wise paired interventions, five-layer failure records,
+   revision-3 run manifests, EvidenceManifest v2, and verified static reports. The reduced fixture
+   proves only framework integrity and cannot open a scientific claim. Integration targets the
+   protected `v3-next` branch after Alpha 3.
 8. **Beta 2 — staged Draft:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as
    a diagnostic subset rather than a full benchmark.
 9. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,

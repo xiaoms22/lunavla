@@ -1,4 +1,4 @@
-# v3 Alpha 3 code-only capability matrix
+# v3 Beta 1 draft capability matrix
 
 | Area | Current status | Boundary |
 | --- | --- | --- |
@@ -6,7 +6,7 @@
 | v2 migration | Implemented and golden-tested | Unknown physical metadata remains explicit |
 | Data QA/replay | Implemented on deterministic fixtures | No real dataset download |
 | Policy/normalization contracts | Implemented and CPU-tested | SmolVLA weights remain gated |
-| Engine/checkpoint/manifest | Revision 2 implemented for NumPy, ACT, and Diffusion | No policy comparison |
+| Engine/checkpoint/manifest | Revision 2 policy artifacts plus revision 3 diagnostic runs | No policy comparison |
 | Native ACT | CPU E2E, masked loss, checkpoint/resume, temporal ensemble | No performance claim |
 | LeRobot Diffusion adapter | Public APIs, DDIM, processors, masked loss, exact CPU resume | Fake-data chain only; no performance claim |
 | Fake PushT/LIBERO | Implemented as fixtures | Connectivity and lifecycle only |
@@ -14,7 +14,8 @@
 | Alpha 3 release supply chain | Hosted CPU code-only candidate, locked build backend, signed tag, SBOM, provenance and checksums | No weight access, performance claim or PyPI publication |
 | SmolVLA v3.1 validation | Strict license/GPU contracts and CUDA lock retained fail-closed | No runner, license review, weight access or validation release |
 | Real PushT/LIBERO subset | Planned Beta 2 | No benchmark statement |
-| Prompt/state diagnostics | Planned Beta 1 | No modality or routing claim |
+| Prompt/state diagnostics | Canonical renderer, four routes, five prompt arms, donor/pair hashes, verified report | Reduced fixture only; no modality or routing claim |
+| Diagnostic evidence | EvidenceManifest v2, per-pair CSV, static HTML, tamper detection | `claim_allowed=false`; no multi-seed conclusion |
 
 An input field or working adapter does not establish that the corresponding modality improves
 behavior. Such claims remain closed until a predeclared paired multi-seed design passes.

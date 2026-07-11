@@ -7,9 +7,12 @@ from typing import Any
 
 from lunavla.v3.artifacts import sha256_file
 from lunavla.v3 import (
+    DiagnosticDesignV1,
     EmbodimentSpec,
     EpisodeRecordV3,
+    EvidenceManifestV2,
     ExperimentConfig,
+    FailureRecordV1,
     FeatureNormalizationV1,
     FeatureSchema,
     FeatureSpec,
@@ -25,6 +28,9 @@ from lunavla.v3 import (
     PolicyBatchV3,
     PolicySampleV3,
     PolicySpecV3,
+    PromptSpecV1,
+    StateRouteSpecV1,
+    InterventionSpecV1,
     TrainStepResultV3,
     TransitionV3,
 )
@@ -61,13 +67,19 @@ PUBLIC_TYPES = {
     "TrainStepResultV3": TrainStepResultV3,
     "FeatureNormalizationV1": FeatureNormalizationV1,
     "NormalizationStatsV1": NormalizationStatsV1,
+    "PromptSpecV1": PromptSpecV1,
+    "StateRouteSpecV1": StateRouteSpecV1,
+    "InterventionSpecV1": InterventionSpecV1,
+    "DiagnosticDesignV1": DiagnosticDesignV1,
+    "FailureRecordV1": FailureRecordV1,
+    "EvidenceManifestV2": EvidenceManifestV2,
 }
 
 
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-alpha.3-code-only-candidate",
+        "release_stage": "v3.0.0-beta.1-draft-diagnostics",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()
@@ -80,6 +92,11 @@ def main() -> int:
     if descriptor() != expected:
         raise SystemExit("v3 public API descriptor drifted")
     for path in sorted((ROOT / "configs/v3").glob("*.yaml")):
+        if path.name.endswith("_design.yaml"):
+            DiagnosticDesignV1.from_mapping(
+                __import__("yaml").safe_load(path.read_text(encoding="utf-8"))
+            )
+            continue
         ExperimentConfig.load(path)
     status = WeightLicenseStatusV1.from_mapping(
         json.loads(LICENSE_STATUS.read_text(encoding="utf-8"))
