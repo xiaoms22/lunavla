@@ -506,15 +506,22 @@ class EngineV3:
                 success = False
                 step_count = 0
                 while step_count < self.config.evaluation["max_steps"]:
-                    padding = policy.spec.history - len(history)
-                    window = history[-policy.spec.history :]
-                    sample = PolicySampleV3(
-                        (window[0],) * max(0, padding) + tuple(window),
-                        np.asarray([False] * max(0, padding) + [True] * len(window)),
-                        None,
-                        None,
-                        observation.episode_id,
-                        observation.step_index,
+                    def build_sample() -> PolicySampleV3:
+                        padding = policy.spec.history - len(history)
+                        window = history[-policy.spec.history :]
+                        return PolicySampleV3(
+                            (window[0],) * max(0, padding) + tuple(window),
+                            np.asarray(
+                                [False] * max(0, padding) + [True] * len(window)
+                            ),
+                            None,
+                            None,
+                            observation.episode_id,
+                            observation.step_index,
+                        )
+
+                    sample = self._diagnostic_call(
+                        "preprocess", "engine", build_sample
                     )
                     chunk = self._diagnostic_call(
                         "predict", "policy", lambda: policy.predict_chunk(sample)

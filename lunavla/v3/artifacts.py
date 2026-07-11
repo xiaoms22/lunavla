@@ -450,6 +450,7 @@ class RunManifestV4R3:
     intervention_set_sha256: str
     donor_bank_sha256: str
     parity_manifest_sha256: str
+    cell_contract_sha256: str
     failure_trace_sha256: str
     input_consumption_sha256: str
     policy_id: str
@@ -495,8 +496,8 @@ class RunManifestV4R3:
             "normalization_sha256", "dependency_lock_sha256", "model_source_sha256",
             "runtime_sha256", "prompt_contract_sha256", "route_contract_sha256",
             "diagnostic_design_sha256", "pair_set_sha256", "intervention_set_sha256",
-            "donor_bank_sha256", "parity_manifest_sha256", "failure_trace_sha256",
-            "input_consumption_sha256",
+            "donor_bank_sha256", "parity_manifest_sha256", "cell_contract_sha256",
+            "failure_trace_sha256", "input_consumption_sha256",
         ):
             payload[name] = _sha256(payload[name], name)
         for name in ("policy_id", "task_id", "device"):
@@ -609,6 +610,7 @@ def verify_run_directory(path: str | Path) -> dict[str, Any]:
                     "interventions.json": manifest.intervention_set_sha256,
                     "donor_bank.json": manifest.donor_bank_sha256,
                     "parity.json": manifest.parity_manifest_sha256,
+                    "cell_contract.json": manifest.cell_contract_sha256,
                     "trace.jsonl": manifest.failure_trace_sha256,
                     "input_consumption.json": manifest.input_consumption_sha256,
                 }
