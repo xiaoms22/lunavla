@@ -10,6 +10,7 @@ from .diagnostics import (
     PromptSpecV1,
     StateRouteSpecV1,
 )
+from .diagnostic_engine import DiagnosticRouterV1, RoutedObservationV1, typed_episode_key
 from .contracts import (
     DatasetSourceV3,
     EmbodimentSpec,
@@ -83,6 +84,7 @@ __all__ = [
     "DatasetBundle",
     "DatasetSourceV3",
     "DiagnosticDesignV1",
+    "DiagnosticRouterV1",
     "EmbodimentSpec",
     "EngineV3",
     "EpisodeRecordV3",
@@ -107,6 +109,7 @@ __all__ = [
     "PromptSpecV1",
     "RunManifestV4",
     "RunManifestV4R2",
+    "RoutedObservationV1",
     "StateRouteSpecV1",
     "TaskEnvV3",
     "TransitionV3",
@@ -123,5 +126,6 @@ __all__ = [
     "run_manifest_from_mapping",
     "split_episode_ids",
     "verify_run_directory",
+    "typed_episode_key",
     "verify_checkpoint_directory",
 ]
