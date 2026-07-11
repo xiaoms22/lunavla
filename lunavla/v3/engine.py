@@ -7,7 +7,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -24,9 +24,9 @@ from .artifacts import (
     verify_checkpoint_directory,
 )
 from .config import ExperimentConfig
-from .contracts import EpisodeRecordV3, ObservationV3, TaskEnvV3
+from .contracts import EpisodeRecordV3, ObservationV3, TaskEnvV3, TransitionV3
 from .data import DatasetBundle, InMemoryDatasetSourceV3, audit_episodes, split_episode_ids
-from .diagnostic_engine import DiagnosticRouterV1
+from .diagnostic_engine import DiagnosticRouterV1, RoutedObservationV1
 from .fake_tasks import FakePointEnvV3, make_fake_episodes
 from .normalization import NormalizationStatsV1, fit_normalization_stats
 from .policy import (
@@ -42,6 +42,7 @@ from .registry import PolicyRegistryV3
 
 Float32Array = npt.NDArray[np.float32]
 BoolArray = npt.NDArray[np.bool_]
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> Path:
@@ -51,8 +52,14 @@ def _write_json(path: Path, value: Mapping[str, Any]) -> Path:
 
 def _git_identity() -> tuple[str, bool]:
     try:
-        sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip())
+        sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, cwd=_REPOSITORY_ROOT
+        ).strip()
+        dirty = bool(
+            subprocess.check_output(
+                ["git", "status", "--porcelain"], text=True, cwd=_REPOSITORY_ROOT
+            ).strip()
+        )
     except (OSError, subprocess.CalledProcessError):
         return "0" * 40, True
     return sha, dirty
@@ -444,19 +451,31 @@ class EngineV3:
         )
         return policy
 
-    def evaluate(self, policy: VLAPolicyV3, env: TaskEnvV3) -> dict[str, Any]:
+    def evaluate(
+        self,
+        policy: VLAPolicyV3,
+        env: TaskEnvV3,
+        *,
+        trace_callback: Callable[
+            [int, RoutedObservationV1, npt.NDArray[np.generic], TransitionV3, int], None
+        ]
+        | None = None,
+    ) -> dict[str, Any]:
         rewards: list[float] = []
         successes: list[bool] = []
         steps: list[int] = []
         try:
             for seed in self.config.evaluation["seeds"]:
                 canonical_observation = env.reset(seed=seed)
+                routed_observation = (
+                    None
+                    if self.diagnostic_router is None
+                    else self.diagnostic_router.route_observation(canonical_observation)
+                )
                 observation = (
                     canonical_observation
-                    if self.diagnostic_router is None
-                    else self.diagnostic_router.route_observation(
-                        canonical_observation
-                    ).observation
+                    if routed_observation is None
+                    else routed_observation.observation
                 )
                 policy.reset(seed)
                 history = [observation]
@@ -484,13 +503,26 @@ class EngineV3:
                     stop = False
                     for action in actions:
                         transition = env.step(action)
+                        if trace_callback is not None:
+                            if routed_observation is None:
+                                raise ValueError(
+                                    "trace_callback requires an active diagnostic router"
+                                )
+                            trace_callback(
+                                seed, routed_observation, action, transition, step_count
+                            )
                         canonical_observation = transition.next_observation
-                        observation = (
-                            canonical_observation
+                        routed_observation = (
+                            None
                             if self.diagnostic_router is None
                             else self.diagnostic_router.route_observation(
                                 canonical_observation
-                            ).observation
+                            )
+                        )
+                        observation = (
+                            canonical_observation
+                            if routed_observation is None
+                            else routed_observation.observation
                         )
                         history.append(observation)
                         total_reward += transition.reward
@@ -544,7 +576,7 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
     normalization_path = _write_json(
         output / "normalization.json", engine.normalization.to_dict()
     )
-    lock_source = Path(
+    lock_source = _REPOSITORY_ROOT / Path(
         "requirements-v3-diffusion-cpu.lock"
         if engine.policy_spec.policy_id == "diffusion_v3"
         else "requirements-v3-core-cpu.lock"

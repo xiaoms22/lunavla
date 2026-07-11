@@ -6,11 +6,18 @@ The v3 namespace is deliberately separate from the frozen top-level v2 API.
 from .config import CONFIG_CONTRACT_REVISION, CONFIG_SCHEMA_VERSION, ExperimentConfig
 from .diagnostics import (
     DiagnosticDesignV1,
+    FailureRecordV1,
     InterventionSpecV1,
     PromptSpecV1,
     StateRouteSpecV1,
 )
 from .diagnostic_engine import DiagnosticRouterV1, RoutedObservationV1, typed_episode_key
+from .diagnostic_workflow import (
+    EvidenceManifestV2,
+    run_diagnostic,
+    verify_diagnostic_output,
+    write_diagnostic_report,
+)
 from .contracts import (
     DatasetSourceV3,
     EmbodimentSpec,
@@ -42,6 +49,7 @@ from .artifacts import (
     CheckpointEnvelopeV4R2,
     RunManifestV4,
     RunManifestV4R2,
+    RunManifestV4R3,
     checkpoint_envelope_from_mapping,
     run_manifest_from_mapping,
     verify_checkpoint_directory,
@@ -81,11 +89,13 @@ __all__ = [
     "DiagnosticDesignV1",
     "DiagnosticRouterV1",
     "EmbodimentSpec",
+    "EvidenceManifestV2",
     "EngineV3",
     "EpisodeRecordV3",
     "EpisodeHashRecord",
     "ExperimentConfig",
     "FeatureSchema",
+    "FailureRecordV1",
     "FeatureSpec",
     "FeatureNormalizationV1",
     "InMemoryDatasetSourceV3",
@@ -103,6 +113,7 @@ __all__ = [
     "PromptSpecV1",
     "RunManifestV4",
     "RunManifestV4R2",
+    "RunManifestV4R3",
     "RoutedObservationV1",
     "StateRouteSpecV1",
     "TaskEnvV3",
@@ -117,9 +128,12 @@ __all__ = [
     "observation_from_v2",
     "observation_to_v2",
     "run_alpha",
+    "run_diagnostic",
     "run_manifest_from_mapping",
     "split_episode_ids",
     "verify_run_directory",
     "typed_episode_key",
     "verify_checkpoint_directory",
+    "verify_diagnostic_output",
+    "write_diagnostic_report",
 ]
