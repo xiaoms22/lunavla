@@ -6,12 +6,15 @@ import pytest
 
 from lunavla.v3 import (
     DiagnosticDesignV1,
+    DiagnosticTraceRowV1,
     DonorBankV1,
     DonorRecordV1,
     ExperimentConfig,
     FailureRecordV1,
     InterventionSpecV1,
     PromptSpecV1,
+    PromptParityManifestV1,
+    PromptParityRecordV1,
     StateRouteSpecV1,
 )
 
@@ -152,6 +155,32 @@ def test_donor_contract_rejects_self_cross_split_duplicate_and_equal_content() -
         DonorBankV1("instruction", "evaluation", 42, (cross,))
     with pytest.raises(ValueError, match="duplicate"):
         DonorBankV1("instruction", "evaluation", 42, (record, record))
+
+
+def test_parity_is_recomputed_and_trace_cannot_invent_primary_cause() -> None:
+    records = tuple(
+        PromptParityRecordV1(
+            "sample", phase, "1" * 64, (), "action_chunk", ("state",), (), "2" * 64
+        )
+        for phase in ("train", "eval", "deploy")
+    )
+    manifest = PromptParityManifestV1(records)
+    assert PromptParityManifestV1.from_mapping(manifest.to_dict()).verified
+    drifted = list(records)
+    drifted[-1] = PromptParityRecordV1(
+        "sample", "deploy", "3" * 64, (), "action_chunk", ("state",), (), "2" * 64
+    )
+    with pytest.raises(ValueError, match="drift"):
+        PromptParityManifestV1(tuple(drifted))
+    failure = FailureRecordV1(
+        "execution", "timeout", "max_steps_v1", "automatic", True
+    )
+    with pytest.raises(ValueError, match="primary_cause"):
+        DiagnosticTraceRowV1(
+            "1" * 64, 1, 2, "episode", "expert_only", "control", "prompt", 0,
+            "2" * 64, "2" * 64, ("state",), (), (), None, None, None,
+            "3" * 64, 0.0, False, True, False, (failure,), None, None,
+        )
 
 
 def test_config_revision_one_hash_is_stable_and_revision_two_is_strict() -> None:

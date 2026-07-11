@@ -23,6 +23,13 @@ def typed_episode_key(value: str | int) -> str:
     return json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
 
 
+class DiagnosticExecutionError(RuntimeError):
+    def __init__(self, stage: str, origin: str, cause: BaseException) -> None:
+        self.stage = stage
+        self.origin = origin
+        super().__init__(f"diagnostic {stage} failed in {origin}: {cause}")
+
+
 @dataclass(frozen=True)
 class RoutedObservationV1:
     observation: ObservationV3
@@ -92,7 +99,11 @@ class DiagnosticRouterV1:
                 raise ValueError("counterfactual transform did not change the instruction")
         return instruction, donor_id
 
-    def route_observation(self, observation: ObservationV3) -> RoutedObservationV1:
+    def route_observation(
+        self, observation: ObservationV3, *, phase: str = "eval"
+    ) -> RoutedObservationV1:
+        if phase not in {"train", "eval", "deploy"}:
+            raise ValueError("diagnostic phase must be train, eval, or deploy")
         if tuple(observation.images) != tuple(
             item.name for item in self.config.feature_schema.by_role("image")
         ):
@@ -154,6 +165,7 @@ class DiagnosticRouterV1:
                 "expert_state_keys": expert_keys,
                 "prompt_state_keys": prompt_keys,
                 "donor_id": donor_id,
+                "phase": phase,
             }
         }
         sanitized = ObservationV3(
@@ -177,9 +189,11 @@ class DiagnosticRouterV1:
     def route_episode(self, episode: EpisodeRecordV3) -> EpisodeRecordV3:
         transitions: list[TransitionV3] = []
         for transition in episode.transitions:
-            current = self.route_observation(transition.observation).observation
+            current = self.route_observation(
+                transition.observation, phase="train"
+            ).observation
             next_observation = self.route_observation(
-                transition.next_observation
+                transition.next_observation, phase="train"
             ).observation
             transitions.append(
                 TransitionV3(

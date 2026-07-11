@@ -26,7 +26,11 @@ from .artifacts import (
 from .config import ExperimentConfig
 from .contracts import EpisodeRecordV3, ObservationV3, TaskEnvV3, TransitionV3
 from .data import DatasetBundle, InMemoryDatasetSourceV3, audit_episodes, split_episode_ids
-from .diagnostic_engine import DiagnosticRouterV1, RoutedObservationV1
+from .diagnostic_engine import (
+    DiagnosticExecutionError,
+    DiagnosticRouterV1,
+    RoutedObservationV1,
+)
 from .fake_tasks import FakePointEnvV3, make_fake_episodes
 from .normalization import NormalizationStatsV1, fit_normalization_stats
 from .policy import (
@@ -176,6 +180,16 @@ class EngineV3:
         self.train_results: tuple[TrainStepResultV3, ...] = ()
         self.training_state: Mapping[str, Any] = {}
         self.diagnostic_router: DiagnosticRouterV1 | None = None
+
+    def _diagnostic_call(
+        self, stage: str, origin: str, callback: Callable[[], Any]
+    ) -> Any:
+        try:
+            return callback()
+        except Exception as exc:
+            if self.diagnostic_router is None:
+                raise
+            raise DiagnosticExecutionError(stage, origin, exc) from exc
 
     def _policy_spec(self) -> PolicySpecV3:
         if self.config.policy["type"] == "act_v3":
@@ -464,20 +478,29 @@ class EngineV3:
         rewards: list[float] = []
         successes: list[bool] = []
         steps: list[int] = []
+        diagnostic_router = self.diagnostic_router
         try:
             for seed in self.config.evaluation["seeds"]:
-                canonical_observation = env.reset(seed=seed)
-                routed_observation = (
+                canonical_observation = self._diagnostic_call(
+                    "reset", "environment", lambda: env.reset(seed=seed)
+                )
+                routed_observation: RoutedObservationV1 | None = (
                     None
-                    if self.diagnostic_router is None
-                    else self.diagnostic_router.route_observation(canonical_observation)
+                    if diagnostic_router is None
+                    else self._diagnostic_call(
+                        "render",
+                        "adapter",
+                        lambda: diagnostic_router.route_observation(
+                            canonical_observation, phase="eval"
+                        ),
+                    )
                 )
                 observation = (
                     canonical_observation
                     if routed_observation is None
                     else routed_observation.observation
                 )
-                policy.reset(seed)
+                self._diagnostic_call("reset", "policy", lambda: policy.reset(seed))
                 history = [observation]
                 total_reward = 0.0
                 success = False
@@ -493,8 +516,14 @@ class EngineV3:
                         observation.episode_id,
                         observation.step_index,
                     )
-                    chunk = policy.predict_chunk(sample)
-                    valid_actions = chunk.values[chunk.valid_mask]
+                    chunk = self._diagnostic_call(
+                        "predict", "policy", lambda: policy.predict_chunk(sample)
+                    )
+                    valid_actions = self._diagnostic_call(
+                        "postprocess",
+                        "engine",
+                        lambda: chunk.values[chunk.valid_mask],
+                    )
                     actions = (
                         valid_actions[: policy.spec.execution_steps]
                         if self.config.evaluation["execution_mode"] == "open_loop_chunk"
@@ -502,21 +531,36 @@ class EngineV3:
                     )
                     stop = False
                     for action in actions:
-                        transition = env.step(action)
+                        transition = self._diagnostic_call(
+                            "step", "environment", lambda: env.step(action)
+                        )
                         if trace_callback is not None:
                             if routed_observation is None:
                                 raise ValueError(
                                     "trace_callback requires an active diagnostic router"
                                 )
-                            trace_callback(
-                                seed, routed_observation, action, transition, step_count
+                            trace_routed = routed_observation
+                            self._diagnostic_call(
+                                "trace",
+                                "engine",
+                                lambda: trace_callback(
+                                    seed,
+                                    trace_routed,
+                                    action,
+                                    transition,
+                                    step_count,
+                                ),
                             )
                         canonical_observation = transition.next_observation
                         routed_observation = (
                             None
-                            if self.diagnostic_router is None
-                            else self.diagnostic_router.route_observation(
-                                canonical_observation
+                            if diagnostic_router is None
+                            else self._diagnostic_call(
+                                "render",
+                                "adapter",
+                                lambda: diagnostic_router.route_observation(
+                                    canonical_observation, phase="eval"
+                                ),
                             )
                         )
                         observation = (

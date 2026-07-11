@@ -503,6 +503,215 @@ class DonorBankV1:
 
 
 @dataclass(frozen=True)
+class PromptParityRecordV1:
+    sample_id: str
+    phase: str
+    prompt_sha256: str
+    camera_order: tuple[str, ...]
+    assistant_target: str
+    expert_state_keys: tuple[str, ...]
+    prompt_state_keys: tuple[str, ...]
+    feature_schema_sha256: str
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if isinstance(self.schema_version, bool) or self.schema_version != 1:
+            raise ValueError("PromptParityRecordV1 schema_version must be integer 1")
+        if self.phase not in {"train", "eval", "deploy"}:
+            raise ValueError("parity phase must be train, eval, or deploy")
+        for name in ("prompt_sha256", "feature_schema_sha256"):
+            value = getattr(self, name)
+            if not isinstance(value, str) or len(value) != 64 or any(
+                item not in "0123456789abcdef" for item in value
+            ):
+                raise ValueError(f"{name} must be a lowercase SHA-256")
+        object.__setattr__(self, "sample_id", _string(self.sample_id, "sample_id"))
+        object.__setattr__(self, "assistant_target", _string(self.assistant_target, "assistant_target"))
+        for name in ("camera_order", "expert_state_keys", "prompt_state_keys"):
+            values = tuple(_string(item, f"{name} item") for item in getattr(self, name))
+            if len(values) != len(set(values)):
+                raise ValueError(f"{name} cannot contain duplicates")
+            object.__setattr__(self, name, values)
+
+    def signature(self) -> tuple[Any, ...]:
+        return (
+            self.prompt_sha256,
+            self.camera_order,
+            self.assistant_target,
+            self.expert_state_keys,
+            self.prompt_state_keys,
+            self.feature_schema_sha256,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "sample_id": self.sample_id,
+            "phase": self.phase,
+            "prompt_sha256": self.prompt_sha256,
+            "camera_order": list(self.camera_order),
+            "assistant_target": self.assistant_target,
+            "expert_state_keys": list(self.expert_state_keys),
+            "prompt_state_keys": list(self.prompt_state_keys),
+            "feature_schema_sha256": self.feature_schema_sha256,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "PromptParityRecordV1":
+        return cls(
+            **_exact(
+                value,
+                {
+                    "schema_version", "sample_id", "phase", "prompt_sha256",
+                    "camera_order", "assistant_target", "expert_state_keys",
+                    "prompt_state_keys", "feature_schema_sha256",
+                },
+                "PromptParityRecordV1",
+            )
+        )
+
+
+@dataclass(frozen=True)
+class PromptParityManifestV1:
+    records: tuple[PromptParityRecordV1, ...]
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if isinstance(self.schema_version, bool) or self.schema_version != 1:
+            raise ValueError("PromptParityManifestV1 schema_version must be integer 1")
+        records = tuple(self.records)
+        if not records:
+            raise ValueError("parity manifest requires records")
+        keys = [(item.sample_id, item.phase) for item in records]
+        if len(keys) != len(set(keys)):
+            raise ValueError("parity manifest contains duplicate sample phases")
+        by_sample: dict[str, list[PromptParityRecordV1]] = {}
+        for item in records:
+            by_sample.setdefault(item.sample_id, []).append(item)
+        for sample, items in by_sample.items():
+            if {item.phase for item in items} != {"train", "eval", "deploy"}:
+                raise ValueError(f"parity sample {sample} must cover train/eval/deploy")
+            if len({item.signature() for item in items}) != 1:
+                raise ValueError(f"parity sample {sample} has preprocessing drift")
+        object.__setattr__(self, "records", records)
+
+    @property
+    def verified(self) -> bool:
+        return True
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "verified": self.verified,
+            "records": [item.to_dict() for item in self.records],
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "PromptParityManifestV1":
+        payload = _exact(value, {"schema_version", "verified", "records"}, "PromptParityManifestV1")
+        verified = payload.pop("verified")
+        records = payload.pop("records")
+        result = cls(
+            records=tuple(PromptParityRecordV1.from_mapping(item) for item in records),
+            **payload,
+        )
+        if verified is not True or verified != result.verified:
+            raise ValueError("parity verified flag does not match recomputed records")
+        return result
+
+    def sha256(self) -> str:
+        return _stable_hash(self.to_dict())
+
+
+@dataclass(frozen=True)
+class DiagnosticTraceRowV1:
+    pair_id: str
+    train_seed: int
+    evaluation_seed: int
+    episode_id: str
+    route: str
+    arm: str
+    intervention_kind: str
+    step_id: int
+    canonical_prompt_sha256: str
+    effective_prompt_sha256: str
+    expert_state_keys: tuple[str, ...]
+    prompt_state_keys: tuple[str, ...]
+    camera_order: tuple[str, ...]
+    donor_id: str | None
+    donor_content_sha256: str | None
+    transform_id: str | None
+    action_chunk_sha256: str
+    reward: float
+    terminated: bool
+    truncated: bool
+    success: bool
+    failures: tuple[FailureRecordV1, ...]
+    error_stage: str | None
+    error_origin: str | None
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if isinstance(self.schema_version, bool) or self.schema_version != 1:
+            raise ValueError("DiagnosticTraceRowV1 schema_version must be integer 1")
+        if self.route not in _ROUTES:
+            raise ValueError("trace route is invalid")
+        if self.intervention_kind not in {"prompt", "image"}:
+            raise ValueError("trace intervention_kind must be prompt or image")
+        for name in ("train_seed", "evaluation_seed", "step_id"):
+            object.__setattr__(self, name, _integer(getattr(self, name), name))
+        for name in (
+            "canonical_prompt_sha256", "effective_prompt_sha256", "action_chunk_sha256"
+        ):
+            value = getattr(self, name)
+            if not isinstance(value, str) or len(value) != 64 or any(
+                item not in "0123456789abcdef" for item in value
+            ):
+                raise ValueError(f"{name} must be a lowercase SHA-256")
+        if self.donor_content_sha256 is not None and (
+            len(self.donor_content_sha256) != 64
+            or any(item not in "0123456789abcdef" for item in self.donor_content_sha256)
+        ):
+            raise ValueError("donor_content_sha256 must be null or SHA-256")
+        reward = float(self.reward)
+        if not math.isfinite(reward):
+            raise ValueError("trace reward must be finite")
+        for name in ("terminated", "truncated", "success"):
+            if not isinstance(getattr(self, name), bool):
+                raise TypeError(f"trace {name} must be boolean")
+        failures = tuple(self.failures)
+        if any(not isinstance(item, FailureRecordV1) for item in failures):
+            raise TypeError("trace failures must contain FailureRecordV1")
+        if any(item.primary_cause is not None for item in failures):
+            raise ValueError("automatic Beta 1 traces cannot assign primary_cause")
+        if (self.error_stage is None) != (self.error_origin is None):
+            raise ValueError("trace error_stage and error_origin must be both set or null")
+        if self.error_origin is not None and self.error_origin not in {
+            "policy", "adapter", "environment", "engine"
+        }:
+            raise ValueError("unsupported trace error_origin")
+        object.__setattr__(self, "reward", reward)
+        object.__setattr__(self, "failures", failures)
+        for name in ("expert_state_keys", "prompt_state_keys", "camera_order"):
+            object.__setattr__(self, name, tuple(getattr(self, name)))
+
+    def to_dict(self) -> dict[str, Any]:
+        result = dict(self.__dict__)
+        result["expert_state_keys"] = list(self.expert_state_keys)
+        result["prompt_state_keys"] = list(self.prompt_state_keys)
+        result["camera_order"] = list(self.camera_order)
+        result["failures"] = [item.to_dict() for item in self.failures]
+        return result
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "DiagnosticTraceRowV1":
+        fields = set(cls.__dataclass_fields__)
+        payload = _exact(value, fields, "DiagnosticTraceRowV1")
+        payload["failures"] = tuple(FailureRecordV1.from_mapping(item) for item in payload["failures"])
+        return cls(**payload)
+
+
+@dataclass(frozen=True)
 class DiagnosticDesignV1:
     design_id: str
     base_config: str
