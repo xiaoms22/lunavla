@@ -26,6 +26,7 @@ from .artifacts import (
 from .config import ExperimentConfig
 from .contracts import EpisodeRecordV3, ObservationV3, TaskEnvV3
 from .data import DatasetBundle, InMemoryDatasetSourceV3, audit_episodes, split_episode_ids
+from .diagnostic_engine import DiagnosticRouterV1
 from .fake_tasks import FakePointEnvV3, make_fake_episodes
 from .normalization import NormalizationStatsV1, fit_normalization_stats
 from .policy import (
@@ -167,6 +168,7 @@ class EngineV3:
         self.normalization: NormalizationStatsV1 | None = None
         self.train_results: tuple[TrainStepResultV3, ...] = ()
         self.training_state: Mapping[str, Any] = {}
+        self.diagnostic_router: DiagnosticRouterV1 | None = None
 
     def _policy_spec(self) -> PolicySpecV3:
         if self.config.policy["type"] == "act_v3":
@@ -363,6 +365,11 @@ class EngineV3:
     def train(self, dataset: InMemoryDatasetSourceV3) -> tuple[VLAPolicyV3, tuple[float, ...]]:
         episodes = tuple(dataset.load())
         normalization = fit_normalization_stats(episodes, self.config.feature_schema)
+        if self.config.diagnostics["enabled"]:
+            self.diagnostic_router = DiagnosticRouterV1(self.config, normalization)
+            episodes = tuple(
+                self.diagnostic_router.route_episode(episode) for episode in episodes
+            )
         spec = self._policy_spec()
         policy = self.registry.create(self.config, spec, normalization)
         supervision_steps = spec.horizon if spec.policy_id == "diffusion_v3" else spec.chunk_size
@@ -430,6 +437,8 @@ class EngineV3:
             self.normalization = loaded_normalization
         if normalization is None:
             raise ValueError("restore requires fitted or checkpoint normalization statistics")
+        if self.config.diagnostics["enabled"]:
+            self.diagnostic_router = DiagnosticRouterV1(self.config, normalization)
         policy = self.registry.restore(
             checkpoint_path, self.config, spec, normalization
         )
@@ -441,7 +450,14 @@ class EngineV3:
         steps: list[int] = []
         try:
             for seed in self.config.evaluation["seeds"]:
-                observation = env.reset(seed=seed)
+                canonical_observation = env.reset(seed=seed)
+                observation = (
+                    canonical_observation
+                    if self.diagnostic_router is None
+                    else self.diagnostic_router.route_observation(
+                        canonical_observation
+                    ).observation
+                )
                 policy.reset(seed)
                 history = [observation]
                 total_reward = 0.0
@@ -468,7 +484,14 @@ class EngineV3:
                     stop = False
                     for action in actions:
                         transition = env.step(action)
-                        observation = transition.next_observation
+                        canonical_observation = transition.next_observation
+                        observation = (
+                            canonical_observation
+                            if self.diagnostic_router is None
+                            else self.diagnostic_router.route_observation(
+                                canonical_observation
+                            ).observation
+                        )
                         history.append(observation)
                         total_reward += transition.reward
                         step_count += 1
