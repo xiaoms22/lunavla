@@ -1,0 +1,77 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+from lunavla.v3.stable_contracts import (
+    StableEvidenceDesignV1,
+    StableEvidenceSummaryV1,
+    StableReleaseCandidateV1,
+    validate_stable_design_set,
+)
+
+
+def _mapping(path: str | Path) -> Mapping[str, Any]:
+    value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(value, Mapping):
+        raise TypeError(f"JSON document must contain a mapping: {path}")
+    return value
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="run_v3_stable_release")
+    commands = parser.add_subparsers(dest="command", required=True)
+    designs = commands.add_parser("validate-designs")
+    designs.add_argument("designs", nargs="+")
+    summary = commands.add_parser("verify-evidence-summary")
+    summary.add_argument("design")
+    summary.add_argument("summary")
+    candidate = commands.add_parser("verify-candidate")
+    candidate.add_argument("candidate")
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    arguments = _parser().parse_args(argv)
+    if arguments.command == "validate-designs":
+        designs = tuple(StableEvidenceDesignV1.load(path) for path in arguments.designs)
+        rows = validate_stable_design_set(designs)
+        print(json.dumps({"valid": True, "rows": rows, "total_rows": sum(rows.values())}, sort_keys=True))
+        return 0
+    if arguments.command == "verify-evidence-summary":
+        design = StableEvidenceDesignV1.load(arguments.design)
+        summary = StableEvidenceSummaryV1.from_mapping(_mapping(arguments.summary))
+        summary.verify_design(design)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "study_id": summary.study_id,
+                    "release_eligible": summary.release_eligible,
+                    "gate_reasons": list(summary.gate_reasons),
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "verify-candidate":
+        candidate = StableReleaseCandidateV1.from_mapping(_mapping(arguments.candidate))
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "tag": candidate.expected_tag,
+                    "git_sha": candidate.git_sha,
+                    "pypi_published": candidate.pypi_published,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    raise AssertionError("unreachable command")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

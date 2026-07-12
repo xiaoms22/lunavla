@@ -17,6 +17,19 @@ from .diagnostic_workflow import (
 from .engine import dataset_for_config, run_alpha
 from .migration import migrate_v2_mapping
 from .profiling import run_profile, verify_profile
+from .stable_contracts import (
+    StableEvidenceDesignV1,
+    StableEvidenceSummaryV1,
+    StableReleaseCandidateV1,
+    validate_stable_design_set,
+)
+
+
+def _json_mapping(path: str | Path) -> dict[str, object]:
+    value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise TypeError(f"JSON document must contain a mapping: {path}")
+    return value
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -52,6 +65,13 @@ def _parser() -> argparse.ArgumentParser:
     profile_run.add_argument("--overwrite", action="store_true")
     profile_verify = subparsers.add_parser("profile-verify")
     profile_verify.add_argument("output_root")
+    stable_designs = subparsers.add_parser("validate-stable-designs")
+    stable_designs.add_argument("designs", nargs="+")
+    stable_evidence = subparsers.add_parser("verify-stable-evidence")
+    stable_evidence.add_argument("design")
+    stable_evidence.add_argument("summary")
+    stable_candidate = subparsers.add_parser("verify-stable-candidate")
+    stable_candidate.add_argument("candidate")
     return parser
 
 
@@ -113,6 +133,41 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "policy_id": profile_manifest.policy_id,
                     "release_eligible": profile_manifest.release_eligible,
                     "comparative_claim_allowed": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "validate-stable-designs":
+        designs = tuple(StableEvidenceDesignV1.load(path) for path in arguments.designs)
+        rows = validate_stable_design_set(designs)
+        print(json.dumps({"valid": True, "rows": rows, "total_rows": sum(rows.values())}, sort_keys=True))
+        return 0
+    if arguments.command == "verify-stable-evidence":
+        design = StableEvidenceDesignV1.load(arguments.design)
+        summary = StableEvidenceSummaryV1.from_mapping(_json_mapping(arguments.summary))
+        summary.verify_design(design)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "study_id": summary.study_id,
+                    "release_eligible": summary.release_eligible,
+                    "gate_reasons": list(summary.gate_reasons),
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "verify-stable-candidate":
+        candidate = StableReleaseCandidateV1.from_mapping(_json_mapping(arguments.candidate))
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "tag": candidate.expected_tag,
+                    "git_sha": candidate.git_sha,
+                    "pypi_published": candidate.pypi_published,
                 },
                 sort_keys=True,
             )
