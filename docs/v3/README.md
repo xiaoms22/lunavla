@@ -1,4 +1,4 @@
-# LunaVLA v3 Beta 1 diagnostic integration candidate
+# LunaVLA v3 CPU-core RC preparation
 
 This branch builds the policy and artifact contracts introduced by the Alpha 2 strategy ladder on top
 of the merged Alpha 1 foundation. It preserves the frozen v2 public API and lightweight v1.x path.
@@ -40,6 +40,9 @@ Implemented in the current candidate:
   remain prohibited.
 - versioned CPU profiling with fixed 5-run warmup, 20 measurements, latency, throughput and peak
   RSS manifests. Measurements are environment-specific and cannot support policy rankings.
+- predeclared CPU teaching-evidence contracts for exact 200-row policy, 600-row route and 750-row
+  prompt-intervention matrices. These contracts verify structure and provenance; they do not
+  assert that the five-seed studies or a stable release have run.
 
 The fake LIBERO fixture tests data shape and lifecycle only. This branch does not download real
 LeRobot or LIBERO data, download or train SmolVLA weights, or establish language, image, state-route,
@@ -55,4 +58,9 @@ Its reduced diagnostic fixtures remain framework-only and cannot open a scientif
 - [Alpha 3 release process](alpha3_release_process.md)
 - [SmolVLA runner qualification](smolvla_runner_qualification.md)
 - [CPU profiling](cpu_profiling.md)
+- [RC and stable release boundary](rc_stable_release.md)
+- [v2 to v3 migration guide](migration_v2_to_v3.md)
+- [Pre-RC model card](model_card.md)
+- [Pre-RC data card](data_card.md)
+- [Security, privacy and safety boundary](security_and_safety.md)
 - [Machine-readable public contract](public_api_contract.json)
