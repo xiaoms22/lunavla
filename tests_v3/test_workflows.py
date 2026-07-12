@@ -99,6 +99,7 @@ def test_alpha3_code_release_dispatcher_is_hosted_and_weight_free() -> None:
     assert "v3.0.0-alpha.3" in workflow
     assert workflow.count("python -m build --no-isolation") == 2
     assert workflow.count("normalize-sdist") == 2
+    assert '"$root/required-checks.json"' in workflow
     assert "RELEASE_SIGNER_PRINCIPAL" in workflow
     assert "RELEASE_SIGNER_PUBLIC_KEY" in workflow
     assert 'gpg.ssh.allowedSignersFile "$RUNNER_TEMP/allowed_signers"' in workflow
