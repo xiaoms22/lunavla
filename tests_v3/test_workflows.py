@@ -101,6 +101,7 @@ def test_alpha2_code_release_dispatcher_is_hosted_and_weight_free() -> None:
     assert "RELEASE_SIGNER_PUBLIC_KEY" in workflow
     assert 'gpg.ssh.allowedSignersFile "$RUNNER_TEMP/allowed_signers"' in workflow
     assert "verification']['verified'] is True" in workflow
+    assert workflow.count('echo "$PWD/.venv/bin" >> "$GITHUB_PATH"') == 2
     assert "self-hosted" not in workflow
 
     signer = Path("docs/v3/release/allowed_signers").read_text(encoding="utf-8")
