@@ -23,8 +23,9 @@
    40-pair NumPy route/prompt matrix and an independent four-pair ACT image-shuffle smoke with
    synthetic thumbnails. These reduced fixtures prove only framework integrity and cannot open a
    scientific claim. Integration targets the protected `v3-next` branch after Alpha 3.
-8. **Beta 2 — staged Draft:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as
-   a diagnostic subset rather than a full benchmark.
+8. **Beta 2 — optional v3.1 connectivity Draft:** pinned public PushT plus LIBERO-Spatial task IDs
+   0–3, explicitly reported as a diagnostic subset rather than a full benchmark. It does not block
+   the fixture-only v3.0 stable release.
 9. **CPU core hardening — in progress:** versioned environment-specific policy profiles and the
    fixed 1,550-row deterministic teaching evidence matrix, without GPU or pretrained weights.
 10. **RC/stable — preparation in a stacked Draft:** fail-closed evidence summaries,

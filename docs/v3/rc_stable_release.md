@@ -7,8 +7,8 @@ prerelease; no RC or stable tag exists.
 
 1. Preserve the signed `v3.0.0-alpha.3` code-only release and merged Beta 1 diagnostics.
 2. Complete the CPU profiler and three deterministic teaching-fixture evidence studies.
-3. Keep real PushT/LIBERO connectivity fail-closed until the same-SHA hosted CPU integration
-   manifest passes; it remains connectivity evidence, not a benchmark.
+3. Treat real PushT/LIBERO connectivity as a separately verified, non-blocking supplement. It is
+   never part of the v3.0 stable performance matrix and cannot open a task-performance claim.
 4. Freeze the public API descriptor and publish `v3.0.0-rc.1` / package `3.0.0rc1` only after its
    package, migration, SBOM, provenance, checksum and signature gates pass.
 5. Merge the protected v3 candidate to `main`, rerun all stable evidence on the actual merge SHA,
@@ -36,6 +36,7 @@ not become positive claims.
 
 SmolVLA weight validation and GPU evidence move to v3.1. v3.0 keeps only the public-API conformance
 adapter with `NOASSERTION / unverified`, pretrained disabled and no derivative checkpoint. The
-LIBERO environment asset license is also independently unverified; until resolved, the hosted
-integration manifest cannot pass. Neither external gate may be replaced by a fixture, user
-permission, code license or download availability.
+LIBERO environment asset license is also independently unverified, so its runtime path remains
+fail-closed. Neither external condition may be replaced by a fixture, user permission, code
+license or download availability. These conditions can block their own supplemental reports, but
+they do not block the fixture-only v3.0 CPU teaching release.

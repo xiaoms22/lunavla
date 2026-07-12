@@ -125,11 +125,7 @@ def _candidate() -> StableReleaseCandidateV1:
         public_api_sha256=SHA,
         migration_report_sha256=SHA,
         contract_descriptor_sha256=SHA,
-        hosted_integration_manifest_sha256=SHA,
         portfolio_bundle_sha256=SHA,
-        integration_manifests=_records(
-            {"integration/hosted-cpu-pusht-libero.json"}
-        ),
         evidence_manifests=_records(
             {
                 "evidence/fixture-policy-ladder.json",
@@ -257,7 +253,7 @@ def test_stable_statistics_are_deterministic_and_finite() -> None:
         clustered_paired_bootstrap({11: (float("nan"),)}, samples=10)
 
 
-def test_stable_candidate_binds_release_sha_assets_and_external_gates() -> None:
+def test_stable_candidate_binds_release_sha_assets_and_cpu_evidence_gates() -> None:
     candidate = _candidate()
     assert StableReleaseCandidateV1.from_mapping(candidate.to_dict()) == candidate
     payload = candidate.to_dict()
@@ -271,6 +267,25 @@ def test_stable_candidate_binds_release_sha_assets_and_external_gates() -> None:
     payload = candidate.to_dict()
     payload["pypi_published"] = True
     with pytest.raises(ValueError, match="PyPI"):
+        StableReleaseCandidateV1.from_mapping(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("hosted_integration_manifest_sha256", SHA),
+        (
+            "integration_manifests",
+            [ArtifactHashRecordV1("integration/hosted-cpu-pusht-libero.json", SHA).to_dict()],
+        ),
+    ),
+)
+def test_stable_candidate_rejects_retired_real_integration_gates(
+    field: str, value: object
+) -> None:
+    payload = _candidate().to_dict()
+    payload[field] = value
+    with pytest.raises(ValueError, match="unknown"):
         StableReleaseCandidateV1.from_mapping(payload)
 
 

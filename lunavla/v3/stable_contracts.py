@@ -511,9 +511,7 @@ class StableReleaseCandidateV1:
     public_api_sha256: str
     migration_report_sha256: str
     contract_descriptor_sha256: str
-    hosted_integration_manifest_sha256: str
     portfolio_bundle_sha256: str
-    integration_manifests: tuple[ArtifactHashRecordV1, ...]
     evidence_manifests: tuple[ArtifactHashRecordV1, ...]
     required_checks_sha256: str
     sbom_sha256: str
@@ -541,7 +539,6 @@ class StableReleaseCandidateV1:
             "public_api_sha256",
             "migration_report_sha256",
             "contract_descriptor_sha256",
-            "hosted_integration_manifest_sha256",
             "portfolio_bundle_sha256",
             "required_checks_sha256",
             "sbom_sha256",
@@ -549,13 +546,8 @@ class StableReleaseCandidateV1:
             "checksums_sha256",
         ):
             object.__setattr__(self, name, _sha256(getattr(self, name), name))
-        integrations = _records(self.integration_manifests, "integration_manifests")
         evidence = _records(self.evidence_manifests, "evidence_manifests")
         assets = _records(self.assets, "stable release assets")
-        if {item.path for item in integrations} != {
-            "integration/hosted-cpu-pusht-libero.json",
-        }:
-            raise ValueError("stable release requires the hosted CPU integration manifest")
         if {item.path for item in evidence} != {
             "evidence/fixture-policy-ladder.json",
             "evidence/fixture-state-routes.json",
@@ -582,7 +574,6 @@ class StableReleaseCandidateV1:
             raise ValueError("stable release requires signed tag, post-merge evidence and privacy scan")
         if self.pypi_published:
             raise ValueError("LunaVLA v3 stable does not publish to PyPI")
-        object.__setattr__(self, "integration_manifests", integrations)
         object.__setattr__(self, "evidence_manifests", evidence)
         object.__setattr__(self, "assets", assets)
 
@@ -596,9 +587,7 @@ class StableReleaseCandidateV1:
             "public_api_sha256": self.public_api_sha256,
             "migration_report_sha256": self.migration_report_sha256,
             "contract_descriptor_sha256": self.contract_descriptor_sha256,
-            "hosted_integration_manifest_sha256": self.hosted_integration_manifest_sha256,
             "portfolio_bundle_sha256": self.portfolio_bundle_sha256,
-            "integration_manifests": [item.to_dict() for item in self.integration_manifests],
             "evidence_manifests": [item.to_dict() for item in self.evidence_manifests],
             "required_checks_sha256": self.required_checks_sha256,
             "sbom_sha256": self.sbom_sha256,
@@ -614,7 +603,7 @@ class StableReleaseCandidateV1:
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "StableReleaseCandidateV1":
         payload = _exact(value, set(cls.__dataclass_fields__), "stable release candidate")
-        for field in ("integration_manifests", "evidence_manifests", "assets"):
+        for field in ("evidence_manifests", "assets"):
             payload[field] = _records(payload[field], field)
         return cls(**payload)
 

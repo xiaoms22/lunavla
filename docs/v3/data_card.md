@@ -2,7 +2,8 @@
 
 Stable performance evidence uses generated, deterministic LunaVLA teaching fixtures with data seed
 42. Public `lerobot/pusht` and `lerobot/libero` revisions are used only by the separate connectivity
-adapter Draft. They do not contribute benchmark claims or stable performance rows.
+adapter Draft. They do not contribute benchmark claims or stable performance rows, and a real-data
+integration manifest is not a v3.0 release requirement.
 
 Feature schemas declare camera order, state/action shape and dtype, units, frame, control rate and
 normalization. Statistics are fit only on the training split. The policy receives a newly mapped
