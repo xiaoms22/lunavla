@@ -78,7 +78,7 @@ features:
     - {name: state.proprioception, role: state, dtype: float32, shape: [8], unit: normalized, frame: robot, rate_hz: 10.0, normalization: minmax, source_key: observation.state, required_by: [diffusion_v3]}
     - {name: action.primary, role: action, dtype: float32, shape: [7], unit: normalized_relative, frame: robot, rate_hz: 10.0, normalization: minmax, source_key: action, required_by: [diffusion_v3]}
 training:
-  device: cuda
+  device: cpu
   seed: 11
   batch_size: 1
   steps: 1

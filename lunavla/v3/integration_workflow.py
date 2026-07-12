@@ -323,7 +323,9 @@ def _policy_payload(config: ExperimentConfig, policy_id: str) -> ExperimentConfi
         payload["artifacts"]["checkpoint_name"] = "diffusion_v3"
     payload["training"]["steps"] = 1
     payload["training"]["batch_size"] = 1
-    payload["training"]["device"] = "cuda"
+    # Beta 2's authoritative integration profile is hosted Linux CPU.  Do not
+    # inherit the retired external-GPU plan into a connectivity-only smoke.
+    payload["training"]["device"] = "cpu"
     payload["prompt"]["camera_order"] = images
     payload["artifacts"]["output_dir"] = f"outputs/v3/beta2-{policy_id}"
     return ExperimentConfig.from_mapping(payload)

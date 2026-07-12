@@ -164,3 +164,6 @@ def test_multi_camera_act_payload_consumes_every_declared_camera() -> None:
         "camera.wrist",
     )
     assert derived.prompt["camera_order"] == ("camera.agentview", "camera.wrist")
+    assert config.training["device"] == "cpu"
+    assert derived.training["device"] == "cpu"
+    assert workflow._policy_payload(config, "diffusion_v3").training["device"] == "cpu"
