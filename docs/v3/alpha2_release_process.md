@@ -1,59 +1,30 @@
-# LunaVLA v3 Alpha 2 release process
+# LunaVLA v3 Alpha 2 code-only release process
 
-Alpha 2 is fail-closed. The repository currently implements only the release contracts and the
-manual dispatcher; it does not assert that the SmolVLA model-weight license is verified and does
-not download the weights in CI.
+Alpha 2 publishes the CPU policy contracts and training paths without accessing pretrained
+SmolVLA weights. Its fixed identities are tag `v3.0.0-alpha.2` and Python package `3.0.0a2`.
 
-## Immutable identities
+## Candidate boundary
 
-- Git tag: `v3.0.0-alpha.2`
-- Python distribution version after the gate-opening PR: `3.0.0a2`
-- GPU runtime: Linux x86_64, one NVIDIA GPU, CUDA 12.8, Torch 2.11.0
-- Model: `lerobot/smolvla_base` at an immutable reviewed revision
-- Existing reviewed weight bytes must retain SHA-256
-  `7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb`.
+The hosted CPU dispatcher requires the protected checks for ACT, Diffusion, SmolVLA public-API
+conformance, v1/v2 compatibility, secrets and CodeQL. It builds a wheel, sdist, SBOM, provenance,
+environment inventory, deterministic evidence archive and exact checksums.
 
-The code repository's Apache-2.0 license is not accepted as evidence for model weights. A future
-gate-opening PR must add `docs/v3/release/smolvla-license-review.json`; its evidence URL must be an
-official Hugging Face URL that explicitly applies to the named model weights.
+The candidate must record `license_status=unverified`, `spdx_license=NOASSERTION`,
+`pretrained_enabled=false`, `conformance_only=true`, `weight_accessed=false`,
+`claim_allowed=false` and `pypi_published=false`. Model weights, checkpoints and caches are rejected
+from the asset tree.
 
-The current normalized model-card, repository-metadata, and file-inventory observations are pinned
-by `docs/v3/release/smolvla-license-status.json`. That record is deliberately
-`NOASSERTION`/`unverified`; citing the model, using it non-commercially, or receiving project-owner
-permission cannot turn it into a `LicenseReviewV1`.
+Finalization accepts only an SSH-signed annotated tag whose GitHub verification is valid and whose
+target equals the candidate SHA. It reproduces wheel/sdist bytes before creating a draft
+prerelease. Publishing the draft remains a separate asset-review action.
 
-## Runner qualification
+## SmolVLA v3.1 track
 
-The dispatcher's `preflight` phase qualifies an isolated A100 runner without a license Environment
-or model-weight access. Volcengine is the authoritative role and the isolated development-host GPU
-is secondary. Each run produces a `RunnerQualificationManifestV1` with hashed runner/GPU identity,
-locked dependencies, single-device checks, resource limits, outbound connectivity, mount isolation,
-and fail-closed release fields. See [the operator guide](smolvla_runner_qualification.md).
+The immutable weight observations and fail-closed `LicenseReviewV1`, runner qualification and GPU
+validation contracts remain available, but now target the earliest possible tag
+`v3.1.0-alpha.1`. The dispatcher cannot open that gate while the official weight license is
+`NOASSERTION` or a qualified runner is absent. A code license, public download, citation or project
+owner permission is not weight-license evidence.
 
-## Two-phase dispatcher
-
-`.github/workflows/v3-alpha2-release-dispatch.yml` must exist with identical bytes on the default
-branch and the reviewed source SHA.
-
-The `gpu` phase validates the committed license review before any weight access, installs the
-hash-locked CUDA profile, verifies every downloaded file, performs one optimizer step, saves and
-restores a checkpoint, and runs an inference smoke. It publishes only a small manifest and GitHub
-attestation; weights, checkpoints, caches and samples are deleted or excluded.
-
-The hosted CPU job then checks all protected v3 gates and builds a pre-tag candidate. The
-`finalize` phase is allowed only after an SSH-signed annotated tag points to the same merge SHA and
-GitHub reports the tag signature as verified. It reproduces the distributions, verifies the GPU
-attestation, and creates a draft prerelease. Publishing that draft is a separate asset-review
-action.
-
-## Current blockers
-
-- `configs/v3/smolvla_pretrained_gpu.yaml` remains
-  `license_status=unverified`, `pretrained_enabled=false`, and `conformance_only=true`.
-- No committed license review exists.
-- No authoritative and secondary qualification manifests have been produced yet.
-- The package remains version 2.0.0 until the gate-opening PR.
-
-These are intentional release blockers, not incomplete claims. There is no timeout or automatic
-downgrade. Alpha 2 does not publish to PyPI and does not claim task performance, modality benefit,
-instruction following, policy superiority, or robot deployment readiness.
+Alpha 2 makes no policy-superiority, task-performance, modality, instruction-following or robot
+deployment claim and is not published to PyPI.
