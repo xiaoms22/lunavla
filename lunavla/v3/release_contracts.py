@@ -15,6 +15,7 @@ from .artifacts import ArtifactHashRecordV1
 ALPHA2_TAG = "v3.0.0-alpha.2"
 ALPHA2_PACKAGE_VERSION = "3.0.0a2"
 SMOLVLA_REPO_ID = "lerobot/smolvla_base"
+SMOLVLA_REVISION = "d06fce6e38c25c04ac5a6319eefb9fae0e257cb2"
 SMOLVLA_WEIGHT_SHA256 = (
     "7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb"
 )
@@ -24,6 +25,22 @@ _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
 _SPDX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+-]*$")
 _LOGIN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_PYTHON_312 = re.compile(r"^3\.12(?:\.\d+)?$")
+_DRIVER_VERSION = re.compile(r"^(\d+)\.(\d+)(?:\.\d+)?$")
+
+_RUNNER_LABELS = {"self-hosted", "linux", "x64", "gpu", "lunavla-v3"}
+_RUNNER_NETWORK_HOSTS = {
+    "api.github.com",
+    "download.pytorch.org",
+    "github.com",
+    "huggingface.co",
+    "pypi.org",
+}
+_LICENSE_SNAPSHOT_PATHS = {
+    "docs/v3/release/smolvla-file-inventory-observation.json",
+    "docs/v3/release/smolvla-model-card-observation.json",
+    "docs/v3/release/smolvla-repository-metadata-observation.json",
+}
 
 
 def _exact(value: Any, fields: set[str], name: str) -> dict[str, Any]:
@@ -174,6 +191,255 @@ class LicenseReviewV1:
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "LicenseReviewV1":
         payload = _exact(value, set(cls.__dataclass_fields__), "license review")
+        return cls(**payload)
+
+    def sha256(self) -> str:
+        return _stable_hash(self.to_dict())
+
+    def save(self, path: str | Path) -> Path:
+        return _write_json(path, self.to_dict())
+
+
+@dataclass(frozen=True)
+class WeightLicenseStatusV1:
+    repo_id: str
+    revision: str
+    weight_sha256: str
+    license_status: str
+    spdx_license: str
+    pretrained_enabled: bool
+    conformance_only: bool
+    owner_authorization_scope: str
+    owner_authorization_is_license_evidence: bool
+    release_eligible: bool
+    source_snapshots: tuple[ArtifactHashRecordV1, ...]
+    reviewer: str
+    checked_at: str
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if _integer(self.schema_version, "weight license status schema_version", minimum=1) != 1:
+            raise ValueError("WeightLicenseStatusV1 schema_version must be integer 1")
+        if self.repo_id != SMOLVLA_REPO_ID:
+            raise ValueError(f"weight license status repo_id must be {SMOLVLA_REPO_ID}")
+        if self.revision != SMOLVLA_REVISION:
+            raise ValueError("weight license status must bind the reviewed SmolVLA revision")
+        if _sha256(self.weight_sha256, "weight SHA-256") != SMOLVLA_WEIGHT_SHA256:
+            raise ValueError("weight license status must bind the reviewed SmolVLA weight")
+        if self.license_status != "unverified" or self.spdx_license != "NOASSERTION":
+            raise ValueError("undeclared SmolVLA weights must remain unverified/NOASSERTION")
+        for name in (
+            "pretrained_enabled",
+            "conformance_only",
+            "owner_authorization_is_license_evidence",
+            "release_eligible",
+        ):
+            _bool(getattr(self, name), name)
+        if self.pretrained_enabled or not self.conformance_only:
+            raise ValueError("unverified weights must remain disabled and conformance-only")
+        if self.owner_authorization_scope != "local_evaluation_only":
+            raise ValueError("owner authorization scope must be local_evaluation_only")
+        if self.owner_authorization_is_license_evidence or self.release_eligible:
+            raise ValueError("owner authorization cannot become upstream license or release evidence")
+        snapshots = _records(self.source_snapshots, "weight license source_snapshots")
+        if {item.path for item in snapshots} != _LICENSE_SNAPSHOT_PATHS:
+            raise ValueError("weight license status requires the exact normalized source snapshots")
+        reviewer = _string(self.reviewer, "weight license status reviewer")
+        if not _LOGIN.fullmatch(reviewer):
+            raise ValueError("weight license status reviewer must be a GitHub login")
+        checked_at = _string(self.checked_at, "weight license status checked_at")
+        if not _DATE.fullmatch(checked_at):
+            raise ValueError("weight license status checked_at must use YYYY-MM-DD")
+        object.__setattr__(self, "source_snapshots", snapshots)
+        object.__setattr__(self, "reviewer", reviewer)
+        object.__setattr__(self, "checked_at", checked_at)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "repo_id": self.repo_id,
+            "revision": self.revision,
+            "weight_sha256": self.weight_sha256,
+            "license_status": self.license_status,
+            "spdx_license": self.spdx_license,
+            "pretrained_enabled": self.pretrained_enabled,
+            "conformance_only": self.conformance_only,
+            "owner_authorization_scope": self.owner_authorization_scope,
+            "owner_authorization_is_license_evidence": self.owner_authorization_is_license_evidence,
+            "release_eligible": self.release_eligible,
+            "source_snapshots": [item.to_dict() for item in self.source_snapshots],
+            "reviewer": self.reviewer,
+            "checked_at": self.checked_at,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "WeightLicenseStatusV1":
+        payload = _exact(value, set(cls.__dataclass_fields__), "weight license status")
+        payload["source_snapshots"] = _records(
+            payload["source_snapshots"], "weight license source_snapshots"
+        )
+        return cls(**payload)
+
+    def sha256(self) -> str:
+        return _stable_hash(self.to_dict())
+
+    def save(self, path: str | Path) -> Path:
+        return _write_json(path, self.to_dict())
+
+
+@dataclass(frozen=True)
+class RunnerQualificationManifestV1:
+    role: str
+    git_sha: str
+    dependency_lock_sha256: str
+    container_image_sha256: str
+    runner_name_sha256: str
+    runner_labels: tuple[str, ...]
+    runner_os: str
+    runner_os_version: str
+    runner_arch: str
+    python_version: str
+    cpu_count: int
+    memory_bytes: int
+    disk_free_bytes: int
+    gpu_count: int
+    cuda_visible_device_count: int
+    gpu_name: str
+    gpu_uuid_sha256: str
+    driver_version: str
+    cuda_runtime: str
+    torch_version: str
+    torchvision_version: str
+    network_hosts: tuple[str, ...]
+    workspace_clean: bool
+    container_isolated: bool
+    private_mounts_detected: bool
+    ephemeral_declared: bool
+    weight_accessed: bool
+    release_eligible: bool
+    claim_allowed: bool
+    checked_at: str
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if _integer(self.schema_version, "runner qualification schema_version", minimum=1) != 1:
+            raise ValueError("RunnerQualificationManifestV1 schema_version must be integer 1")
+        if self.role not in {"authoritative", "secondary"}:
+            raise ValueError("runner qualification role must be authoritative or secondary")
+        object.__setattr__(self, "git_sha", _git_sha(self.git_sha, "runner qualification git_sha"))
+        for name in (
+            "dependency_lock_sha256",
+            "container_image_sha256",
+            "runner_name_sha256",
+            "gpu_uuid_sha256",
+        ):
+            object.__setattr__(self, name, _sha256(getattr(self, name), name))
+        if isinstance(self.runner_labels, (str, bytes)):
+            raise TypeError("runner_labels must be a sequence")
+        labels = tuple(_string(item, "runner label") for item in self.runner_labels)
+        if len(labels) != len(set(labels)) or not _RUNNER_LABELS.issubset(labels):
+            raise ValueError("runner_labels must uniquely include the LunaVLA GPU labels")
+        object.__setattr__(self, "runner_labels", tuple(sorted(labels)))
+        if self.runner_os != "Linux" or self.runner_arch != "X64":
+            raise ValueError("runner qualification requires Linux X64")
+        object.__setattr__(self, "runner_os_version", _string(self.runner_os_version, "OS version"))
+        if not _PYTHON_312.fullmatch(self.python_version):
+            raise ValueError("runner qualification requires Python 3.12")
+        object.__setattr__(self, "cpu_count", _integer(self.cpu_count, "CPU count", minimum=1))
+        object.__setattr__(
+            self, "memory_bytes", _integer(self.memory_bytes, "memory bytes", minimum=16 * 1024**3)
+        )
+        object.__setattr__(
+            self,
+            "disk_free_bytes",
+            _integer(self.disk_free_bytes, "disk free bytes", minimum=30 * 1024**3),
+        )
+        if _integer(self.gpu_count, "GPU count", minimum=1) != 1:
+            raise ValueError("runner qualification requires exactly one nvidia-smi GPU")
+        if _integer(self.cuda_visible_device_count, "CUDA visible count", minimum=1) != 1:
+            raise ValueError("runner qualification requires exactly one PyTorch CUDA device")
+        gpu_name = _string(self.gpu_name, "GPU name")
+        if "NVIDIA A100" not in gpu_name:
+            raise ValueError("runner qualification requires an NVIDIA A100")
+        object.__setattr__(self, "gpu_name", gpu_name)
+        driver = _string(self.driver_version, "driver version")
+        match = _DRIVER_VERSION.fullmatch(driver)
+        if match is None or (int(match.group(1)), int(match.group(2))) < (570, 26):
+            raise ValueError("runner qualification requires NVIDIA driver >=570.26")
+        object.__setattr__(self, "driver_version", driver)
+        if self.cuda_runtime != "12.8":
+            raise ValueError("runner qualification requires CUDA runtime 12.8")
+        if self.torch_version != "2.11.0+cu128":
+            raise ValueError("runner qualification requires Torch 2.11.0+cu128")
+        if self.torchvision_version != "0.26.0+cu128":
+            raise ValueError("runner qualification requires torchvision 0.26.0+cu128")
+        if isinstance(self.network_hosts, (str, bytes)):
+            raise TypeError("network_hosts must be a sequence")
+        hosts = tuple(_string(item, "network host") for item in self.network_hosts)
+        if len(hosts) != len(set(hosts)) or set(hosts) != _RUNNER_NETWORK_HOSTS:
+            raise ValueError("runner qualification must verify the exact outbound host set")
+        object.__setattr__(self, "network_hosts", tuple(sorted(hosts)))
+        for name in (
+            "workspace_clean",
+            "container_isolated",
+            "private_mounts_detected",
+            "ephemeral_declared",
+            "weight_accessed",
+            "release_eligible",
+            "claim_allowed",
+        ):
+            _bool(getattr(self, name), name)
+        if not self.workspace_clean or not self.container_isolated or not self.ephemeral_declared:
+            raise ValueError("runner qualification requires a clean isolated ephemeral runner")
+        if self.private_mounts_detected or self.weight_accessed:
+            raise ValueError("runner qualification forbids private mounts and weight access")
+        if self.release_eligible or self.claim_allowed:
+            raise ValueError("runner preflight cannot open release or scientific-claim gates")
+        checked_at = _string(self.checked_at, "runner qualification checked_at")
+        if not _DATE.fullmatch(checked_at):
+            raise ValueError("runner qualification checked_at must use YYYY-MM-DD")
+        object.__setattr__(self, "checked_at", checked_at)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "role": self.role,
+            "git_sha": self.git_sha,
+            "dependency_lock_sha256": self.dependency_lock_sha256,
+            "container_image_sha256": self.container_image_sha256,
+            "runner_name_sha256": self.runner_name_sha256,
+            "runner_labels": list(self.runner_labels),
+            "runner_os": self.runner_os,
+            "runner_os_version": self.runner_os_version,
+            "runner_arch": self.runner_arch,
+            "python_version": self.python_version,
+            "cpu_count": self.cpu_count,
+            "memory_bytes": self.memory_bytes,
+            "disk_free_bytes": self.disk_free_bytes,
+            "gpu_count": self.gpu_count,
+            "cuda_visible_device_count": self.cuda_visible_device_count,
+            "gpu_name": self.gpu_name,
+            "gpu_uuid_sha256": self.gpu_uuid_sha256,
+            "driver_version": self.driver_version,
+            "cuda_runtime": self.cuda_runtime,
+            "torch_version": self.torch_version,
+            "torchvision_version": self.torchvision_version,
+            "network_hosts": list(self.network_hosts),
+            "workspace_clean": self.workspace_clean,
+            "container_isolated": self.container_isolated,
+            "private_mounts_detected": self.private_mounts_detected,
+            "ephemeral_declared": self.ephemeral_declared,
+            "weight_accessed": self.weight_accessed,
+            "release_eligible": self.release_eligible,
+            "claim_allowed": self.claim_allowed,
+            "checked_at": self.checked_at,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "RunnerQualificationManifestV1":
+        payload = _exact(value, set(cls.__dataclass_fields__), "runner qualification manifest")
+        payload["runner_labels"] = tuple(payload["runner_labels"])
+        payload["network_hosts"] = tuple(payload["network_hosts"])
         return cls(**payload)
 
     def sha256(self) -> str:

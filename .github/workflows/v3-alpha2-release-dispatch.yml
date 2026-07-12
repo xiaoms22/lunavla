@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       phase:
-        description: GPU pre-tag evidence or signed-tag finalization
+        description: Runner qualification, GPU evidence, or signed-tag finalization
         required: true
-        default: gpu
+        default: preflight
         type: choice
-        options: [gpu, finalize]
+        options: [preflight, gpu, finalize]
       source_ref:
         description: Reviewed branch, tag, or commit in this repository
         required: true
@@ -20,7 +20,19 @@ on:
         type: string
       expected_license_review_sha256:
         description: SHA-256 of the committed model-weight license review
+        required: false
+        default: ""
+        type: string
+      runner_role:
+        description: Authoritative cloud runner or secondary development runner
         required: true
+        default: authoritative
+        type: choice
+        options: [authoritative, secondary]
+      expected_container_image_sha256:
+        description: Immutable SHA-256 of the isolated runner container image
+        required: false
+        default: ""
         type: string
       enable_pretrained_gate:
         description: Confirm the reviewed model-weight and GPU gate
@@ -49,6 +61,97 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  runner-preflight:
+    name: v3-smolvla-runner-preflight
+    if: ${{ inputs.phase == 'preflight' && !inputs.enable_pretrained_gate }}
+    runs-on: [self-hosted, linux, x64, gpu, lunavla-v3]
+    timeout-minutes: 30
+    env:
+      SOURCE_REF: ${{ inputs.source_ref }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      EXPECTED_CONTAINER_IMAGE_SHA256: ${{ inputs.expected_container_image_sha256 }}
+      RUNNER_LABELS: self-hosted,linux,x64,gpu,lunavla-v3
+      RUNNER_ROLE: ${{ inputs.runner_role }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Validate immutable runner request
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_CONTAINER_IMAGE_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$SOURCE_REF" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$ ]]
+          [[ "$SOURCE_REF" != refs/pull && "$SOURCE_REF" != refs/pull/* ]]
+          [[ "$SOURCE_REF" != *..* && "$SOURCE_REF" != *//* && "$SOURCE_REF" != */ ]]
+          test "$LUNAVLA_EPHEMERAL_RUNNER" = true
+          test "$LUNAVLA_CONTAINER_IMAGE_SHA256" = "$EXPECTED_CONTAINER_IMAGE_SHA256"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify source, dispatcher, and closed license gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --depth=1 origin main
+          git show origin/main:.github/workflows/v3-alpha2-release-dispatch.yml \
+            > "$RUNNER_TEMP/main-v3-alpha2-release-dispatch.yml"
+          cmp --silent .github/workflows/v3-alpha2-release-dispatch.yml \
+            "$RUNNER_TEMP/main-v3-alpha2-release-dispatch.yml"
+          python - <<'PY'
+          import json
+          status = json.load(open('docs/v3/release/smolvla-license-status.json'))
+          assert status['license_status'] == 'unverified'
+          assert status['spdx_license'] == 'NOASSERTION'
+          assert status['pretrained_enabled'] is False
+          assert status['conformance_only'] is True
+          assert status['release_eligible'] is False
+          PY
+          echo "HF_HOME=$RUNNER_TEMP/lunavla-empty-hf-cache" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the hash-locked CUDA 12.8 profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v3-smolvla-gpu-cu128.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cu128
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Qualify isolated single-A100 runner without weight access
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_dir="$RUNNER_TEMP/v3-runner-qualification"
+          install -d -m 0700 "$HF_HOME" "$evidence_dir"
+          test -z "$(find "$HF_HOME" -type f -print -quit)"
+          uv run --no-sync python scripts/run_v3_runner_preflight.py qualify \
+            --role "$RUNNER_ROLE" \
+            --expected-git-sha "$EXPECTED_SHA" \
+            --container-image-sha256 "$EXPECTED_CONTAINER_IMAGE_SHA256" \
+            --runner-name "${{ runner.name }}" \
+            --out "$evidence_dir/runner-qualification-manifest.json"
+          uv run --no-sync python scripts/run_v3_runner_preflight.py verify \
+            "$evidence_dir/runner-qualification-manifest.json"
+          test -z "$(find "$HF_HOME" -type f -print -quit)"
+      - name: Attest runner qualification manifest
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ runner.temp }}/v3-runner-qualification/runner-qualification-manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v3-runner-${{ inputs.runner_role }}-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/v3-runner-qualification/runner-qualification-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
   gpu-gate:
     name: v3-smolvla-gpu-gate
     if: ${{ inputs.phase == 'gpu' && inputs.enable_pretrained_gate }}

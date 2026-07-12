@@ -17,6 +17,19 @@ The code repository's Apache-2.0 license is not accepted as evidence for model w
 gate-opening PR must add `docs/v3/release/smolvla-license-review.json`; its evidence URL must be an
 official Hugging Face URL that explicitly applies to the named model weights.
 
+The current normalized model-card, repository-metadata, and file-inventory observations are pinned
+by `docs/v3/release/smolvla-license-status.json`. That record is deliberately
+`NOASSERTION`/`unverified`; citing the model, using it non-commercially, or receiving project-owner
+permission cannot turn it into a `LicenseReviewV1`.
+
+## Runner qualification
+
+The dispatcher's `preflight` phase qualifies an isolated A100 runner without a license Environment
+or model-weight access. Volcengine is the authoritative role and the isolated development-host GPU
+is secondary. Each run produces a `RunnerQualificationManifestV1` with hashed runner/GPU identity,
+locked dependencies, single-device checks, resource limits, outbound connectivity, mount isolation,
+and fail-closed release fields. See [the operator guide](smolvla_runner_qualification.md).
+
 ## Two-phase dispatcher
 
 `.github/workflows/v3-alpha2-release-dispatch.yml` must exist with identical bytes on the default
@@ -38,7 +51,7 @@ action.
 - `configs/v3/smolvla_pretrained_gpu.yaml` remains
   `license_status=unverified`, `pretrained_enabled=false`, and `conformance_only=true`.
 - No committed license review exists.
-- No qualifying self-hosted runner exists.
+- No authoritative and secondary qualification manifests have been produced yet.
 - The package remains version 2.0.0 until the gate-opening PR.
 
 These are intentional release blockers, not incomplete claims. There is no timeout or automatic

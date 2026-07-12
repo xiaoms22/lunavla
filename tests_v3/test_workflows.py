@@ -55,13 +55,23 @@ def test_smolvla_release_dispatcher_is_manual_self_hosted_and_fail_closed() -> N
         "source_ref",
         "expected_sha",
         "expected_license_review_sha256",
+        "runner_role",
+        "expected_container_image_sha256",
         "enable_pretrained_gate",
         "gpu_run_id",
         "tag",
     }
     job = payload["jobs"]["gpu-gate"]
     assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu", "lunavla-v3"]
+    preflight = payload["jobs"]["runner-preflight"]
+    assert preflight["runs-on"] == ["self-hosted", "linux", "x64", "gpu", "lunavla-v3"]
+    assert "environment" not in preflight
     workflow = path.read_text(encoding="utf-8")
+    assert "run_v3_runner_preflight.py qualify" in workflow
+    assert "LUNAVLA_EPHEMERAL_RUNNER" in workflow
+    assert "LUNAVLA_CONTAINER_IMAGE_SHA256" in workflow
+    assert "license_status'] == 'unverified'" in workflow
+    assert "spdx_license'] == 'NOASSERTION'" in workflow
     assert "validate-license" in workflow
     assert "--enable-pretrained-gate" in workflow
     assert "requirements-v3-smolvla-gpu-cu128.lock" in workflow

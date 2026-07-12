@@ -36,4 +36,5 @@ PushT, LIBERO, ACT, or Diffusion performance.
 - [Compatibility](compatibility.md)
 - [Capability matrix](capability_matrix.md)
 - [Alpha 2 release process](alpha2_release_process.md)
+- [SmolVLA runner qualification](smolvla_runner_qualification.md)
 - [Machine-readable public contract](public_api_contract.json)

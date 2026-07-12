@@ -12,6 +12,8 @@ from lunavla.v3 import (
     Alpha2ReleaseCandidateV1,
     GpuValidationManifestV1,
     LicenseReviewV1,
+    RunnerQualificationManifestV1,
+    WeightLicenseStatusV1,
 )
 from lunavla.v3.artifacts import ArtifactHashRecordV1, sha256_file
 from lunavla.v3.release_contracts import SMOLVLA_WEIGHT_SHA256
@@ -20,6 +22,72 @@ from scripts.run_v3_alpha2_release import validate_license
 
 SHA = "1" * 64
 GIT_SHA = "2" * 40
+
+
+def _license_status() -> WeightLicenseStatusV1:
+    return WeightLicenseStatusV1(
+        repo_id="lerobot/smolvla_base",
+        revision="d06fce6e38c25c04ac5a6319eefb9fae0e257cb2",
+        weight_sha256="7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb",
+        license_status="unverified",
+        spdx_license="NOASSERTION",
+        pretrained_enabled=False,
+        conformance_only=True,
+        owner_authorization_scope="local_evaluation_only",
+        owner_authorization_is_license_evidence=False,
+        release_eligible=False,
+        source_snapshots=tuple(
+            ArtifactHashRecordV1(path, SHA)
+            for path in (
+                "docs/v3/release/smolvla-file-inventory-observation.json",
+                "docs/v3/release/smolvla-model-card-observation.json",
+                "docs/v3/release/smolvla-repository-metadata-observation.json",
+            )
+        ),
+        reviewer="xiaoms22",
+        checked_at="2026-07-12",
+    )
+
+
+def _runner_manifest(role: str = "authoritative") -> RunnerQualificationManifestV1:
+    return RunnerQualificationManifestV1(
+        role=role,
+        git_sha=GIT_SHA,
+        dependency_lock_sha256=SHA,
+        container_image_sha256=SHA,
+        runner_name_sha256=SHA,
+        runner_labels=("self-hosted", "linux", "x64", "gpu", "lunavla-v3"),
+        runner_os="Linux",
+        runner_os_version="Ubuntu 22.04.5 LTS",
+        runner_arch="X64",
+        python_version="3.12.10",
+        cpu_count=16,
+        memory_bytes=64 * 1024**3,
+        disk_free_bytes=100 * 1024**3,
+        gpu_count=1,
+        cuda_visible_device_count=1,
+        gpu_name="NVIDIA A100-SXM4-80GB",
+        gpu_uuid_sha256=SHA,
+        driver_version="570.124.06",
+        cuda_runtime="12.8",
+        torch_version="2.11.0+cu128",
+        torchvision_version="0.26.0+cu128",
+        network_hosts=(
+            "api.github.com",
+            "download.pytorch.org",
+            "github.com",
+            "huggingface.co",
+            "pypi.org",
+        ),
+        workspace_clean=True,
+        container_isolated=True,
+        private_mounts_detected=False,
+        ephemeral_declared=True,
+        weight_accessed=False,
+        release_eligible=False,
+        claim_allowed=False,
+        checked_at="2026-07-12",
+    )
 
 
 def _license_review(evidence_sha256: str = SHA) -> LicenseReviewV1:
@@ -173,3 +241,62 @@ def test_current_license_and_pretrained_gate_fails_before_weight_access(tmp_path
             evidence_path=evidence,
             enable_pretrained_gate=True,
         )
+
+
+def test_unverified_weight_status_round_trip_is_fail_closed() -> None:
+    status = _license_status()
+    assert WeightLicenseStatusV1.from_mapping(status.to_dict()) == status
+    assert status.spdx_license == "NOASSERTION"
+    assert status.pretrained_enabled is False
+    assert status.release_eligible is False
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("license_status", "verified"),
+        ("spdx_license", "Apache-2.0"),
+        ("pretrained_enabled", True),
+        ("conformance_only", False),
+        ("owner_authorization_is_license_evidence", True),
+        ("release_eligible", True),
+    ],
+)
+def test_unverified_weight_status_cannot_open_gate(field: str, value: object) -> None:
+    payload = _license_status().to_dict()
+    payload[field] = value
+    with pytest.raises(ValueError):
+        WeightLicenseStatusV1.from_mapping(payload)
+
+
+def test_runner_qualification_round_trip_for_both_roles() -> None:
+    for role in ("authoritative", "secondary"):
+        manifest = _runner_manifest(role)
+        assert RunnerQualificationManifestV1.from_mapping(manifest.to_dict()) == manifest
+        assert manifest.release_eligible is False
+        assert manifest.claim_allowed is False
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("gpu_count", 8),
+        ("cuda_visible_device_count", 2),
+        ("gpu_name", "NVIDIA H100 80GB HBM3"),
+        ("driver_version", "565.57.01"),
+        ("memory_bytes", 8 * 1024**3),
+        ("disk_free_bytes", 20 * 1024**3),
+        ("container_isolated", False),
+        ("private_mounts_detected", True),
+        ("ephemeral_declared", False),
+        ("weight_accessed", True),
+        ("release_eligible", True),
+    ],
+)
+def test_runner_qualification_rejects_unsafe_or_ineligible_state(
+    field: str, value: object
+) -> None:
+    payload = _runner_manifest().to_dict()
+    payload[field] = value
+    with pytest.raises(ValueError):
+        RunnerQualificationManifestV1.from_mapping(payload)
