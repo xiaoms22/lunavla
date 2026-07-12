@@ -201,6 +201,24 @@ def test_real_runtime_requires_explicit_hosted_cpu_environment(
         workflow._default_runtime(config, tmp_path)
 
 
+def test_libero_runtime_config_is_noninteractive_and_isolated(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = tmp_path / "site-packages" / "libero" / "libero"
+    for name in ("bddl_files", "init_files", "assets"):
+        (package / name).mkdir(parents=True, exist_ok=True)
+    spec = SimpleNamespace(
+        submodule_search_locations=[str(package.parent)],
+    )
+    monkeypatch.setattr(workflow.importlib.util, "find_spec", lambda _name: spec)
+    monkeypatch.delenv("LIBERO_CONFIG_PATH", raising=False)
+    path = workflow._prepare_libero_config(tmp_path / "isolated-runtime")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert Path(payload["benchmark_root"]) == package
+    assert Path(payload["datasets"]) == tmp_path / "isolated-runtime" / "datasets"
+    assert workflow.os.environ["LIBERO_CONFIG_PATH"] == str(path.parent)
+
+
 def test_multi_camera_act_payload_consumes_every_declared_camera() -> None:
     config = ExperimentConfig.load("configs/v3/beta2_libero_integration.yaml")
     derived = workflow._policy_payload(config, "act_v3")

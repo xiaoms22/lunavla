@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib
 import importlib.metadata as metadata
+import importlib.util
 import json
 import os
 import platform
@@ -383,7 +384,36 @@ def run_policy_smokes(
     return tuple(results)
 
 
-def run_environment_smoke(config: ExperimentConfig) -> dict[str, Any]:
+def _prepare_libero_config(runtime_root: Path) -> Path:
+    package = importlib.util.find_spec("libero")
+    locations = None if package is None else package.submodule_search_locations
+    if not locations:
+        raise ImportError("hf-libero package location is unavailable")
+    benchmark_root = Path(next(iter(locations))).resolve() / "libero"
+    required = {
+        "benchmark_root": benchmark_root,
+        "bddl_files": benchmark_root / "bddl_files",
+        "init_states": benchmark_root / "init_files",
+        "assets": benchmark_root / "assets",
+    }
+    missing = [name for name, path in required.items() if not path.is_dir()]
+    if missing:
+        raise FileNotFoundError("hf-libero installation is missing: " + ", ".join(missing))
+    config_root = runtime_root.resolve() / "config"
+    datasets = runtime_root.resolve() / "datasets"
+    config_root.mkdir(parents=True, exist_ok=True)
+    datasets.mkdir(parents=True, exist_ok=True)
+    config_path = _write_json(
+        config_root / "config.yaml",
+        {**{name: str(path) for name, path in required.items()}, "datasets": str(datasets)},
+    )
+    os.environ["LIBERO_CONFIG_PATH"] = str(config_root)
+    return config_path
+
+
+def run_environment_smoke(
+    config: ExperimentConfig, *, runtime_root: Path | None = None
+) -> dict[str, Any]:
     spec = config.simulation_task_spec
     if spec is None:
         raise ValueError("environment smoke requires a simulation task spec")
@@ -392,6 +422,9 @@ def run_environment_smoke(config: ExperimentConfig) -> dict[str, Any]:
         environment = PushTEnvV3(config.feature_schema, spec)
         environments: list[Any] = [environment]
     else:
+        if runtime_root is None:
+            raise ValueError("LIBERO environment smoke requires an isolated runtime_root")
+        _prepare_libero_config(runtime_root)
         module = importlib.import_module("lerobot.envs.libero")
         suite = module._get_suite("libero_spatial")
         suite_languages = tuple(str(suite.get_task(task).language) for task in spec.task_ids)
@@ -501,7 +534,7 @@ def _default_runtime(config: ExperimentConfig, cache_dir: Path) -> IntegrationRu
     return IntegrationRuntime(
         inventory,
         episodes,
-        run_environment_smoke(config),
+            run_environment_smoke(config, runtime_root=cache_dir / "libero-runtime"),
         run_policy_smokes(config, episodes),
         runtime_environment_path,
         "hosted_cpu",
