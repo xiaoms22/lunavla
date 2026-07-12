@@ -32,6 +32,10 @@ repeat sentinel. The exact total is 1,550 rows. A missing row, mixed source, fai
 eligibility. Negative or neutral results remain publishable after complete verification; they do
 not become positive claims.
 
+The seed 11 sentinel binds the deterministic seed-11 row subset, checkpoint and behavior metrics.
+Environment-specific latency and memory remain in the separate `PolicyProfileManifestV1`; they are
+not mixed into the bit-exact stable-evidence inventory.
+
 ## External gates kept separate
 
 SmolVLA weight validation and GPU evidence move to v3.1. v3.0 keeps only the public-API conformance

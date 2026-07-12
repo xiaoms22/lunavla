@@ -17,6 +17,7 @@ from lunavla.v3 import (
     build_stable_evidence_summary,
     clustered_paired_bootstrap,
     expected_stable_matrix_keys,
+    stable_row_inventory_sha256,
     validate_stable_design_set,
     verify_stable_evidence_bundle,
     wilson_interval,
@@ -56,8 +57,6 @@ def _rows(design: StableEvidenceDesignV1) -> tuple[StableEvidenceRowV1, ...]:
             final_metric=0.1,
             smoothness=0.2,
             first_action_mse=0.3,
-            latency_ms=1.0,
-            peak_memory_bytes=1024,
             failure_count=0,
         )
         for policy, train_seed, task_id, evaluation_id, route, intervention
@@ -71,30 +70,14 @@ def _summary_bundle(
     rows = _rows(design)
     if not complete:
         rows = rows[:-1]
-    provisional = StableRepeatSentinelV1(
-        study_id=design.study_id,
-        train_seed=11,
-        source_row_inventory_sha256="c" * 64,
-        repeat_row_inventory_sha256="d" * 64,
-        source_checkpoint_sha256=SHA,
-        repeat_checkpoint_sha256="d" * 64,
-        source_metrics_sha256=SHA,
-        repeat_metrics_sha256="d" * 64,
-        verified=False,
-    )
-    first = build_stable_evidence_summary(
-        design,
-        rows,
-        provisional,
-        expected_git_sha=GIT_SHA,
-        statistics_sha256=SHA,
-        claim_gate_sha256=SHA,
+    repeat_inventory = stable_row_inventory_sha256(
+        tuple(row for row in rows if row.train_seed == design.repeat_train_seed)
     )
     sentinel = StableRepeatSentinelV1(
         study_id=design.study_id,
         train_seed=11,
-        source_row_inventory_sha256=first.row_inventory_sha256,
-        repeat_row_inventory_sha256=first.row_inventory_sha256,
+        source_row_inventory_sha256=repeat_inventory,
+        repeat_row_inventory_sha256=repeat_inventory,
         source_checkpoint_sha256=SHA,
         repeat_checkpoint_sha256=SHA,
         source_metrics_sha256=SHA,
@@ -186,6 +169,7 @@ def test_stable_evidence_summary_round_trip_and_fail_closed_gates() -> None:
     rows, sentinel, summary = _summary_bundle(design)
     verify_stable_evidence_bundle(design, rows, sentinel, summary)
     assert StableEvidenceSummaryV1.from_mapping(summary.to_dict()) == summary
+    assert summary.row_inventory_sha256 != sentinel.source_row_inventory_sha256
     incomplete_rows, incomplete_sentinel, incomplete = _summary_bundle(design, complete=False)
     verify_stable_evidence_bundle(design, incomplete_rows, incomplete_sentinel, incomplete)
     incomplete.verify_design(design)

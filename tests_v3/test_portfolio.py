@@ -15,6 +15,7 @@ from lunavla.v3 import (
     build_portfolio,
     build_stable_evidence_summary,
     expected_stable_matrix_keys,
+    stable_row_inventory_sha256,
     verify_portfolio,
 )
 from lunavla.v3.cli import main as cli_main
@@ -50,8 +51,6 @@ def _rows(
             final_metric=0.1,
             smoothness=0.2,
             first_action_mse=0.3,
-            latency_ms=1.0,
-            peak_memory_bytes=1024,
             failure_count=0,
         )
         for policy, train_seed, task_id, evaluation_id, route, intervention in
@@ -69,30 +68,14 @@ def _write_study(
     rows = _rows(design, git_sha=git_sha)
     if not complete:
         rows = rows[:-1]
-    provisional = StableRepeatSentinelV1(
-        study_id=design.study_id,
-        train_seed=11,
-        source_row_inventory_sha256="c" * 64,
-        repeat_row_inventory_sha256="d" * 64,
-        source_checkpoint_sha256=SHA,
-        repeat_checkpoint_sha256="d" * 64,
-        source_metrics_sha256=SHA,
-        repeat_metrics_sha256="d" * 64,
-        verified=False,
-    )
-    first = build_stable_evidence_summary(
-        design,
-        rows,
-        provisional,
-        expected_git_sha=git_sha,
-        statistics_sha256=SHA,
-        claim_gate_sha256=SHA,
+    repeat_inventory = stable_row_inventory_sha256(
+        tuple(row for row in rows if row.train_seed == design.repeat_train_seed)
     )
     sentinel = StableRepeatSentinelV1(
         study_id=design.study_id,
         train_seed=11,
-        source_row_inventory_sha256=first.row_inventory_sha256,
-        repeat_row_inventory_sha256=first.row_inventory_sha256,
+        source_row_inventory_sha256=repeat_inventory,
+        repeat_row_inventory_sha256=repeat_inventory,
         source_checkpoint_sha256=SHA,
         repeat_checkpoint_sha256=SHA,
         source_metrics_sha256=SHA,
