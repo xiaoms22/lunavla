@@ -15,6 +15,9 @@ PUSHT_REPO_ID = "lerobot/pusht"
 PUSHT_REVISION = "b1c3ecbae7f244acc039a3dbc255a00dad1372b9"
 LIBERO_REPO_ID = "lerobot/libero"
 LIBERO_REVISION = "a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4"
+LIBERO_ASSETS_REPO_ID = "lerobot/libero-assets"
+LIBERO_ASSETS_REVISION = "0b3ea86be5fe169d0fd036ae63d1070ec09e90f6"
+LIBERO_ASSETS_LICENSE_STATUS = "unverified"
 # Environment task IDs are suite-local.  LeRobot's combined LIBERO dataset
 # uses a separate global task index; bind the two by pinned language identity.
 LIBERO_SPATIAL_TASK_IDS = (0, 1, 2, 3)

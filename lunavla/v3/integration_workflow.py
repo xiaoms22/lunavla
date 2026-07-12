@@ -23,6 +23,9 @@ from .data import InMemoryDatasetSourceV3
 from .engine import EngineV3
 from .integration_contracts import (
     CONNECTIVITY_STATEMENT,
+    LIBERO_ASSETS_LICENSE_STATUS,
+    LIBERO_ASSETS_REPO_ID,
+    LIBERO_ASSETS_REVISION,
     LIBERO_REPO_ID,
     LIBERO_SPATIAL_DATASET_TASK_IDS,
     LIBERO_SPATIAL_MIN_EPISODES,
@@ -394,11 +397,17 @@ def _prepare_libero_config(runtime_root: Path) -> Path:
         "benchmark_root": benchmark_root,
         "bddl_files": benchmark_root / "bddl_files",
         "init_states": benchmark_root / "init_files",
-        "assets": benchmark_root / "assets",
     }
     missing = [name for name, path in required.items() if not path.is_dir()]
     if missing:
         raise FileNotFoundError("hf-libero installation is missing: " + ", ".join(missing))
+    assets = benchmark_root / "assets"
+    if not assets.is_dir():
+        raise RuntimeError(
+            f"{LIBERO_ASSETS_REPO_ID}@{LIBERO_ASSETS_REVISION} asset license is "
+            f"{LIBERO_ASSETS_LICENSE_STATUS}; automatic asset download is disabled"
+        )
+    required["assets"] = assets
     config_root = runtime_root.resolve() / "config"
     datasets = runtime_root.resolve() / "datasets"
     config_root.mkdir(parents=True, exist_ok=True)

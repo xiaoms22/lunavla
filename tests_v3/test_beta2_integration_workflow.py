@@ -219,6 +219,18 @@ def test_libero_runtime_config_is_noninteractive_and_isolated(
     assert workflow.os.environ["LIBERO_CONFIG_PATH"] == str(path.parent)
 
 
+def test_libero_runtime_refuses_unlicensed_implicit_asset_download(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = tmp_path / "site-packages" / "libero" / "libero"
+    for name in ("bddl_files", "init_files"):
+        (package / name).mkdir(parents=True, exist_ok=True)
+    spec = SimpleNamespace(submodule_search_locations=[str(package.parent)])
+    monkeypatch.setattr(workflow.importlib.util, "find_spec", lambda _name: spec)
+    with pytest.raises(RuntimeError, match="asset license is unverified"):
+        workflow._prepare_libero_config(tmp_path / "isolated-runtime")
+
+
 def test_multi_camera_act_payload_consumes_every_declared_camera() -> None:
     config = ExperimentConfig.load("configs/v3/beta2_libero_integration.yaml")
     derived = workflow._policy_payload(config, "act_v3")

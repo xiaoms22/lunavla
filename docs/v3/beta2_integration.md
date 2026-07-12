@@ -49,6 +49,14 @@ only the two connectivity manifests, metrics and file-hash inventories.
 
 ## Current gate state
 
-No same-SHA hosted CPU integration manifest has been produced for this candidate yet. The SmolVLA
-weight license remains `NOASSERTION/unverified`; pretrained access remains closed and is unrelated
-to the Beta 2 public-data connectivity gate.
+PushT and the pinned LIBERO dataset decode/task-parity path have run on the candidate SHA, but no
+complete same-SHA hosted CPU integration manifest exists yet. `hf-libero==0.1.4` does not ship the
+MuJoCo assets; its fallback points to
+`lerobot/libero-assets@0b3ea86be5fe169d0fd036ae63d1070ec09e90f6`, whose dataset metadata
+currently declares no license. LunaVLA records that asset license as `unverified` and refuses the
+implicit download. The LIBERO reset/step gate stays closed until the asset repository publishes an
+explicit license covering those files.
+
+The SmolVLA weight license separately remains `NOASSERTION/unverified`; pretrained access remains
+closed and is unrelated to the Beta 2 public-data adapter checks. Neither external gate may be
+inferred from package code licenses or from public download availability.
