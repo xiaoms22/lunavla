@@ -1,4 +1,4 @@
-# v3 Alpha 2 contracts capability matrix
+# v3 Alpha 3 code-only capability matrix
 
 | Area | Current status | Boundary |
 | --- | --- | --- |
@@ -11,7 +11,7 @@
 | LeRobot Diffusion adapter | Public APIs, DDIM, processors, masked loss, exact CPU resume | Fake-data chain only; no performance claim |
 | Fake PushT/LIBERO | Implemented as fixtures | Connectivity and lifecycle only |
 | SmolVLA adapter | Public-API conformance fixture and pinned model identity | Pretrained, optimizer, resume, and inference gates closed |
-| Alpha 2 release supply chain | Hosted CPU code-only candidate, signed tag, SBOM, provenance and checksums | No weight access, performance claim or PyPI publication |
+| Alpha 3 release supply chain | Hosted CPU code-only candidate, locked build backend, signed tag, SBOM, provenance and checksums | No weight access, performance claim or PyPI publication |
 | SmolVLA v3.1 validation | Strict license/GPU contracts and CUDA lock retained fail-closed | No runner, license review, weight access or validation release |
 | Real PushT/LIBERO subset | Planned Beta 2 | No benchmark statement |
 | Prompt/state diagnostics | Planned Beta 1 | No modality or routing claim |

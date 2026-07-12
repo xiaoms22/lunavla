@@ -2,19 +2,19 @@
 
 1. **Alpha 1 — merged:** schema 3, feature/embodiment contracts, v2 migration,
    data QA/replay, fake task fixtures, CPU EngineV3, checkpoint/manifest verification.
-2. **Alpha 2 contracts — implemented in this branch:** policy specs, history-aware samples,
+2. **Alpha 2 contracts — implemented:** policy specs, history-aware samples,
    train-only normalization, strict registry dispatch, training configuration, and revision-2
    artifact envelopes.
-3. **Alpha 2 native ACT — implemented in this branch:** action-query CVAE Transformer, masked
+3. **Alpha 2 native ACT — implemented:** action-query CVAE Transformer, masked
    chunks, one RGB camera, state/instruction conditioning, temporal ensembling, and exact CPU
    checkpoint resume through the unified Engine.
-4. **Alpha 2 LeRobot Diffusion — implemented in this branch:** public policy/processor APIs,
+4. **Alpha 2 LeRobot Diffusion — implemented:** public policy/processor APIs,
    DDIM scheduler, history and padding contracts, hash-locked CPU dependencies, and exact resume.
-5. **Alpha 2 SmolVLA adapter — implemented in this branch:** dependency-injected public policy and
+5. **Alpha 2 SmolVLA adapter — implemented:** dependency-injected public policy and
    processor conformance, pinned upstream identity, and fail-closed pretrained/optimizer gates.
    Actual weights, optimizer, resume, and inference remain blocked until the model-weight license
    and a single GPU are verified.
-6. **Alpha 2 code-only release — candidate implementation:** package `3.0.0a2`, hosted CPU checks,
+6. **Alpha 3 code-only release — candidate implementation:** package `3.0.0a3`, hosted CPU checks,
    signed assets and a conformance-only SmolVLA status. No weight or GPU is required. The original
    license/GPU validation contracts move intact to the future v3.1 track.
 7. **Beta 1 — staged Draft:** prompt rendering parity, declared state routes, paired interventions, and

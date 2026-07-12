@@ -2,18 +2,32 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
-## v3.0.0-alpha.2 — release gate pending
+## v3.0.0-alpha.3 — code-only release candidate
 
 ### Added
 
-- Added versioned model-weight license review, single-GPU validation, and Alpha 2 release-candidate contracts.
-- Added hash-locked Linux CUDA 12.8 and release CPU profiles plus a two-phase default-branch dispatcher for pre-tag GPU evidence and signed-tag finalization.
+- Added a hosted CPU release path for ACT, Diffusion, and the SmolVLA public-API conformance adapter.
+- Pinned the PEP 517 build backend and disabled build isolation so wheel/sdist bytes are reproducible from the recorded release lock.
+- Added signed-tag verification, SBOM, provenance, evidence archive, exact checksums, and wheel-install smoke tests.
+
+### Boundaries
+
+- SmolVLA remains `NOASSERTION/unverified`, pretrained loading remains disabled, and no model weight or checkpoint is included.
+- The release makes no policy-performance, modality, task, or robot-deployment claim and is not published to PyPI.
+
+## v3.0.0-alpha.2 — signed candidate not released
+
+### Added
+
+- Added versioned model-weight license review, single-GPU validation, and release-candidate contracts.
+- Added hash-locked Linux CUDA 12.8 and release CPU profiles plus guarded dispatcher infrastructure.
 - Added a dormant official SmolVLA loader, optimizer, checkpoint and restore path that is reachable only after a separate reviewed gate-opening change.
 
 ### Boundaries
 
 - The model-weight license remains unverified, the pretrained gate remains disabled, and no qualifying self-hosted runner is registered.
-- Package version `3.0.0a2` is reserved for the future gate-opening PR; no v3 tag, release, weight download, PyPI publication, or performance claim is created by this infrastructure change.
+- The signed tag was preserved but no GitHub release was created: reproducibility review found that build isolation resolved an unrecorded setuptools version inconsistent with the lock and SBOM.
+- No weight download, PyPI publication, or performance claim was created; the corrected non-destructive successor is Alpha 3.
 
 ## v2.0.0 — 2026-07-11
 

@@ -12,7 +12,7 @@
 - schema-4 revision-1 run artifacts remain verifiable but are not rewritten. New runs use a
   revision-2 `checkpoint/` directory with hashes for policy, processor, normalization, dependency,
   and training-state files.
-- Alpha 1 configs load with explicit Alpha 2 defaults for optimizer, scheduler, precision,
+- Alpha 1 configs load with explicit Alpha 2 contract defaults for optimizer, scheduler, precision,
   gradient clipping, and disabled resume.
 - `act_v3` is a new policy id. v2 Transformer checkpoints stay read-only and are never relabeled as
   `act_v3`; users must train a native v3 checkpoint.
@@ -28,8 +28,8 @@
   upstream revision and model hash are recorded, while the weight license remains `unverified` and
   `pretrained_enabled=false`. Default registry creation, optimizer steps, and restore fail closed;
   CI uses only dependency-injected implementations of the documented public methods.
-- Alpha 2 uses package `3.0.0a2` and a hosted CPU code-only release. The SmolVLA GPU workflow moves
+- Alpha 3 uses package `3.0.0a3` and a hosted CPU code-only release. The SmolVLA GPU workflow moves
   to v3.1 and continues to fail closed. Historical v2 manifests retain their original package
   identity; v2 release tooling rejects a v3 package rather than relabeling old assets.
-- v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
+- v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 3
   contracts.

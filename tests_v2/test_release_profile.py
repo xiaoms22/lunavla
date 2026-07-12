@@ -74,7 +74,7 @@ def test_installed_requirements_is_sorted_and_contains_project() -> None:
 
 
 def test_release_version_contract_matches_all_sources() -> None:
-    assert validated_project_version() == "3.0.0a2"
+    assert validated_project_version() == "3.0.0a3"
 
 
 def test_release_version_contract_fails_closed_on_mismatch(

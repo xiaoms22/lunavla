@@ -1,6 +1,6 @@
-# LunaVLA v3 Alpha 2 contracts candidate
+# LunaVLA v3 Alpha 3 code-only candidate
 
-This branch builds the policy and artifact contracts needed by the Alpha 2 strategy ladder on top
+This branch builds the policy and artifact contracts introduced by the Alpha 2 strategy ladder on top
 of the merged Alpha 1 foundation. It preserves the frozen v2 public API and lightweight v1.x path.
 
 Implemented in this Alpha:
@@ -23,7 +23,7 @@ Implemented in this Alpha:
 - `lerobot_smolvla`, a dependency-injected public-API conformance adapter. Its fixed model revision
   and 907 MB weight hash are recorded, but `license_status=unverified`, pretrained loading is
   disabled, and no optimizer/resume claim is made.
-- a hosted CPU code-only Alpha 2 candidate and signed-tag dispatcher. It packages ACT, Diffusion
+- a hosted CPU code-only Alpha 3 candidate and signed-tag dispatcher. It packages ACT, Diffusion
   and SmolVLA public-API conformance without accessing weights. The original license/GPU contracts
   remain fail-closed in the separate v3.1 validation track.
 
@@ -35,6 +35,6 @@ PushT, LIBERO, ACT, or Diffusion performance.
 - [Roadmap](roadmap.md)
 - [Compatibility](compatibility.md)
 - [Capability matrix](capability_matrix.md)
-- [Alpha 2 release process](alpha2_release_process.md)
+- [Alpha 3 release process](alpha3_release_process.md)
 - [SmolVLA runner qualification](smolvla_runner_qualification.md)
 - [Machine-readable public contract](public_api_contract.json)
