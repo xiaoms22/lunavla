@@ -257,6 +257,7 @@ jobs:
             --require-hashes --strict --only-binary :all: --torch-backend cpu
           uv pip install --no-deps --no-build-isolation --editable .
           uv pip check
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
           root="$RUNNER_TEMP/release-assets"
           python scripts/run_v3_code_release.py verify-candidate \
             "$root/release-candidate.json" --asset-root "$root"
