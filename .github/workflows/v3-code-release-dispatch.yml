@@ -145,7 +145,7 @@ jobs:
           python -m build --outdir "$root/dist"
           uv pip freeze > "$root/environment-requirements.txt"
           cyclonedx-py requirements "$root/environment-requirements.txt" \
-            --output-reproducible --outfile "$root/sbom.json"
+            --output-reproducible --output-file "$root/sbom.json"
           EXPECTED_SHA="$EXPECTED_SHA" ROOT="$root" python - <<'PY'
           import json, os
           from pathlib import Path
