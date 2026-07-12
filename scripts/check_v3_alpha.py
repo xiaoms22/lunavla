@@ -18,6 +18,7 @@ from lunavla.v3 import (
     GpuValidationManifestV1,
     LicenseReviewV1,
     RunnerQualificationManifestV1,
+    SmolVLAValidationCandidateV1,
     WeightLicenseStatusV1,
     NormalizationStatsV1,
     ObservationV3,
@@ -36,7 +37,8 @@ DIFFUSION_LOCK = ROOT / "requirements-v3-diffusion-cpu.lock"
 SMOLVLA_LOCK = ROOT / "requirements-v3-smolvla-cpu.lock"
 SMOLVLA_GPU_LOCK = ROOT / "requirements-v3-smolvla-gpu-cu128.lock"
 RELEASE_LOCK = ROOT / "requirements-v3-release-cpu.lock"
-RELEASE_DISPATCHER = ROOT / ".github/workflows/v3-alpha2-release-dispatch.yml"
+CODE_RELEASE_DISPATCHER = ROOT / ".github/workflows/v3-code-release-dispatch.yml"
+SMOLVLA_VALIDATION_DISPATCHER = ROOT / ".github/workflows/v3-alpha2-release-dispatch.yml"
 LICENSE_STATUS = ROOT / "docs/v3/release/smolvla-license-status.json"
 PUBLIC_TYPES = {
     "FeatureSpec": FeatureSpec,
@@ -52,6 +54,7 @@ PUBLIC_TYPES = {
     "RunnerQualificationManifestV1": RunnerQualificationManifestV1,
     "GpuValidationManifestV1": GpuValidationManifestV1,
     "Alpha2ReleaseCandidateV1": Alpha2ReleaseCandidateV1,
+    "SmolVLAValidationCandidateV1": SmolVLAValidationCandidateV1,
     "PolicySpecV3": PolicySpecV3,
     "PolicySampleV3": PolicySampleV3,
     "PolicyBatchV3": PolicyBatchV3,
@@ -64,7 +67,7 @@ PUBLIC_TYPES = {
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-alpha.2-smolvla-adapter",
+        "release_stage": "v3.0.0-alpha.2-code-only-candidate",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()
@@ -147,8 +150,10 @@ def main() -> int:
         raise SystemExit(f"v3 release CPU lock is stale; missing {missing}")
     if any(item in release_lock for item in forbidden):
         raise SystemExit("v3 release CPU lock contains an accelerator-only package")
-    if "workflow_dispatch:" not in RELEASE_DISPATCHER.read_text(encoding="utf-8"):
-        raise SystemExit("v3 Alpha 2 release dispatcher is missing its manual entrypoint")
+    if "workflow_dispatch:" not in CODE_RELEASE_DISPATCHER.read_text(encoding="utf-8"):
+        raise SystemExit("v3 code release dispatcher is missing its manual entrypoint")
+    if "workflow_dispatch:" not in SMOLVLA_VALIDATION_DISPATCHER.read_text(encoding="utf-8"):
+        raise SystemExit("v3.1 SmolVLA validation dispatcher is missing its manual entrypoint")
     print("v3 alpha contracts, configs, and CPU lock are valid")
     return 0
 

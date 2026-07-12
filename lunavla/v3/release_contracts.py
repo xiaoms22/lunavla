@@ -14,6 +14,8 @@ from .artifacts import ArtifactHashRecordV1
 
 ALPHA2_TAG = "v3.0.0-alpha.2"
 ALPHA2_PACKAGE_VERSION = "3.0.0a2"
+SMOLVLA_VALIDATION_TAG = "v3.1.0-alpha.1"
+SMOLVLA_VALIDATION_PACKAGE_VERSION = "3.1.0a1"
 SMOLVLA_REPO_ID = "lerobot/smolvla_base"
 SMOLVLA_REVISION = "d06fce6e38c25c04ac5a6319eefb9fae0e257cb2"
 SMOLVLA_WEIGHT_SHA256 = (
@@ -487,8 +489,10 @@ class GpuValidationManifestV1:
         if _integer(self.schema_version, "GPU manifest schema_version", minimum=1) != 1:
             raise ValueError("GpuValidationManifestV1 schema_version must be integer 1")
         object.__setattr__(self, "git_sha", _git_sha(self.git_sha, "GPU manifest git_sha"))
-        if self.package_version != ALPHA2_PACKAGE_VERSION:
-            raise ValueError(f"GPU manifest package_version must be {ALPHA2_PACKAGE_VERSION}")
+        if self.package_version != SMOLVLA_VALIDATION_PACKAGE_VERSION:
+            raise ValueError(
+                "GPU manifest package_version must target the v3.1 SmolVLA validation track"
+            )
         for name in (
             "license_review_sha256",
             "model_source_sha256",
@@ -595,7 +599,7 @@ class GpuValidationManifestV1:
 
 
 @dataclass(frozen=True)
-class Alpha2ReleaseCandidateV1:
+class SmolVLAValidationCandidateV1:
     expected_tag: str
     git_sha: str
     package_version: str
@@ -610,12 +614,16 @@ class Alpha2ReleaseCandidateV1:
 
     def __post_init__(self) -> None:
         if _integer(self.schema_version, "release candidate schema_version", minimum=1) != 1:
-            raise ValueError("Alpha2ReleaseCandidateV1 schema_version must be integer 1")
-        if self.expected_tag != ALPHA2_TAG:
-            raise ValueError(f"release candidate expected_tag must be {ALPHA2_TAG}")
+            raise ValueError("SmolVLAValidationCandidateV1 schema_version must be integer 1")
+        if self.expected_tag != SMOLVLA_VALIDATION_TAG:
+            raise ValueError(
+                f"SmolVLA validation expected_tag must be {SMOLVLA_VALIDATION_TAG}"
+            )
         object.__setattr__(self, "git_sha", _git_sha(self.git_sha, "release candidate git_sha"))
-        if self.package_version != ALPHA2_PACKAGE_VERSION:
-            raise ValueError(f"release candidate package_version must be {ALPHA2_PACKAGE_VERSION}")
+        if self.package_version != SMOLVLA_VALIDATION_PACKAGE_VERSION:
+            raise ValueError(
+                "SmolVLA validation package_version must target the v3.1 validation track"
+            )
         for name in (
             "gpu_manifest_sha256",
             "gpu_attestation_sha256",
@@ -625,8 +633,8 @@ class Alpha2ReleaseCandidateV1:
             object.__setattr__(self, name, _sha256(getattr(self, name), name))
         assets = _records(self.assets, "release candidate assets")
         required_names = {
-            "dist/lunavla-3.0.0a2-py3-none-any.whl",
-            "dist/lunavla-3.0.0a2.tar.gz",
+            "dist/lunavla-3.1.0a1-py3-none-any.whl",
+            "dist/lunavla-3.1.0a1.tar.gz",
             "environment-requirements.txt",
             "sbom.json",
             "gpu-validation-manifest.json",
@@ -634,12 +642,12 @@ class Alpha2ReleaseCandidateV1:
             "lunavla-v3-alpha2-evidence.tar.gz",
         }
         if not required_names.issubset(item.path for item in assets):
-            raise ValueError("release candidate is missing required Alpha 2 assets")
+            raise ValueError("validation candidate is missing required SmolVLA assets")
         object.__setattr__(self, "assets", assets)
         _bool(self.claim_allowed, "claim_allowed")
         _bool(self.pypi_published, "pypi_published")
         if self.claim_allowed or self.pypi_published:
-            raise ValueError("Alpha 2 candidate cannot allow claims or publish to PyPI")
+            raise ValueError("SmolVLA validation cannot allow claims or publish to PyPI")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -657,9 +665,105 @@ class Alpha2ReleaseCandidateV1:
         }
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "Alpha2ReleaseCandidateV1":
-        payload = _exact(value, set(cls.__dataclass_fields__), "Alpha 2 release candidate")
+    def from_mapping(cls, value: Mapping[str, Any]) -> "SmolVLAValidationCandidateV1":
+        payload = _exact(value, set(cls.__dataclass_fields__), "SmolVLA validation candidate")
         payload["assets"] = _records(payload["assets"], "release candidate assets")
+        return cls(**payload)
+
+    def sha256(self) -> str:
+        return _stable_hash(self.to_dict())
+
+    def save(self, path: str | Path) -> Path:
+        return _write_json(path, self.to_dict())
+
+
+@dataclass(frozen=True)
+class Alpha2ReleaseCandidateV1:
+    expected_tag: str
+    git_sha: str
+    package_version: str
+    public_api_sha256: str
+    core_lock_sha256: str
+    diffusion_lock_sha256: str
+    smolvla_lock_sha256: str
+    weight_license_status_sha256: str
+    required_checks_sha256: str
+    dispatcher_sha256: str
+    assets: tuple[ArtifactHashRecordV1, ...]
+    pretrained_enabled: bool = False
+    conformance_only: bool = True
+    claim_allowed: bool = False
+    pypi_published: bool = False
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if _integer(self.schema_version, "Alpha 2 candidate schema_version", minimum=1) != 1:
+            raise ValueError("Alpha2ReleaseCandidateV1 schema_version must be integer 1")
+        if self.expected_tag != ALPHA2_TAG:
+            raise ValueError(f"Alpha 2 expected_tag must be {ALPHA2_TAG}")
+        object.__setattr__(self, "git_sha", _git_sha(self.git_sha, "Alpha 2 git_sha"))
+        if self.package_version != ALPHA2_PACKAGE_VERSION:
+            raise ValueError(f"Alpha 2 package_version must be {ALPHA2_PACKAGE_VERSION}")
+        for name in (
+            "public_api_sha256",
+            "core_lock_sha256",
+            "diffusion_lock_sha256",
+            "smolvla_lock_sha256",
+            "weight_license_status_sha256",
+            "required_checks_sha256",
+            "dispatcher_sha256",
+        ):
+            object.__setattr__(self, name, _sha256(getattr(self, name), name))
+        assets = _records(self.assets, "Alpha 2 code-only assets")
+        required_names = {
+            "dist/lunavla-3.0.0a2-py3-none-any.whl",
+            "dist/lunavla-3.0.0a2.tar.gz",
+            "environment-requirements.txt",
+            "test-manifest.json",
+            "smolvla-conformance-status.json",
+            "sbom.json",
+            "provenance.jsonl",
+            "lunavla-v3-alpha2-code-evidence.tar.gz",
+        }
+        if not required_names.issubset(item.path for item in assets):
+            raise ValueError("Alpha 2 candidate is missing required code-only assets")
+        for name in (
+            "pretrained_enabled",
+            "conformance_only",
+            "claim_allowed",
+            "pypi_published",
+        ):
+            _bool(getattr(self, name), name)
+        if self.pretrained_enabled or not self.conformance_only:
+            raise ValueError("Alpha 2 must keep SmolVLA pretrained disabled and conformance-only")
+        if self.claim_allowed or self.pypi_published:
+            raise ValueError("Alpha 2 cannot allow scientific claims or publish to PyPI")
+        object.__setattr__(self, "assets", assets)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "expected_tag": self.expected_tag,
+            "git_sha": self.git_sha,
+            "package_version": self.package_version,
+            "public_api_sha256": self.public_api_sha256,
+            "core_lock_sha256": self.core_lock_sha256,
+            "diffusion_lock_sha256": self.diffusion_lock_sha256,
+            "smolvla_lock_sha256": self.smolvla_lock_sha256,
+            "weight_license_status_sha256": self.weight_license_status_sha256,
+            "required_checks_sha256": self.required_checks_sha256,
+            "dispatcher_sha256": self.dispatcher_sha256,
+            "assets": [item.to_dict() for item in self.assets],
+            "pretrained_enabled": self.pretrained_enabled,
+            "conformance_only": self.conformance_only,
+            "claim_allowed": self.claim_allowed,
+            "pypi_published": self.pypi_published,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "Alpha2ReleaseCandidateV1":
+        payload = _exact(value, set(cls.__dataclass_fields__), "Alpha 2 code-only candidate")
+        payload["assets"] = _records(payload["assets"], "Alpha 2 code-only assets")
         return cls(**payload)
 
     def sha256(self) -> str:

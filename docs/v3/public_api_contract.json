@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_stage": "v3.0.0-alpha.2-smolvla-adapter",
+  "release_stage": "v3.0.0-alpha.2-code-only-candidate",
   "contracts": {
     "FeatureSpec": {
       "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
@@ -39,6 +39,9 @@
       "signature": "(git_sha: 'str', package_version: 'str', license_review_sha256: 'str', model_source_sha256: 'str', dependency_lock_sha256: 'str', dispatcher_sha256: 'str', runner_labels: 'tuple[str, ...]', runner_os: 'str', runner_arch: 'str', gpu_count: 'int', gpu_name: 'str', gpu_uuid_sha256: 'str', driver_version: 'str', cuda_runtime: 'str', torch_version: 'str', torchvision_version: 'str', downloaded_files: 'tuple[ArtifactHashRecordV1, ...]', model_bytes: 'int', train_seed: 'int', loss_before: 'float', loss_after: 'float', gradient_norm: 'float', checkpoint_sha256: 'str', restored_action_sha256: 'str', resume_rtol: 'float', resume_atol: 'float', optimizer_step_verified: 'bool', resume_verified: 'bool', inference_verified: 'bool', claim_allowed: 'bool' = False, schema_version: 'int' = 1) -> None"
     },
     "Alpha2ReleaseCandidateV1": {
+      "signature": "(expected_tag: 'str', git_sha: 'str', package_version: 'str', public_api_sha256: 'str', core_lock_sha256: 'str', diffusion_lock_sha256: 'str', smolvla_lock_sha256: 'str', weight_license_status_sha256: 'str', required_checks_sha256: 'str', dispatcher_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', pretrained_enabled: 'bool' = False, conformance_only: 'bool' = True, claim_allowed: 'bool' = False, pypi_published: 'bool' = False, schema_version: 'int' = 1) -> None"
+    },
+    "SmolVLAValidationCandidateV1": {
       "signature": "(expected_tag: 'str', git_sha: 'str', package_version: 'str', gpu_manifest_sha256: 'str', gpu_attestation_sha256: 'str', required_checks_sha256: 'str', dispatcher_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', claim_allowed: 'bool' = False, pypi_published: 'bool' = False, schema_version: 'int' = 1) -> None"
     },
     "PolicySpecV3": {

@@ -27,7 +27,7 @@ from .registry import PolicyRegistry, default_policy_registry
 from .temporal import TemporalEnsembler
 
 
-__version__ = "2.0.0"
+__version__ = "3.0.0a2"
 
 __all__ = [
     "ActionChunk",
