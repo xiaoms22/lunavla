@@ -11,8 +11,8 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         Loader=yaml.BaseLoader,
     )
     triggers = payload["on"]
-    assert set(triggers["pull_request"]["branches"]) == {"main", "v3"}
-    assert triggers["push"]["branches"] == ["v3"]
+    assert set(triggers["pull_request"]["branches"]) == {"main", "v3", "v3-next"}
+    assert triggers["push"]["branches"] == ["v3", "v3-next"]
     names = {job["name"] for job in payload["jobs"].values()}
     assert names == {
         "v3-contracts",
@@ -46,7 +46,7 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "validate-config configs/v3/smolvla_conformance_cpu.yaml" in workflow
 
 
-def test_smolvla_release_dispatcher_is_manual_self_hosted_and_fail_closed() -> None:
+def test_v31_smolvla_dispatcher_is_manual_self_hosted_and_fail_closed() -> None:
     path = Path(".github/workflows/v3-alpha2-release-dispatch.yml")
     payload = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     assert set(payload["on"]) == {"workflow_dispatch"}
@@ -82,6 +82,22 @@ def test_smolvla_release_dispatcher_is_manual_self_hosted_and_fail_closed() -> N
     assert "verification']['verified'] is True" in workflow
     assert "gh release create" in workflow and "--draft --prerelease" in workflow
     assert "nvidia-smi" in workflow
+    assert "v3.1.0-alpha.1" in workflow
+
+
+def test_alpha2_code_release_dispatcher_is_hosted_and_weight_free() -> None:
+    path = Path(".github/workflows/v3-code-release-dispatch.yml")
+    payload = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    assert set(payload["on"]) == {"workflow_dispatch"}
+    assert set(payload["jobs"]) == {"candidate", "finalize"}
+    assert payload["jobs"]["candidate"]["runs-on"] == "ubuntu-latest"
+    assert payload["jobs"]["finalize"]["runs-on"] == "ubuntu-latest"
+    workflow = path.read_text(encoding="utf-8")
+    assert "run_v3_code_release.py" in workflow
+    assert "smolvla-conformance-status.json" in workflow
+    assert "weight_network_accessed': False" in workflow
+    assert "v3.0.0-alpha.2" in workflow
+    assert "self-hosted" not in workflow
 
 
 def test_gpu_and_release_locks_pin_authoritative_platforms() -> None:

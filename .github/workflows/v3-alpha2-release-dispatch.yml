@@ -1,4 +1,4 @@
-name: V3 Alpha 2 Release Dispatcher
+name: V3.1 SmolVLA Validation Dispatcher
 
 on:
   workflow_dispatch:
@@ -435,7 +435,7 @@ jobs:
           set -euo pipefail
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$GPU_RUN_ID" =~ ^[1-9][0-9]*$ ]]
-          test "$RELEASE_TAG" = v3.0.0-alpha.2
+          test "$RELEASE_TAG" = v3.1.0-alpha.1
           test "${{ inputs.source_ref }}" = "$RELEASE_TAG"
       - uses: actions/checkout@v4
         with:
@@ -513,7 +513,7 @@ jobs:
           fi
           gh release create "$RELEASE_TAG" \
             --draft --prerelease \
-            --title "LunaVLA v3.0.0-alpha.2 — unified policy ladder" \
+            --title "LunaVLA v3.1.0-alpha.1 — unified policy ladder" \
             --notes "Interface and training-chain prerelease. No policy, modality, task-performance, or robot-deployment claim." \
             "$RUNNER_TEMP/release-assets/dist/"* \
             "$RUNNER_TEMP/release-assets/gpu-validation-manifest.json" \

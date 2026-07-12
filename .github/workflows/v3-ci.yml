@@ -2,9 +2,9 @@ name: V3 Alpha CPU
 
 on:
   push:
-    branches: [v3]
+    branches: [v3, v3-next]
   pull_request:
-    branches: [v3, main]
+    branches: [v3, v3-next, main]
   workflow_dispatch:
 
 permissions:
@@ -29,9 +29,9 @@ jobs:
       - run: uv sync --frozen --extra dev
       - name: Static and contract checks
         run: |
-          uv run --no-sync ruff check lunavla/v3 tests_v3 scripts/check_v3_alpha.py scripts/run_v3_runner_preflight.py
-          uv run --no-sync mypy lunavla/v3 scripts/check_v3_alpha.py scripts/run_v3_runner_preflight.py
-          uv run --no-sync python -m compileall -q lunavla/v3 scripts/check_v3_alpha.py scripts/run_v3_runner_preflight.py
+          uv run --no-sync ruff check lunavla/v3 tests_v3 scripts/check_v3_alpha.py scripts/run_v3_runner_preflight.py scripts/run_v3_code_release.py
+          uv run --no-sync mypy lunavla/v3 scripts/check_v3_alpha.py scripts/run_v3_runner_preflight.py scripts/run_v3_code_release.py
+          uv run --no-sync python -m compileall -q lunavla/v3 scripts/check_v3_alpha.py scripts/run_v3_runner_preflight.py scripts/run_v3_code_release.py
           uv run --no-sync python scripts/check_v3_alpha.py
           uv run --no-sync pytest tests_v3/test_contracts.py tests_v3/test_config_migration.py
 
