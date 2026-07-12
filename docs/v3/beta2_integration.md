@@ -9,7 +9,7 @@ opening a benchmark, modality, policy-ranking, or robot-deployment claim.
 | --- | --- | --- |
 | LeRobot | `0.6.0@30da8e687a6dfc617fcd94afc367ac7071c376ce` | Public dataset, policy and environment APIs |
 | PushT | `lerobot/pusht@b1c3ecbae7f244acc039a3dbc255a00dad1372b9` | Episode 0, 161 decoded frames, 12 MiB cap |
-| LIBERO | `lerobot/libero@a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4` | Spatial task IDs 0–3, minimum episode per task, 384 MiB cap |
+| LIBERO | `lerobot/libero@a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4` | Spatial suite-local IDs 0–3 mapped by pinned language to dataset-global IDs 34/37/38/35 and minimum episodes 1272/1281/1283/1278, 384 MiB cap |
 | LIBERO runtime | `hf-libero==0.1.4` | Linux x64, headless EGL, init-state ID 0 |
 
 The runtime follows the [LeRobot LIBERO task-ID interface](https://huggingface.co/docs/lerobot/libero)
@@ -38,7 +38,8 @@ must report Torch `2.11.0+cpu`, torchvision `0.26.0+cpu`, LeRobot `0.6.0`, hf-li
 no CUDA, NCCL or Triton packages. The workflow then:
 
 1. validates Hub revision, file identity and download caps;
-2. decodes PushT episode 0 and one deterministic episode for each LIBERO task ID 0–3;
+2. decodes PushT episode 0 and one deterministic episode for each suite-local LIBERO task ID
+   0–3 after verifying the pinned global dataset-task/language mapping;
 3. performs reset, three steps and close for both environment families;
 4. runs one finite ACT and Diffusion optimizer step through `EngineV3` for each task family;
 5. uploads only configs, inventories, metrics, locks and integration manifests.

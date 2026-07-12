@@ -56,7 +56,7 @@ dataset:
       repo_id: lerobot/libero
       revision: a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4
       license: Apache-2.0
-      task_ids: [0, 1, 2, 3]
+      task_ids: [34, 37, 38, 35]
       episodes: []
       episode_selection: minimum_per_task
       video_backend: pyav

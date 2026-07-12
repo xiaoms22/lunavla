@@ -14,7 +14,11 @@ import yaml
 from lunavla.contracts import normalize_device
 
 from .contracts import EmbodimentSpec, FeatureSchema
-from .integration_contracts import ExternalDatasetSpecV1, SimulationTaskSpecV1
+from .integration_contracts import (
+    LIBERO_SPATIAL_DATASET_TASK_IDS,
+    ExternalDatasetSpecV1,
+    SimulationTaskSpecV1,
+)
 
 
 CONFIG_SCHEMA_VERSION = 3
@@ -621,9 +625,11 @@ class ExperimentConfig:
                     raise ValueError("LIBERO-Spatial requires task IDs 0-3 and init-state ID 0")
                 if (
                     external_spec.repo_id != "lerobot/libero"
-                    or external_spec.task_ids != simulation.task_ids
+                    or external_spec.task_ids != LIBERO_SPATIAL_DATASET_TASK_IDS
                 ):
-                    raise ValueError("LIBERO source task IDs must match the simulation task IDs")
+                    raise ValueError(
+                        "LIBERO source global task IDs must match the pinned Spatial mapping"
+                    )
 
         feature_schema = FeatureSchema.from_mapping(_mapping(root["features"], "features"))
         embodiment_section = sections["embodiment"]

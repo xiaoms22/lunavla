@@ -11,6 +11,9 @@ import pytest
 from lunavla.v3 import (
     ExperimentConfig,
     IntegrationRuntime,
+    LIBERO_SPATIAL_DATASET_TASK_IDS,
+    LIBERO_SPATIAL_MIN_EPISODES,
+    LIBERO_SPATIAL_TASK_LANGUAGES,
     LeRobotDatasetSourceV3,
     SourceFileRecordV1,
     SourceInventoryV1,
@@ -167,3 +170,48 @@ def test_multi_camera_act_payload_consumes_every_declared_camera() -> None:
     assert config.training["device"] == "cpu"
     assert derived.training["device"] == "cpu"
     assert workflow._policy_payload(config, "diffusion_v3").training["device"] == "cpu"
+
+
+def test_libero_metadata_maps_suite_languages_to_global_dataset_tasks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class Tasks:
+        def iterrows(self) -> Any:
+            return iter(
+                (
+                    language,
+                    SimpleNamespace(task_index=task),
+                )
+                for task, language in zip(
+                    LIBERO_SPATIAL_DATASET_TASK_IDS,
+                    LIBERO_SPATIAL_TASK_LANGUAGES,
+                    strict=True,
+                )
+            )
+
+    fake_metadata = SimpleNamespace(
+        tasks=Tasks(),
+        episodes=[{"episode_index": episode} for episode in LIBERO_SPATIAL_MIN_EPISODES],
+    )
+    module = SimpleNamespace(LeRobotDatasetMetadata=lambda *_args: fake_metadata)
+    original_import = workflow.importlib.import_module
+    monkeypatch.setattr(
+        workflow.importlib,
+        "import_module",
+        lambda name: module
+        if name == "lerobot.datasets.dataset_metadata"
+        else original_import(name),
+    )
+    spec = ExperimentConfig.load(
+        "configs/v3/beta2_libero_integration.yaml"
+    ).external_dataset_spec
+    assert spec is not None
+    rows, tasks = workflow._metadata_for_libero(tmp_path, spec)
+    assert [row["episode_index"] for row in rows] == list(LIBERO_SPATIAL_MIN_EPISODES)
+    assert tasks == dict(
+        zip(
+            LIBERO_SPATIAL_DATASET_TASK_IDS,
+            LIBERO_SPATIAL_TASK_LANGUAGES,
+            strict=True,
+        )
+    )

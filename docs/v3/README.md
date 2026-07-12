@@ -39,7 +39,8 @@ Implemented in the current candidate:
 - four byte-reproducible 16×16 synthetic PNG fixtures with a hash manifest. Real-data thumbnails
   remain prohibited.
 - config contract revision 3 plus strict `ExternalDatasetSpecV1`, `SimulationTaskSpecV1`, and
-  `IntegrationManifestV1` contracts for pinned PushT and LIBERO-Spatial task IDs 0–3;
+  `IntegrationManifestV1` contracts for pinned PushT and LIBERO-Spatial suite-local task IDs
+  0–3;
 - LeRobot v3 frame mapping, two-camera LIBERO state/action mapping, source download caps, and
   exactly-once PushT/LIBERO environment adapters;
 - `source-preflight`, `integration-run`, and `integration-verify` commands, with an offline PR

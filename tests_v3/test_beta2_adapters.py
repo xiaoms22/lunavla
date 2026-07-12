@@ -9,6 +9,9 @@ import pytest
 
 from lunavla.v3 import (
     ExperimentConfig,
+    LIBERO_SPATIAL_DATASET_TASK_IDS,
+    LIBERO_SPATIAL_MIN_EPISODES,
+    LIBERO_SPATIAL_TASK_LANGUAGES,
     LeRobotDatasetSourceV3,
     LiberoSpatialEnvV3,
     PushTEnvV3,
@@ -100,6 +103,52 @@ def test_libero_selects_minimum_distinct_episode_and_validates_language() -> Non
     duplicate[1] = dict(duplicate[1], episode_index=10)
     with pytest.raises(ValueError, match="duplicate episode_index"):
         select_minimum_episode_per_task(duplicate, task_ids=(0, 1, 2, 3))
+
+
+def test_libero_source_binds_global_tasks_to_pinned_spatial_episodes() -> None:
+    config = ExperimentConfig.load("configs/v3/beta2_libero_integration.yaml")
+    metadata = [
+        {"task_index": task, "episode_index": episode, "task": language}
+        for task, episode, language in zip(
+            LIBERO_SPATIAL_DATASET_TASK_IDS,
+            LIBERO_SPATIAL_MIN_EPISODES,
+            LIBERO_SPATIAL_TASK_LANGUAGES,
+            strict=True,
+        )
+    ]
+    rows = [
+        {
+            "episode_index": episode,
+            "frame_index": 0,
+            "task_index": task,
+            "observation.images.image": np.zeros((256, 256, 3), dtype=np.uint8),
+            "observation.images.image2": np.ones((256, 256, 3), dtype=np.uint8),
+            "observation.state": np.zeros(8, dtype=np.float32),
+            "action": np.zeros(7, dtype=np.float32),
+        }
+        for task, episode in zip(
+            LIBERO_SPATIAL_DATASET_TASK_IDS, LIBERO_SPATIAL_MIN_EPISODES, strict=True
+        )
+    ]
+    source = LeRobotDatasetSourceV3(
+        config.external_dataset_spec,  # type: ignore[arg-type]
+        config.feature_schema,
+        dataset_factory=lambda **_: rows,
+        metadata=metadata,
+        expected_task_languages=dict(
+            zip(
+                LIBERO_SPATIAL_DATASET_TASK_IDS,
+                LIBERO_SPATIAL_TASK_LANGUAGES,
+                strict=True,
+            )
+        ),
+    )
+    assert {record.episode_id for record in source.load()} == set(
+        LIBERO_SPATIAL_MIN_EPISODES
+    )
+    rows[0]["task_index"] = 0
+    with pytest.raises(ValueError, match="task mapping drift"):
+        source.load()
 
 
 class _FakeEnv:

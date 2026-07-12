@@ -9,6 +9,7 @@ from lunavla.v3 import (
     ExperimentConfig,
     ExternalDatasetSpecV1,
     IntegrationManifestV1,
+    LIBERO_SPATIAL_DATASET_TASK_IDS,
     SimulationTaskSpecV1,
 )
 
@@ -57,7 +58,7 @@ def test_libero_task_subset_and_feature_contract_are_pinned() -> None:
     config = ExperimentConfig.load("configs/v3/beta2_libero_integration.yaml")
     source = config.external_dataset_spec
     simulation = config.simulation_task_spec
-    assert source is not None and source.task_ids == (0, 1, 2, 3)
+    assert source is not None and source.task_ids == LIBERO_SPATIAL_DATASET_TASK_IDS
     assert simulation is not None and simulation.init_state_ids == (0,)
     features = config.feature_schema
     assert tuple(item.name for item in features.by_role("image")) == (

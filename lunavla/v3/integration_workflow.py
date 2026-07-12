@@ -23,6 +23,9 @@ from .engine import EngineV3
 from .integration_contracts import (
     CONNECTIVITY_STATEMENT,
     LIBERO_REPO_ID,
+    LIBERO_SPATIAL_DATASET_TASK_IDS,
+    LIBERO_SPATIAL_MIN_EPISODES,
+    LIBERO_SPATIAL_TASK_LANGUAGES,
     PUSHT_REPO_ID,
     ExternalDatasetSpecV1,
     IntegrationManifestV1,
@@ -150,9 +153,13 @@ def _selected_hub_paths(spec: ExternalDatasetSpecV1, siblings: Sequence[Any]) ->
             "meta/info.json",
             "meta/tasks.parquet",
             "meta/episodes/chunk-000/file-000.parquet",
-            "data/chunk-000/file-000.parquet",
-            "videos/observation.images.image/chunk-000/file-000.mp4",
-            "videos/observation.images.image2/chunk-000/file-000.mp4",
+            "data/chunk-000/file-309.parquet",
+            "data/chunk-000/file-310.parquet",
+            "data/chunk-000/file-311.parquet",
+            "videos/observation.images.image/chunk-000/file-027.mp4",
+            "videos/observation.images.image/chunk-000/file-028.mp4",
+            "videos/observation.images.image2/chunk-000/file-027.mp4",
+            "videos/observation.images.image2/chunk-000/file-028.mp4",
         )
     missing = sorted(set(required) - set(by_path))
     if missing:
@@ -219,14 +226,30 @@ def preflight_source(
 def _metadata_for_libero(cache_dir: Path, spec: ExternalDatasetSpecV1) -> tuple[list[dict[str, Any]], dict[int, str]]:
     module = importlib.import_module("lerobot.datasets.dataset_metadata")
     metadata = module.LeRobotDatasetMetadata(spec.repo_id, cache_dir, spec.revision)
-    rows = [dict(metadata.episodes[index]) for index in range(len(metadata.episodes))]
     tasks = {
         int(row.task_index): str(task)
         for task, row in metadata.tasks.iterrows()
         if int(row.task_index) in spec.task_ids
     }
     if set(tasks) != set(spec.task_ids):
-        raise ValueError("LeRobot metadata does not contain the pinned LIBERO task IDs")
+        raise ValueError("LeRobot metadata does not contain the pinned global LIBERO task IDs")
+    expected_languages = dict(
+        zip(LIBERO_SPATIAL_DATASET_TASK_IDS, LIBERO_SPATIAL_TASK_LANGUAGES, strict=True)
+    )
+    if tasks != expected_languages:
+        raise ValueError("LeRobot global task language mapping drifted from LIBERO-Spatial")
+    episode_metadata = {
+        int(row["episode_index"]): dict(row)
+        for row in (metadata.episodes[index] for index in range(len(metadata.episodes)))
+    }
+    task_to_episode = dict(
+        zip(LIBERO_SPATIAL_DATASET_TASK_IDS, LIBERO_SPATIAL_MIN_EPISODES, strict=True)
+    )
+    rows: list[dict[str, Any]] = []
+    for task, episode in task_to_episode.items():
+        if episode not in episode_metadata:
+            raise ValueError("LeRobot metadata is missing a pinned minimum Spatial episode")
+        rows.append({"task_index": task, "episode_index": episode, "task": tasks[task]})
     return rows, tasks
 
 
@@ -368,6 +391,9 @@ def run_environment_smoke(config: ExperimentConfig) -> dict[str, Any]:
     else:
         module = importlib.import_module("lerobot.envs.libero")
         suite = module._get_suite("libero_spatial")
+        suite_languages = tuple(str(suite.get_task(task).language) for task in spec.task_ids)
+        if suite_languages != LIBERO_SPATIAL_TASK_LANGUAGES:
+            raise ValueError("hf-libero Spatial task language mapping drift")
 
         def factory(**kwargs: Any) -> Any:
             return module.LiberoEnv(

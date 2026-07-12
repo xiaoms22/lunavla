@@ -13,7 +13,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .contracts import EpisodeRecordV3, FeatureSchema, ObservationV3, TransitionV3
-from .integration_contracts import ExternalDatasetSpecV1, SimulationTaskSpecV1
+from .integration_contracts import LIBERO_REPO_ID, ExternalDatasetSpecV1, SimulationTaskSpecV1
 
 
 Array = npt.NDArray[np.generic]
@@ -237,10 +237,17 @@ class LeRobotDatasetSourceV3:
         )
         grouped: dict[int, list[Mapping[str, Any]]] = defaultdict(list)
         selected = set(self.selection.episodes)
+        task_by_episode = {
+            episode: task for task, episode in self.selection.task_to_episode.items()
+        }
         for row in rows:
             episode = _scalar_int(_lookup(row, "episode_index"), "episode_index")
             if episode not in selected:
                 raise ValueError("dataset factory returned an unselected episode")
+            if self.spec.repo_id == LIBERO_REPO_ID:
+                task = _scalar_int(_lookup(row, "task_index"), "task_index")
+                if task != task_by_episode[episode]:
+                    raise ValueError("LIBERO episode task mapping drift")
             grouped[episode].append(row)
         if set(grouped) != selected:
             raise ValueError("dataset factory did not return every selected episode")

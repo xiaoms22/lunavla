@@ -15,7 +15,17 @@ PUSHT_REPO_ID = "lerobot/pusht"
 PUSHT_REVISION = "b1c3ecbae7f244acc039a3dbc255a00dad1372b9"
 LIBERO_REPO_ID = "lerobot/libero"
 LIBERO_REVISION = "a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4"
+# Environment task IDs are suite-local.  LeRobot's combined LIBERO dataset
+# uses a separate global task index; bind the two by pinned language identity.
 LIBERO_SPATIAL_TASK_IDS = (0, 1, 2, 3)
+LIBERO_SPATIAL_DATASET_TASK_IDS = (34, 37, 38, 35)
+LIBERO_SPATIAL_MIN_EPISODES = (1272, 1281, 1283, 1278)
+LIBERO_SPATIAL_TASK_LANGUAGES = (
+    "pick up the black bowl between the plate and the ramekin and place it on the plate",
+    "pick up the black bowl next to the ramekin and place it on the plate",
+    "pick up the black bowl from table center and place it on the plate",
+    "pick up the black bowl on the cookie box and place it on the plate",
+)
 PUSHT_MAX_DOWNLOAD_BYTES = 12 * 1024 * 1024
 LIBERO_MAX_DOWNLOAD_BYTES = 384 * 1024 * 1024
 CONNECTIVITY_STATEMENT = "Real public data and simulation adapter paths are connected."
@@ -149,7 +159,7 @@ class ExternalDatasetSpecV1:
             expected = (
                 LIBERO_REVISION,
                 "apache-2.0",
-                LIBERO_SPATIAL_TASK_IDS,
+                LIBERO_SPATIAL_DATASET_TASK_IDS,
                 (),
                 "minimum_per_task",
                 LIBERO_MAX_DOWNLOAD_BYTES,
