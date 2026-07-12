@@ -19,9 +19,12 @@ from .migration import migrate_v2_mapping
 from .profiling import run_profile, verify_profile
 from .stable_contracts import (
     StableEvidenceDesignV1,
+    StableEvidenceRowV1,
     StableEvidenceSummaryV1,
+    StableRepeatSentinelV1,
     StableReleaseCandidateV1,
     validate_stable_design_set,
+    verify_stable_evidence_bundle,
 )
 
 
@@ -30,6 +33,13 @@ def _json_mapping(path: str | Path) -> dict[str, object]:
     if not isinstance(value, dict):
         raise TypeError(f"JSON document must contain a mapping: {path}")
     return value
+
+
+def _json_rows(path: str | Path) -> tuple[StableEvidenceRowV1, ...]:
+    value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(value, list):
+        raise TypeError(f"JSON document must contain a row list: {path}")
+    return tuple(StableEvidenceRowV1.from_mapping(item) for item in value)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -69,6 +79,8 @@ def _parser() -> argparse.ArgumentParser:
     stable_designs.add_argument("designs", nargs="+")
     stable_evidence = subparsers.add_parser("verify-stable-evidence")
     stable_evidence.add_argument("design")
+    stable_evidence.add_argument("rows")
+    stable_evidence.add_argument("sentinel")
     stable_evidence.add_argument("summary")
     stable_candidate = subparsers.add_parser("verify-stable-candidate")
     stable_candidate.add_argument("candidate")
@@ -145,8 +157,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if arguments.command == "verify-stable-evidence":
         design = StableEvidenceDesignV1.load(arguments.design)
+        row_records = _json_rows(arguments.rows)
+        sentinel = StableRepeatSentinelV1.from_mapping(_json_mapping(arguments.sentinel))
         summary = StableEvidenceSummaryV1.from_mapping(_json_mapping(arguments.summary))
-        summary.verify_design(design)
+        verify_stable_evidence_bundle(design, row_records, sentinel, summary)
         print(
             json.dumps(
                 {

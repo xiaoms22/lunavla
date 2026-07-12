@@ -41,7 +41,9 @@ from lunavla.v3 import (
     TrainStepResultV3,
     TransitionV3,
     StableEvidenceDesignV1,
+    StableEvidenceRowV1,
     StableEvidenceSummaryV1,
+    StableRepeatSentinelV1,
     StableReleaseCandidateV1,
 )
 
@@ -91,7 +93,9 @@ PUBLIC_TYPES = {
     "FailureRecordV1": FailureRecordV1,
     "EvidenceManifestV2": EvidenceManifestV2,
     "StableEvidenceDesignV1": StableEvidenceDesignV1,
+    "StableEvidenceRowV1": StableEvidenceRowV1,
     "StableEvidenceSummaryV1": StableEvidenceSummaryV1,
+    "StableRepeatSentinelV1": StableRepeatSentinelV1,
     "StableReleaseCandidateV1": StableReleaseCandidateV1,
 }
 
