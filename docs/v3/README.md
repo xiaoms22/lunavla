@@ -43,6 +43,9 @@ Implemented in the current candidate:
 - predeclared CPU teaching-evidence contracts for exact 200-row policy, 600-row route and 750-row
   prompt-intervention matrices. These contracts verify structure and provenance; they do not
   assert that the five-seed studies or a stable release have run.
+- `stable-run` and `stable-verify` execute each frozen study through the unified Engine, rerun the
+  complete seed-11 subset, atomically preserve generations, and independently reject row, tree,
+  statistics or sentinel tampering.
 
 The v3.0 stable gate is intentionally fixture-only: the exact 1,550-row CPU evidence matrix is
 required, while independently verified real PushT/LIBERO connectivity remains a non-blocking

@@ -14,6 +14,8 @@ from lunavla.v3.stable_contracts import (
     validate_stable_design_set,
     verify_stable_evidence_bundle,
 )
+from lunavla.v3.stable_executor import TeachingFixtureStableExecutor
+from lunavla.v3.stable_workflow import run_stable_study, verify_stable_study
 
 
 def _mapping(path: str | Path) -> Mapping[str, Any]:
@@ -33,6 +35,12 @@ def _parser() -> argparse.ArgumentParser:
     summary.add_argument("rows")
     summary.add_argument("sentinel")
     summary.add_argument("summary")
+    run_study = commands.add_parser("run-study")
+    run_study.add_argument("design")
+    run_study.add_argument("--out", required=True)
+    run_study.add_argument("--overwrite", action="store_true")
+    verify_study = commands.add_parser("verify-study")
+    verify_study.add_argument("output_dir")
     candidate = commands.add_parser("verify-candidate")
     candidate.add_argument("candidate")
     return parser
@@ -61,6 +69,40 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "study_id": summary.study_id,
                     "release_eligible": summary.release_eligible,
                     "gate_reasons": list(summary.gate_reasons),
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "run-study":
+        output = run_stable_study(
+            arguments.design,
+            arguments.out,
+            TeachingFixtureStableExecutor(),
+            overwrite=arguments.overwrite,
+        )
+        summary = verify_stable_study(output)
+        print(
+            json.dumps(
+                {
+                    "output_dir": str(output),
+                    "study_id": summary.study_id,
+                    "rows": summary.observed_rows,
+                    "release_eligible": summary.release_eligible,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "verify-study":
+        summary = verify_stable_study(arguments.output_dir)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "study_id": summary.study_id,
+                    "rows": summary.observed_rows,
+                    "release_eligible": summary.release_eligible,
                 },
                 sort_keys=True,
             )

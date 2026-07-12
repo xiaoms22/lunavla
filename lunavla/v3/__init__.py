@@ -125,6 +125,11 @@ from .stable_contracts import (
     verify_stable_evidence_bundle,
     wilson_interval,
 )
+from .stable_workflow import (
+    StableExecutionBatchV1,
+    run_stable_study,
+    verify_stable_study,
+)
 
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
@@ -191,6 +196,7 @@ __all__ = [
     "StableEvidenceDesignV1",
     "StableEvidenceRowV1",
     "StableEvidenceSummaryV1",
+    "StableExecutionBatchV1",
     "StableRepeatSentinelV1",
     "StableReleaseCandidateV1",
     "RC_TAG",
@@ -214,6 +220,7 @@ __all__ = [
     "run_diagnostic",
     "run_manifest_from_mapping",
     "run_profile",
+    "run_stable_study",
     "build_portfolio",
     "split_episode_ids",
     "verify_run_directory",
@@ -228,6 +235,7 @@ __all__ = [
     "stable_row_inventory_sha256",
     "build_stable_evidence_summary",
     "verify_stable_evidence_bundle",
+    "verify_stable_study",
     "wilson_interval",
     "clustered_paired_bootstrap",
 ]
