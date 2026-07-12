@@ -7,9 +7,12 @@ from typing import Any, Mapping, Sequence
 
 from lunavla.v3.stable_contracts import (
     StableEvidenceDesignV1,
+    StableEvidenceRowV1,
     StableEvidenceSummaryV1,
+    StableRepeatSentinelV1,
     StableReleaseCandidateV1,
     validate_stable_design_set,
+    verify_stable_evidence_bundle,
 )
 
 
@@ -27,6 +30,8 @@ def _parser() -> argparse.ArgumentParser:
     designs.add_argument("designs", nargs="+")
     summary = commands.add_parser("verify-evidence-summary")
     summary.add_argument("design")
+    summary.add_argument("rows")
+    summary.add_argument("sentinel")
     summary.add_argument("summary")
     candidate = commands.add_parser("verify-candidate")
     candidate.add_argument("candidate")
@@ -42,8 +47,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if arguments.command == "verify-evidence-summary":
         design = StableEvidenceDesignV1.load(arguments.design)
+        row_values = json.loads(Path(arguments.rows).read_text(encoding="utf-8"))
+        if not isinstance(row_values, list):
+            raise TypeError("stable evidence rows JSON must contain a list")
+        row_records = tuple(StableEvidenceRowV1.from_mapping(item) for item in row_values)
+        sentinel = StableRepeatSentinelV1.from_mapping(_mapping(arguments.sentinel))
         summary = StableEvidenceSummaryV1.from_mapping(_mapping(arguments.summary))
-        summary.verify_design(design)
+        verify_stable_evidence_bundle(design, row_records, sentinel, summary)
         print(
             json.dumps(
                 {

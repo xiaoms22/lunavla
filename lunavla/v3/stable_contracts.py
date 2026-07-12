@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+import numpy as np
+
 from .artifacts import ArtifactHashRecordV1
 
 
@@ -344,6 +346,163 @@ class StableEvidenceSummaryV1:
 
 
 @dataclass(frozen=True)
+class StableEvidenceRowV1:
+    study_id: str
+    policy: str
+    train_seed: int
+    task_id: int | None
+    evaluation_id: int
+    route: str | None
+    intervention: str | None
+    git_sha: str
+    dependency_lock_sha256: str
+    upstream_identity_sha256: str
+    run_manifest_sha256: str
+    metrics_sha256: str
+    success: bool
+    final_metric: float
+    smoothness: float
+    first_action_mse: float | None
+    latency_ms: float
+    peak_memory_bytes: int
+    failure_count: int
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if _integer(self.schema_version, "stable evidence row schema_version", positive=True) != 1:
+            raise ValueError("StableEvidenceRowV1 schema_version must be integer 1")
+        if self.study_id not in _STUDIES:
+            raise ValueError("stable evidence row has an unknown study_id")
+        if not isinstance(self.policy, str) or not self.policy.strip():
+            raise ValueError("stable evidence row policy must be a non-empty string")
+        object.__setattr__(self, "policy", self.policy.strip())
+        object.__setattr__(self, "train_seed", _integer(self.train_seed, "row train_seed"))
+        if self.task_id is not None:
+            object.__setattr__(self, "task_id", _integer(self.task_id, "row task_id"))
+        object.__setattr__(self, "evaluation_id", _integer(self.evaluation_id, "row evaluation_id"))
+        for name in ("route", "intervention"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(f"row {name} must be null or a non-empty string")
+            if value is not None:
+                object.__setattr__(self, name, value.strip())
+        object.__setattr__(self, "git_sha", _git_sha(self.git_sha, "row git_sha"))
+        for name in (
+            "dependency_lock_sha256",
+            "upstream_identity_sha256",
+            "run_manifest_sha256",
+            "metrics_sha256",
+        ):
+            object.__setattr__(self, name, _sha256(getattr(self, name), name))
+        _boolean(self.success, "row success")
+        for name in ("final_metric", "smoothness", "latency_ms"):
+            object.__setattr__(self, name, _finite(getattr(self, name), name))
+        if self.first_action_mse is not None:
+            object.__setattr__(self, "first_action_mse", _finite(self.first_action_mse, "first_action_mse"))
+        object.__setattr__(self, "peak_memory_bytes", _integer(self.peak_memory_bytes, "peak_memory_bytes"))
+        object.__setattr__(self, "failure_count", _integer(self.failure_count, "failure_count"))
+
+    @property
+    def matrix_key(self) -> tuple[Any, ...]:
+        return (
+            self.policy,
+            self.train_seed,
+            self.task_id,
+            self.evaluation_id,
+            self.route,
+            self.intervention,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "study_id": self.study_id,
+            "policy": self.policy,
+            "train_seed": self.train_seed,
+            "task_id": self.task_id,
+            "evaluation_id": self.evaluation_id,
+            "route": self.route,
+            "intervention": self.intervention,
+            "git_sha": self.git_sha,
+            "dependency_lock_sha256": self.dependency_lock_sha256,
+            "upstream_identity_sha256": self.upstream_identity_sha256,
+            "run_manifest_sha256": self.run_manifest_sha256,
+            "metrics_sha256": self.metrics_sha256,
+            "success": self.success,
+            "final_metric": self.final_metric,
+            "smoothness": self.smoothness,
+            "first_action_mse": self.first_action_mse,
+            "latency_ms": self.latency_ms,
+            "peak_memory_bytes": self.peak_memory_bytes,
+            "failure_count": self.failure_count,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "StableEvidenceRowV1":
+        return cls(**_exact(value, set(cls.__dataclass_fields__), "stable evidence row"))
+
+
+@dataclass(frozen=True)
+class StableRepeatSentinelV1:
+    study_id: str
+    train_seed: int
+    source_row_inventory_sha256: str
+    repeat_row_inventory_sha256: str
+    source_checkpoint_sha256: str
+    repeat_checkpoint_sha256: str
+    source_metrics_sha256: str
+    repeat_metrics_sha256: str
+    verified: bool
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if _integer(self.schema_version, "repeat sentinel schema_version", positive=True) != 1:
+            raise ValueError("StableRepeatSentinelV1 schema_version must be integer 1")
+        if self.study_id not in _STUDIES:
+            raise ValueError("repeat sentinel has an unknown study_id")
+        if _integer(self.train_seed, "repeat sentinel train_seed") != 11:
+            raise ValueError("stable repeat sentinel must use train seed 11")
+        for name in (
+            "source_row_inventory_sha256",
+            "repeat_row_inventory_sha256",
+            "source_checkpoint_sha256",
+            "repeat_checkpoint_sha256",
+            "source_metrics_sha256",
+            "repeat_metrics_sha256",
+        ):
+            object.__setattr__(self, name, _sha256(getattr(self, name), name))
+        _boolean(self.verified, "repeat sentinel verified")
+        equal = (
+            self.source_row_inventory_sha256 == self.repeat_row_inventory_sha256
+            and self.source_checkpoint_sha256 == self.repeat_checkpoint_sha256
+            and self.source_metrics_sha256 == self.repeat_metrics_sha256
+        )
+        if self.verified != equal:
+            raise ValueError("repeat sentinel verified must reflect exact row/checkpoint/metrics hashes")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "study_id": self.study_id,
+            "train_seed": self.train_seed,
+            "source_row_inventory_sha256": self.source_row_inventory_sha256,
+            "repeat_row_inventory_sha256": self.repeat_row_inventory_sha256,
+            "source_checkpoint_sha256": self.source_checkpoint_sha256,
+            "repeat_checkpoint_sha256": self.repeat_checkpoint_sha256,
+            "source_metrics_sha256": self.source_metrics_sha256,
+            "repeat_metrics_sha256": self.repeat_metrics_sha256,
+            "verified": self.verified,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "StableRepeatSentinelV1":
+        return cls(**_exact(value, set(cls.__dataclass_fields__), "stable repeat sentinel"))
+
+    def sha256(self) -> str:
+        return _stable_hash(self.to_dict())
+
+
+@dataclass(frozen=True)
 class StableReleaseCandidateV1:
     expected_tag: str
     package_version: str
@@ -480,3 +639,176 @@ def validate_stable_design_set(designs: Sequence[StableEvidenceDesignV1]) -> Map
         raise ValueError("stable evidence design set must contain exactly 2,100 evaluation rows")
     return rows
 
+
+def expected_stable_matrix_keys(design: StableEvidenceDesignV1) -> tuple[tuple[Any, ...], ...]:
+    design.validate_stable_matrix()
+    task_ids: tuple[int | None, ...] = design.task_ids or (None,)
+    routes: tuple[str | None, ...] = design.routes or (None,)
+    interventions: tuple[str | None, ...] = design.interventions or (None,)
+    return tuple(
+        (
+            policy,
+            train_seed,
+            task_id,
+            evaluation_id,
+            route,
+            intervention,
+        )
+        for policy in design.policies
+        for train_seed in design.train_seeds
+        for task_id in task_ids
+        for evaluation_id in design.evaluation_ids
+        for route in routes
+        for intervention in interventions
+    )
+
+
+def build_stable_evidence_summary(
+    design: StableEvidenceDesignV1,
+    rows: Sequence[StableEvidenceRowV1],
+    sentinel: StableRepeatSentinelV1,
+    *,
+    expected_git_sha: str,
+    statistics_sha256: str,
+    claim_gate_sha256: str,
+) -> StableEvidenceSummaryV1:
+    design.validate_stable_matrix()
+    expected_git_sha = _git_sha(expected_git_sha, "expected evidence git_sha")
+    statistics_sha256 = _sha256(statistics_sha256, "statistics_sha256")
+    claim_gate_sha256 = _sha256(claim_gate_sha256, "claim_gate_sha256")
+    actual_rows = tuple(rows)
+    if any(not isinstance(row, StableEvidenceRowV1) for row in actual_rows):
+        raise TypeError("stable evidence rows must contain StableEvidenceRowV1 values")
+    expected = set(expected_stable_matrix_keys(design))
+    actual_keys = tuple(row.matrix_key for row in actual_rows)
+    actual = set(actual_keys)
+    matrix_complete = (
+        len(actual_keys) == len(actual)
+        and actual == expected
+        and all(row.study_id == design.study_id for row in actual_rows)
+    )
+    inventory = _stable_hash(
+        {
+            "rows": [
+                row.to_dict()
+                for row in sorted(
+                    actual_rows,
+                    key=lambda item: json.dumps(item.matrix_key, separators=(",", ":")),
+                )
+            ]
+        }
+    )
+    dependencies: dict[str, set[str]] = {}
+    upstreams: dict[str, set[str]] = {}
+    for row in actual_rows:
+        dependencies.setdefault(row.policy, set()).add(row.dependency_lock_sha256)
+        upstreams.setdefault(row.policy, set()).add(row.upstream_identity_sha256)
+    homogeneous = (
+        all(row.git_sha == expected_git_sha for row in actual_rows)
+        and all(len(values) == 1 for values in dependencies.values())
+        and all(len(values) == 1 for values in upstreams.values())
+    )
+    dependency_hash = _stable_hash(
+        {policy: sorted(values) for policy, values in sorted(dependencies.items())}
+    )
+    upstream_hash = _stable_hash(
+        {policy: sorted(values) for policy, values in sorted(upstreams.items())}
+    )
+    sentinel_verified = (
+        sentinel.study_id == design.study_id
+        and sentinel.train_seed == design.repeat_train_seed
+        and sentinel.source_row_inventory_sha256 == inventory
+        and sentinel.verified
+    )
+    reasons: list[str] = []
+    if not matrix_complete:
+        reasons.append("incomplete_matrix")
+    if not homogeneous:
+        reasons.append("mixed_source")
+    if not sentinel_verified:
+        reasons.append("sentinel_failure")
+    return StableEvidenceSummaryV1(
+        study_id=design.study_id,
+        design_sha256=design.sha256(),
+        git_sha=expected_git_sha,
+        dependency_lock_sha256=dependency_hash,
+        upstream_identity_sha256=upstream_hash,
+        row_inventory_sha256=inventory,
+        statistics_sha256=statistics_sha256,
+        sentinel_sha256=sentinel.sha256(),
+        expected_rows=design.expected_rows,
+        observed_rows=len(actual_rows),
+        matrix_complete=matrix_complete,
+        homogeneous_source=homogeneous,
+        sentinel_verified=sentinel_verified,
+        claim_gate_sha256=claim_gate_sha256,
+        release_eligible=not reasons,
+        gate_reasons=tuple(reasons),
+    )
+
+
+def verify_stable_evidence_bundle(
+    design: StableEvidenceDesignV1,
+    rows: Sequence[StableEvidenceRowV1],
+    sentinel: StableRepeatSentinelV1,
+    summary: StableEvidenceSummaryV1,
+) -> None:
+    recomputed = build_stable_evidence_summary(
+        design,
+        rows,
+        sentinel,
+        expected_git_sha=summary.git_sha,
+        statistics_sha256=summary.statistics_sha256,
+        claim_gate_sha256=summary.claim_gate_sha256,
+    )
+    if recomputed != summary:
+        raise ValueError("stable evidence summary does not match independently recomputed rows")
+
+
+def wilson_interval(successes: int, trials: int) -> tuple[float, float]:
+    successes = _integer(successes, "successes")
+    trials = _integer(trials, "trials", positive=True)
+    if successes > trials:
+        raise ValueError("successes cannot exceed trials")
+    z = 1.959963984540054
+    proportion = successes / trials
+    denominator = 1.0 + z * z / trials
+    center = (proportion + z * z / (2.0 * trials)) / denominator
+    radius = (
+        z
+        * math.sqrt(proportion * (1.0 - proportion) / trials + z * z / (4.0 * trials * trials))
+        / denominator
+    )
+    return (center - radius, center + radius)
+
+
+def clustered_paired_bootstrap(
+    differences_by_seed: Mapping[int, Sequence[float]],
+    *,
+    samples: int = STABLE_BOOTSTRAP_SAMPLES,
+    seed: int = STABLE_ANALYSIS_SEED,
+) -> tuple[float, float]:
+    samples = _integer(samples, "bootstrap samples", positive=True)
+    seed = _integer(seed, "bootstrap seed")
+    if not differences_by_seed:
+        raise ValueError("clustered bootstrap requires at least one training seed")
+    clusters: dict[int, np.ndarray[Any, np.dtype[np.float64]]] = {}
+    for train_seed, cluster_values in differences_by_seed.items():
+        key = _integer(train_seed, "cluster train seed")
+        array = np.asarray(tuple(cluster_values), dtype=np.float64)
+        if array.ndim != 1 or array.size == 0 or not np.isfinite(array).all():
+            raise ValueError("every bootstrap cluster must be a non-empty finite vector")
+        clusters[key] = array
+    keys = tuple(sorted(clusters))
+    rng = np.random.default_rng(seed)
+    estimates = np.empty(samples, dtype=np.float64)
+    for index in range(samples):
+        sampled_keys = rng.choice(keys, size=len(keys), replace=True)
+        sampled_values: list[float] = []
+        for key in sampled_keys:
+            cluster = clusters[int(key)]
+            selected = rng.choice(cluster, size=cluster.size, replace=True)
+            sampled_values.extend(float(item) for item in selected)
+        estimates[index] = float(np.mean(sampled_values))
+    low, high = np.quantile(estimates, (0.025, 0.975))
+    return (float(low), float(high))

@@ -126,9 +126,16 @@ from .stable_contracts import (
     STABLE_TAG,
     STABLE_TRAIN_SEEDS,
     StableEvidenceDesignV1,
+    StableEvidenceRowV1,
     StableEvidenceSummaryV1,
+    StableRepeatSentinelV1,
     StableReleaseCandidateV1,
+    build_stable_evidence_summary,
+    clustered_paired_bootstrap,
+    expected_stable_matrix_keys,
     validate_stable_design_set,
+    verify_stable_evidence_bundle,
+    wilson_interval,
 )
 
 __all__ = [
@@ -195,7 +202,9 @@ __all__ = [
     "VLAPolicyV3",
     "WeightLicenseStatusV1",
     "StableEvidenceDesignV1",
+    "StableEvidenceRowV1",
     "StableEvidenceSummaryV1",
+    "StableRepeatSentinelV1",
     "StableReleaseCandidateV1",
     "RC_TAG",
     "RC_PACKAGE_VERSION",
@@ -238,4 +247,9 @@ __all__ = [
     "verify_diagnostic_output",
     "write_diagnostic_report",
     "validate_stable_design_set",
+    "expected_stable_matrix_keys",
+    "build_stable_evidence_summary",
+    "verify_stable_evidence_bundle",
+    "wilson_interval",
+    "clustered_paired_bootstrap",
 ]
