@@ -122,6 +122,7 @@ def _private_mounts() -> tuple[str, ...]:
 
 def _verify_network() -> tuple[str, ...]:
     context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     verified: list[str] = []
     for host in NETWORK_HOSTS:
         with socket.create_connection((host, 443), timeout=10) as raw:
