@@ -104,8 +104,14 @@
     "StableEvidenceDesignV1": {
       "signature": "(study_id: 'str', train_seeds: 'tuple[int, ...]', data_seed: 'int', analysis_seed: 'int', bootstrap_samples: 'int', policies: 'tuple[str, ...]', task_ids: 'tuple[int, ...]', evaluation_ids: 'tuple[int, ...]', routes: 'tuple[str, ...]', interventions: 'tuple[str, ...]', repeat_train_seed: 'int', reduced_design: 'bool', schema_version: 'int' = 1) -> None"
     },
+    "StableEvidenceRowV1": {
+      "signature": "(study_id: 'str', policy: 'str', train_seed: 'int', task_id: 'int | None', evaluation_id: 'int', route: 'str | None', intervention: 'str | None', git_sha: 'str', dependency_lock_sha256: 'str', upstream_identity_sha256: 'str', run_manifest_sha256: 'str', metrics_sha256: 'str', success: 'bool', final_metric: 'float', smoothness: 'float', first_action_mse: 'float | None', latency_ms: 'float', peak_memory_bytes: 'int', failure_count: 'int', schema_version: 'int' = 1) -> None"
+    },
     "StableEvidenceSummaryV1": {
       "signature": "(study_id: 'str', design_sha256: 'str', git_sha: 'str', dependency_lock_sha256: 'str', upstream_identity_sha256: 'str', row_inventory_sha256: 'str', statistics_sha256: 'str', sentinel_sha256: 'str', expected_rows: 'int', observed_rows: 'int', matrix_complete: 'bool', homogeneous_source: 'bool', sentinel_verified: 'bool', claim_gate_sha256: 'str', release_eligible: 'bool', gate_reasons: 'tuple[str, ...]', schema_version: 'int' = 1) -> None"
+    },
+    "StableRepeatSentinelV1": {
+      "signature": "(study_id: 'str', train_seed: 'int', source_row_inventory_sha256: 'str', repeat_row_inventory_sha256: 'str', source_checkpoint_sha256: 'str', repeat_checkpoint_sha256: 'str', source_metrics_sha256: 'str', repeat_metrics_sha256: 'str', verified: 'bool', schema_version: 'int' = 1) -> None"
     },
     "StableReleaseCandidateV1": {
       "signature": "(expected_tag: 'str', package_version: 'str', git_sha: 'str', merge_sha: 'str', public_api_sha256: 'str', migration_report_sha256: 'str', alpha2_gpu_manifest_sha256: 'str', license_review_sha256: 'str', authoritative_runner_sha256: 'str', secondary_runner_sha256: 'str', integration_manifests: 'tuple[ArtifactHashRecordV1, ...]', evidence_manifests: 'tuple[ArtifactHashRecordV1, ...]', required_checks_sha256: 'str', sbom_sha256: 'str', provenance_sha256: 'str', checksums_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', signed_tag_verified: 'bool', post_merge_evidence: 'bool', privacy_scan_verified: 'bool', pypi_published: 'bool', schema_version: 'int' = 1) -> None"
