@@ -44,6 +44,10 @@ Implemented in the current candidate:
   prompt-intervention matrices. These contracts verify structure and provenance; they do not
   assert that the five-seed studies or a stable release have run.
 
+The v3.0 stable gate is intentionally fixture-only: the exact 1,550-row CPU evidence matrix is
+required, while independently verified real PushT/LIBERO connectivity remains a non-blocking
+supplement and cannot be substituted for performance evidence.
+
 The fake LIBERO fixture tests data shape and lifecycle only. This branch does not download real
 LeRobot or LIBERO data, download or train SmolVLA weights, or establish language, image, state-route,
 PushT, LIBERO, ACT, or Diffusion performance.

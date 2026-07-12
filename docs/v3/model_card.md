@@ -14,6 +14,10 @@ failures and confidence intervals. They do not estimate real PushT, LIBERO or ro
 threshold is not a release requirement. Claims are generated only from verified evidence and stay
 closed when intervals, task strata or provenance gates fail.
 
+Real PushT or LIBERO connectivity, when independently verified, is supplemental adapter evidence.
+It is neither required by the v3.0 stable candidate nor interchangeable with the teaching-fixture
+performance evidence.
+
 Do not use these policies for safety-critical control, autonomous deployment or decisions affecting
 people. The project does not validate real-robot safety, real-time behavior, collision avoidance or
 recovery from distribution shift.
