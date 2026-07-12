@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -75,6 +76,47 @@ def test_source_preflight_validates_pinned_hub_identity_hashes_and_limit(tmp_pat
     siblings[0].lfs.sha256 = "0" * 64
     with pytest.raises(ValueError, match="SHA-256 drift"):
         preflight_source(config, api=api, metadata_cache=tmp_path)
+
+
+def test_source_preflight_hashes_non_lfs_metadata_before_comparison(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = ExperimentConfig.load("configs/v3/beta2_pusht_integration.yaml").to_dict()
+    source_payload = payload["dataset"]["parameters"]["source"]
+    path = next(iter(source_payload["file_hashes"]))
+    local = tmp_path / "downloaded-metadata"
+    local.write_bytes(b"pinned metadata\n")
+    digest = hashlib.sha256(local.read_bytes()).hexdigest()
+    source_payload["file_hashes"][path] = digest
+    config = ExperimentConfig.from_mapping(payload)
+    spec = config.external_dataset_spec
+    assert spec is not None
+    siblings = []
+    for candidate, expected in spec.file_hashes.items():
+        if candidate == path:
+            siblings.append(SimpleNamespace(rfilename=candidate, size=local.stat().st_size, lfs=None))
+        else:
+            siblings.append(
+                SimpleNamespace(
+                    rfilename=candidate,
+                    size=1,
+                    lfs=SimpleNamespace(size=1, sha256=expected),
+                )
+            )
+    api = SimpleNamespace(
+        dataset_info=lambda *_args, **_kwargs: SimpleNamespace(
+            sha=spec.revision, siblings=siblings
+        )
+    )
+    hub = SimpleNamespace(hf_hub_download=lambda **_kwargs: str(local))
+    original_import = workflow.importlib.import_module
+    monkeypatch.setattr(
+        workflow.importlib,
+        "import_module",
+        lambda name: hub if name == "huggingface_hub" else original_import(name),
+    )
+    inventory = preflight_source(config, api=api, metadata_cache=tmp_path / "cache")
+    assert {item.path: item.sha256 for item in inventory.files}[path] == digest
 
 
 def test_integration_run_is_atomic_fail_closed_and_tamper_evident(

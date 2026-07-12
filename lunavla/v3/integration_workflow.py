@@ -194,9 +194,10 @@ def preflight_source(
         if isinstance(size, bool) or not isinstance(size, int) or size <= 0:
             raise ValueError(f"Hub file {path!r} has no valid size")
         digest = str(getattr(lfs, "sha256", ""))
-        if path in spec.file_hashes and digest != spec.file_hashes[path]:
-            raise ValueError(f"Hub SHA-256 drift for {path}")
-        if not _SHA256.fullmatch(digest):
+        if _SHA256.fullmatch(digest):
+            if path in spec.file_hashes and digest != spec.file_hashes[path]:
+                raise ValueError(f"Hub SHA-256 drift for {path}")
+        else:
             if cache is None:
                 raise ValueError(f"Hub metadata has no SHA-256 for {path}; metadata_cache is required")
             hub = importlib.import_module("huggingface_hub")
@@ -212,6 +213,8 @@ def preflight_source(
             if local.stat().st_size != size:
                 raise ValueError(f"downloaded metadata size drift for {path}")
             digest = _sha256_file(local)
+            if path in spec.file_hashes and digest != spec.file_hashes[path]:
+                raise ValueError(f"downloaded SHA-256 drift for {path}")
         records.append(SourceFileRecordV1(path, size, digest))
     inventory = SourceInventoryV1(
         spec.repo_id,
