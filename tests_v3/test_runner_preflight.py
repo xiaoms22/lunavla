@@ -108,3 +108,26 @@ def test_preflight_verify_rejects_tampered_manifest(tmp_path: Path) -> None:
 
 def test_mount_path_decoder_handles_kernel_escapes() -> None:
     assert preflight._decode_mount_path("/workspace/private\\040repo") == "/workspace/private repo"
+
+
+def test_network_preflight_enforces_tls12_or_newer(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Connection:
+        def __enter__(self) -> "Connection":
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+    class Context:
+        minimum_version: object | None = None
+
+        def wrap_socket(self, _raw: object, *, server_hostname: str) -> Connection:
+            assert server_hostname in preflight.NETWORK_HOSTS
+            return Connection()
+
+    context = Context()
+    monkeypatch.setattr(preflight.ssl, "create_default_context", lambda: context)
+    monkeypatch.setattr(preflight.socket, "create_connection", lambda *_args, **_kwargs: Connection())
+
+    assert preflight._verify_network() == preflight.NETWORK_HOSTS
+    assert context.minimum_version is preflight.ssl.TLSVersion.TLSv1_2
