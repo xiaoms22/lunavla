@@ -89,7 +89,7 @@ PUBLIC_TYPES = {
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-beta.1-draft-diagnostics",
+        "release_stage": "v3.0.0-beta.1-diagnostics-candidate",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()

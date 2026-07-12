@@ -17,7 +17,7 @@
 6. **Alpha 3 code-only release — published prerelease:** package `3.0.0a3`, hosted CPU checks,
    reproducible signed assets and a conformance-only SmolVLA status. No weight or GPU is required. The original
    license/GPU validation contracts move intact to the future v3.1 track.
-7. **Beta 1 — implemented in an unmerged Draft PR:** canonical prompt parity, declared state
+7. **Beta 1 — integration candidate:** canonical prompt parity, declared state
    routes, same-split donors, step-wise paired interventions, five-layer failure records,
    revision-3 run manifests, EvidenceManifest v2, and verified static reports. The CPU gate runs a
    40-pair NumPy route/prompt matrix and an independent four-pair ACT image-shuffle smoke with

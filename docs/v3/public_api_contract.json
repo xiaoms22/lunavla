@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_stage": "v3.0.0-beta.1-draft-diagnostics",
+  "release_stage": "v3.0.0-beta.1-diagnostics-candidate",
   "contracts": {
     "FeatureSpec": {
       "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"

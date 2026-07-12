@@ -1,9 +1,9 @@
-# LunaVLA v3 Beta 1 diagnostic framework draft
+# LunaVLA v3 Beta 1 diagnostic integration candidate
 
 This branch builds the policy and artifact contracts introduced by the Alpha 2 strategy ladder on top
 of the merged Alpha 1 foundation. It preserves the frozen v2 public API and lightweight v1.x path.
 
-Implemented in the current draft:
+Implemented in the current candidate:
 
 - named multimodal feature and embodiment contracts;
 - immutable `ObservationV3`, `TransitionV3`, and ordered episode records;
