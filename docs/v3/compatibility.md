@@ -43,5 +43,12 @@
   train/eval/deploy preprocessing parity, normalized cell contracts, typed instruction/image
   donors, gate reasons, and optional synthetic-thumbnail hashes without changing revision-1/2
   artifact readers.
+- ExperimentConfig contract revision 3 is reserved for pinned real sources and tasks. Revisions 1
+  and 2 retain their prior serialization; v2 migration continues to emit revision 2. Real PushT
+  and LIBERO configs reject revision drift, task/data mismatches and implicit camera loss.
+- Beta 2 adds multi-camera ACT preprocessing by deterministic horizontal composition while keeping
+  the Alpha 2 single-camera field valid. Both declared LIBERO cameras are consumed in order.
+- the real integration profile is isolated in a CUDA 12.8 hash lock and manual workflow. It does
+  not enter v1.x, v2, Alpha 1/2, or Beta 1 CPU quickstarts.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
   contracts.

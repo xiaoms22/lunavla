@@ -11,7 +11,9 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         Loader=yaml.BaseLoader,
     )
     triggers = payload["on"]
-    assert set(triggers["pull_request"]["branches"]) == {"main", "v3"}
+    assert set(triggers["pull_request"]["branches"]) == {
+        "main", "v3", "agent/v3-beta1-diagnostics-rebased"
+    }
     assert triggers["push"]["branches"] == ["v3"]
     names = {job["name"] for job in payload["jobs"].values()}
     assert names == {
@@ -23,6 +25,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-v2-compat",
         "v3-secret-scan",
         "v3-smolvla-adapter",
+        "v3-beta2-fixtures",
     }
 
 
@@ -103,3 +106,22 @@ def test_gpu_and_release_locks_pin_authoritative_platforms() -> None:
     assert "torchvision==0.26.0+cpu" in release
     assert "cyclonedx-bom==7" in release
     assert "nvidia-" not in release and "triton==" not in release
+
+
+def test_beta2_dispatcher_and_lock_are_manual_bounded_and_fail_closed() -> None:
+    path = Path(".github/workflows/v3-beta2-integration-dispatch.yml")
+    payload = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    assert set(payload["on"]) == {"workflow_dispatch"}
+    job = payload["jobs"]["bounded-integration"]
+    assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu", "lunavla-v3"]
+    workflow = path.read_text(encoding="utf-8")
+    assert "requirements-v3-beta2-integration-cu128.lock" in workflow
+    assert "source-preflight" in workflow
+    assert "integration-run" in workflow and "integration-verify" in workflow
+    assert "claim_allowed" not in workflow
+    lock = Path("requirements-v3-beta2-integration-cu128.lock").read_text(encoding="utf-8")
+    for requirement in (
+        "hf-libero==0.1.4", "lerobot==0.6.0", "torch==2.11.0+cu128",
+        "torchvision==0.26.0+cu128", "gym-pusht==0.1.6", "av==15.1.0",
+    ):
+        assert requirement in lock

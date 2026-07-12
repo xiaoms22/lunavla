@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_stage": "v3.0.0-beta.1-draft-diagnostics",
+  "release_stage": "v3.0.0-beta.2-stacked-draft",
   "contracts": {
     "FeatureSpec": {
       "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
@@ -91,6 +91,15 @@
     },
     "EvidenceManifestV2": {
       "signature": "(design_sha256: 'str', base_config_sha256: 'str', base_config_file_sha256: 'str', cell_contract_sha256: 'str', source_manifests: 'tuple[ArtifactHashRecordV1, ...]', matrix_sha256: 'str', aggregate_sha256: 'str', per_pair_sha256: 'str', thumbnail_manifest_sha256: 'str | None', expected_pairs: 'int', observed_pairs: 'int', homogeneous: 'bool', matrix_complete: 'bool', reduced_design: 'bool', claim_allowed: 'bool', framework_statement_allowed: 'bool', release_eligible: 'bool', gate_reasons: 'tuple[str, ...]', allowed_wording: 'str | None') -> None"
+    },
+    "ExternalDatasetSpecV1": {
+      "signature": "(repo_id: 'str', revision: 'str', license: 'str', task_ids: 'tuple[int, ...]', episodes: 'tuple[int, ...]', episode_selection: 'str', video_backend: 'str', return_uint8: 'bool', max_download_bytes: 'int', file_hashes: 'Mapping[str, str]', schema_version: 'int' = 1) -> None"
+    },
+    "SimulationTaskSpecV1": {
+      "signature": "(environment_id: 'str', suite: 'str', task_ids: 'tuple[int, ...]', init_state_ids: 'tuple[int, ...]', control_mode: 'str', camera_mapping: 'Mapping[str, str]', state_mapping: 'Mapping[str, str]', action_mapping: 'Mapping[str, str]', max_steps: 'int', headless: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "IntegrationManifestV1": {
+      "signature": "(git_sha: 'str', git_dirty: 'bool', config_sha256: 'str', dependency_lock_sha256: 'str', source_spec_sha256: 'str', source_inventory_sha256: 'str', runner_qualification_sha256: 'str', metrics_sha256: 'str', runner_role: 'str', data_validation: 'Mapping[str, Any]', environment_validation: 'Mapping[str, Any]', policy_smokes: 'tuple[Mapping[str, Any], ...]', downloaded_bytes: 'int', claim_allowed: 'bool', benchmark_claim: 'bool', statement: 'str', schema_version: 'int' = 1) -> None"
     }
   }
 }

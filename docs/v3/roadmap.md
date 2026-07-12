@@ -25,7 +25,10 @@
    synthetic thumbnails. These reduced fixtures prove only framework integrity and cannot open a
    scientific claim. The work remains unmerged until the Alpha 2 license/GPU release gate is
    satisfied and the Alpha 2 tag is created from `v3`.
-8. **Beta 2 — planned:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as
+8. **Beta 2 — implemented in a stacked Draft PR, real gate pending:** pinned public PushT plus
+   LIBERO-Spatial task IDs 0–3, strict source/task/manifest contracts, real-format adapters,
+   bounded ACT/Diffusion Engine smokes, and a manual dual-runner dispatcher. PR tests are offline;
+   no authoritative or secondary runner manifest has been produced. The four LIBERO tasks remain
    a diagnostic subset rather than a full benchmark.
 9. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
    signed assets, SBOM, provenance, and checksums.

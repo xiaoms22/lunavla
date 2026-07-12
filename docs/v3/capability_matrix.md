@@ -1,4 +1,4 @@
-# v3 Beta 1 draft capability matrix
+# v3 Beta 2 stacked draft capability matrix
 
 | Area | Current status | Boundary |
 | --- | --- | --- |
@@ -12,7 +12,8 @@
 | Fake PushT/LIBERO | Implemented as fixtures | Connectivity and lifecycle only |
 | SmolVLA adapter | Public-API conformance fixture and pinned model identity | Pretrained, optimizer, resume, and inference gates closed |
 | Alpha 2 release supply chain | Strict license/GPU/candidate contracts, CUDA and release locks, signed-tag draft dispatcher | No runner, license review, weight access, tag, release or PyPI publication |
-| Real PushT/LIBERO subset | Planned Beta 2 | No benchmark statement |
+| Real PushT/LIBERO subset | Pinned contracts, adapters, CLI and manual dispatcher implemented; offline fixtures pass | No runner manifest yet; no benchmark statement |
+| Bounded integration evidence | Atomic IntegrationManifest v1 and independent hash verification | `claim_allowed=false`, `benchmark_claim=false`; real workflow pending |
 | Prompt/state diagnostics | Canonical train/eval/deploy renderer, four routes, five prompt arms, typed donor/pair hashes | 40 reduced NumPy pairs only; no modality or routing claim |
 | Image diagnostic smoke | ACT control/image-shuffle, step-wise image donors, four synthetic thumbnails | Four reduced pairs; no visual-contribution claim |
 | Diagnostic evidence | EvidenceManifest v2, normalized cell contracts, gate reasons, per-pair CSV, verified HTML | `claim_allowed=false`; dirty/mixed inputs are inspectable but not release-eligible |
