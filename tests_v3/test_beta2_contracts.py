@@ -89,7 +89,8 @@ def test_simulation_and_manifest_contracts_are_frozen_and_fail_closed() -> None:
     simulation = config.simulation_task_spec
     assert simulation is not None
     assert SimulationTaskSpecV1.from_mapping(simulation.to_dict()).sha256() == simulation.sha256()
-    data = {"frames": 161}
+    nested = [161]
+    data = {"frames": 161, "nested": nested}
     manifest = IntegrationManifestV1(
         git_sha="1" * 40,
         git_dirty=False,
@@ -109,7 +110,9 @@ def test_simulation_and_manifest_contracts_are_frozen_and_fail_closed() -> None:
         statement=CONNECTIVITY_STATEMENT,
     )
     data["frames"] = 0
+    nested.append(0)
     assert manifest.data_validation["frames"] == 161
+    assert manifest.data_validation["nested"] == (161,)
     assert IntegrationManifestV1.from_mapping(manifest.to_dict()).sha256() == manifest.sha256()
     payload = copy.deepcopy(manifest.to_dict())
     payload["claim_allowed"] = True
