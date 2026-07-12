@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -140,6 +141,36 @@ def test_pusht_env_maps_steps_and_closes_exactly_once() -> None:
     finally:
         env.close()
         env.close()
+    assert upstream.closed == 1
+
+
+def test_pusht_env_registers_namespace_before_default_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = ExperimentConfig.load("configs/v3/beta2_pusht_integration.yaml")
+    upstream = _FakeEnv(
+        {
+            "pixels": np.zeros((96, 96, 3), dtype=np.uint8),
+            "agent_pos": np.zeros(2, dtype=np.float32),
+        }
+    )
+    imports: list[str] = []
+
+    def import_module(name: str) -> Any:
+        imports.append(name)
+        if name == "gym_pusht":
+            return SimpleNamespace()
+        if name == "gymnasium":
+            return SimpleNamespace(make=lambda *_args, **_kwargs: upstream)
+        raise AssertionError(f"unexpected import: {name}")
+
+    monkeypatch.setattr("lunavla.v3.real_adapters.importlib.import_module", import_module)
+    env = PushTEnvV3(
+        config.feature_schema,
+        config.simulation_task_spec,  # type: ignore[arg-type]
+    )
+    env.close()
+    assert imports == ["gym_pusht", "gymnasium"]
     assert upstream.closed == 1
 
 

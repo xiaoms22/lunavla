@@ -405,6 +405,9 @@ class PushTEnvV3(_EnvV3Base):
         if spec.environment_id != "gym_pusht/PushT-v0":
             raise ValueError("PushTEnvV3 requires gym_pusht/PushT-v0")
         if env_factory is None:
+            # gym-pusht registers its namespace as an import side effect.  Keep
+            # the import explicit so a clean process can resolve PushT-v0.
+            importlib.import_module("gym_pusht")
             gym = importlib.import_module("gymnasium")
             env_factory = gym.make
         super().__init__(env_factory(spec.environment_id, obs_type="pixels_agent_pos"), schema, spec)
