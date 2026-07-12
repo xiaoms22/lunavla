@@ -1,0 +1,102 @@
+schema_version: 3
+contract_revision: 3
+project_name: lunavla-v3-beta2-libero-spatial-integration
+engine: lunavla_v3
+policy:
+  type: diffusion_v3
+  parameters:
+    state_feature: state.proprioception
+    camera_features: [camera.agentview, camera.wrist]
+    unused_modalities: [instruction]
+    history: 2
+    chunk_size: 4
+    horizon: 8
+    execution_steps: 4
+    n_action_steps: 4
+    noise_scheduler_type: DDIM
+    num_train_timesteps: 16
+    num_inference_steps: 8
+    prediction_type: epsilon
+    do_mask_loss_for_padding: true
+    noise_seed: 202611
+    down_dims: [32, 64, 128]
+    kernel_size: 3
+    n_groups: 8
+    diffusion_step_embed_dim: 32
+    spatial_softmax_num_keypoints: 8
+    vision_backbone: resnet18
+    use_group_norm: true
+    use_separate_rgb_encoder_per_camera: true
+    pretrained_backbone_weights: null
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: true
+    clip_sample_range: 1.0
+task:
+  id: libero_spatial_subset
+  parameters:
+    simulation:
+      schema_version: 1
+      environment_id: libero
+      suite: libero_spatial
+      task_ids: [0, 1, 2, 3]
+      init_state_ids: [0]
+      control_mode: relative
+      camera_mapping: {agentview_image: camera.agentview, robot0_eye_in_hand_image: camera.wrist}
+      state_mapping: {observation.state: state.proprioception}
+      action_mapping: {action: action.primary}
+      max_steps: 3
+      headless: true
+dataset:
+  type: lerobot_libero_spatial
+  split: train
+  seed: 42
+  parameters:
+    source:
+      schema_version: 1
+      repo_id: lerobot/libero
+      revision: a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4
+      license: Apache-2.0
+      task_ids: [0, 1, 2, 3]
+      episodes: []
+      episode_selection: minimum_per_task
+      video_backend: pyav
+      return_uint8: true
+      max_download_bytes: 402653184
+      file_hashes: {}
+embodiment:
+  id: libero_spatial
+  task_id: libero_spatial_subset
+  control_rate_hz: 10.0
+  camera_mapping: {observation.images.image: camera.agentview, observation.images.image2: camera.wrist}
+  state_mapping: {observation.state: state.proprioception}
+  action_mapping: {action: action.primary}
+features:
+  schema_version: 1
+  items:
+    - {name: camera.agentview, role: image, dtype: uint8, shape: [256, 256, 3], unit: pixel, frame: agentview_camera, rate_hz: 10.0, normalization: none, source_key: observation.images.image, required_by: [diffusion_v3]}
+    - {name: camera.wrist, role: image, dtype: uint8, shape: [256, 256, 3], unit: pixel, frame: wrist_camera, rate_hz: 10.0, normalization: none, source_key: observation.images.image2, required_by: [diffusion_v3]}
+    - {name: state.proprioception, role: state, dtype: float32, shape: [8], unit: normalized, frame: robot, rate_hz: 10.0, normalization: minmax, source_key: observation.state, required_by: [diffusion_v3]}
+    - {name: action.primary, role: action, dtype: float32, shape: [7], unit: normalized_relative, frame: robot, rate_hz: 10.0, normalization: minmax, source_key: action, required_by: [diffusion_v3]}
+training:
+  device: cuda
+  seed: 11
+  batch_size: 1
+  steps: 1
+  learning_rate: 0.0003
+  optimizer: {type: adamw, parameters: {weight_decay: 0.000001, betas: [0.95, 0.999], eps: 0.00000001}}
+  scheduler: {type: constant, parameters: {}}
+  precision: float32
+  gradient_clip_norm: 10.0
+  resume: {enabled: false, checkpoint: null, strict: true}
+evaluation: {execution_mode: open_loop_chunk, episodes: 1, seed: 1000, seeds: [1000], max_steps: 3}
+diagnostics: {enabled: false}
+prompt:
+  enabled: false
+  renderer_id: lunavla.canonical_json
+  renderer_version: 1
+  assistant_target: action_chunk
+  neutral_token: "[MASKED]"
+  camera_order: [camera.agentview, camera.wrist]
+  public_slots: {}
+routing: {mode: expert_only, state_features: [state.proprioception]}
+artifacts: {output_dir: outputs/v3/beta2-libero, checkpoint_name: diffusion_v3}

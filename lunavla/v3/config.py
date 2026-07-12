@@ -14,10 +14,11 @@ import yaml
 from lunavla.contracts import normalize_device
 
 from .contracts import EmbodimentSpec, FeatureSchema
+from .integration_contracts import ExternalDatasetSpecV1, SimulationTaskSpecV1
 
 
 CONFIG_SCHEMA_VERSION = 3
-CONFIG_CONTRACT_REVISION = 2
+CONFIG_CONTRACT_REVISION = 3
 _ROOT_V1 = {
     "schema_version", "project_name", "engine", "policy", "task", "dataset", "embodiment",
     "features", "training", "evaluation", "diagnostics", "artifacts",
@@ -40,8 +41,15 @@ _POLICIES = {
     "numpy_linear_chunk", "numpy_bc_mlp", "transformer_chunk", "transformer_chunk_cvae",
     "act", "act_v3", "diffusion_v3", "lerobot_smolvla",
 }
-_TASKS = {"fake_pusht", "fake_libero", "pusht_style_point_reach", "language_conditioned_point_reach", "rendered_visual_point_reach", "lerobot_pusht"}
-_DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat"}
+_TASKS = {
+    "fake_pusht", "fake_libero", "pusht_style_point_reach",
+    "language_conditioned_point_reach", "rendered_visual_point_reach",
+    "lerobot_pusht", "libero_spatial_subset",
+}
+_DATASETS = {
+    "memory", "fake_pusht", "fake_libero", "v2_compat",
+    "lerobot_pusht", "lerobot_libero_spatial",
+}
 _EXECUTION = {"open_loop_chunk", "receding_horizon"}
 _NUMPY_PARAMETER_FIELDS = {
     "state_dim", "instruction_dim", "action_dim", "chunk_size", "hidden_dim",
@@ -202,9 +210,9 @@ class ExperimentConfig:
         raw_revision = root.get("contract_revision", 1)
         if isinstance(raw_revision, bool) or not isinstance(raw_revision, int):
             raise TypeError("contract_revision must be an integer")
-        if raw_revision not in {1, CONFIG_CONTRACT_REVISION}:
+        if raw_revision not in {1, 2, CONFIG_CONTRACT_REVISION}:
             raise ValueError(
-                f"contract_revision must be 1 or {CONFIG_CONTRACT_REVISION}"
+                f"contract_revision must be 1, 2, or {CONFIG_CONTRACT_REVISION}"
             )
         allowed_root = _ROOT_V1 if raw_revision == 1 else _ROOT_V2
         _reject_unknown(root, allowed_root, "config")
@@ -505,7 +513,17 @@ class ExperimentConfig:
         if task["id"] not in _TASKS:
             raise ValueError(f"unsupported task.id {task['id']!r}")
         task["parameters"] = _mapping(task["parameters"], "task.parameters")
-        if set(task["parameters"]) != {"legacy"}:
+        if task["id"] in {"lerobot_pusht", "libero_spatial_subset"}:
+            if raw_revision != 3:
+                raise ValueError("real simulation tasks require config contract_revision=3")
+            _reject_unknown(task["parameters"], {"simulation"}, "task.parameters")
+            if set(task["parameters"]) != {"simulation"}:
+                raise ValueError("real simulation tasks require task.parameters.simulation")
+            simulation = SimulationTaskSpecV1.from_mapping(
+                _mapping(task["parameters"]["simulation"], "task.parameters.simulation")
+            )
+            task["parameters"]["simulation"] = simulation.to_dict()
+        elif set(task["parameters"]) != {"legacy"}:
             _reject_unknown(task["parameters"], set(), "task.parameters")
         dataset = sections["dataset"]
         if dataset["type"] not in _DATASETS:
@@ -514,7 +532,18 @@ class ExperimentConfig:
             raise ValueError("dataset.split must be train, validation, or test")
         dataset["seed"] = _integer(dataset["seed"], "dataset.seed")
         dataset["parameters"] = _mapping(dataset["parameters"], "dataset.parameters")
-        if dataset["type"] == "v2_compat":
+        if dataset["type"] in {"lerobot_pusht", "lerobot_libero_spatial"}:
+            if raw_revision != 3:
+                raise ValueError("real external datasets require config contract_revision=3")
+            _reject_unknown(dataset["parameters"], {"source"}, "dataset.parameters")
+            if set(dataset["parameters"]) != {"source"}:
+                raise ValueError("real external datasets require dataset.parameters.source")
+            external_spec = ExternalDatasetSpecV1.from_mapping(
+                _mapping(dataset["parameters"]["source"], "dataset.parameters.source")
+            )
+            external_spec.validate_supported_source()
+            dataset["parameters"]["source"] = external_spec.to_dict()
+        elif dataset["type"] == "v2_compat":
             _reject_unknown(dataset["parameters"], {"legacy"}, "dataset.parameters")
             if "legacy" not in dataset["parameters"]:
                 raise ValueError("v2_compat dataset requires dataset.parameters.legacy")
@@ -548,6 +577,36 @@ class ExperimentConfig:
             raise ValueError("v2_compat datasets require a migrated compat_read_only policy")
         if task_id in {"fake_pusht", "fake_libero"} and dataset["split"] != "train":
             raise ValueError("runnable fake datasets require dataset.split=train")
+        real_pairs = {
+            "lerobot_pusht": "lerobot_pusht",
+            "libero_spatial_subset": "lerobot_libero_spatial",
+        }
+        if task_id in real_pairs and dataset_type != real_pairs[task_id]:
+            raise ValueError("real task.id and dataset.type must match")
+        if dataset_type in set(real_pairs.values()) and real_pairs.get(task_id) != dataset_type:
+            raise ValueError("real dataset.type and task.id must match")
+        if dataset_type in set(real_pairs.values()) and dataset["split"] != "train":
+            raise ValueError("bounded real integration datasets require dataset.split=train")
+        if task_id in real_pairs:
+            simulation = SimulationTaskSpecV1.from_mapping(task["parameters"]["simulation"])
+            external_spec = ExternalDatasetSpecV1.from_mapping(
+                dataset["parameters"]["source"]
+            )
+            if task_id == "lerobot_pusht":
+                if simulation.environment_id != "gym_pusht/PushT-v0" or simulation.task_ids:
+                    raise ValueError("lerobot_pusht simulation identity is not pinned")
+                if external_spec.repo_id != "lerobot/pusht":
+                    raise ValueError("lerobot_pusht source repo is not pinned")
+            else:
+                if simulation.environment_id != "libero" or simulation.suite != "libero_spatial":
+                    raise ValueError("LIBERO-Spatial simulation identity is not pinned")
+                if simulation.task_ids != (0, 1, 2, 3) or simulation.init_state_ids != (0,):
+                    raise ValueError("LIBERO-Spatial requires task IDs 0-3 and init-state ID 0")
+                if (
+                    external_spec.repo_id != "lerobot/libero"
+                    or external_spec.task_ids != simulation.task_ids
+                ):
+                    raise ValueError("LIBERO source task IDs must match the simulation task IDs")
 
         feature_schema = FeatureSchema.from_mapping(_mapping(root["features"], "features"))
         embodiment_section = sections["embodiment"]
@@ -840,7 +899,7 @@ class ExperimentConfig:
             expected_cameras = tuple(str(item) for item in policy_parameters["camera_features"])
         elif "legacy" in parameters and policy_parameters.get("image_shape") is not None:
             expected_cameras = ("camera.primary",)
-        if raw_revision == CONFIG_CONTRACT_REVISION and tuple(camera_values) != expected_cameras:
+        if raw_revision >= 2 and tuple(camera_values) != expected_cameras:
             raise ValueError("prompt.camera_order must exactly match policy camera order")
         consumes_instruction = False
         if policy["type"] == "lerobot_smolvla":
@@ -854,8 +913,8 @@ class ExperimentConfig:
         if policy["type"] == "diffusion_v3" and (prompt["enabled"] or mode not in {"none", "expert_only"}):
             raise ValueError("diffusion_v3 does not support prompt diagnostics")
         if diagnostics["enabled"]:
-            if raw_revision != CONFIG_CONTRACT_REVISION:
-                raise ValueError("diagnostics require config contract_revision=2")
+            if raw_revision < 2:
+                raise ValueError("diagnostics require config contract_revision>=2")
             if not prompt["enabled"]:
                 raise ValueError("diagnostics require prompt.enabled=true")
             if evaluation["execution_mode"] != "receding_horizon":
@@ -909,7 +968,7 @@ class ExperimentConfig:
             "schema_version", "project_name", "engine", "policy", "task", "dataset", "embodiment",
             "features", "training", "evaluation", "diagnostics", "artifacts",
         )}
-        if self.contract_revision == CONFIG_CONTRACT_REVISION:
+        if self.contract_revision >= 2:
             result["contract_revision"] = self.contract_revision
             result["prompt"] = _thaw(self.prompt)
             result["routing"] = _thaw(self.routing)
@@ -933,3 +992,13 @@ class ExperimentConfig:
             state_mapping=self.embodiment["state_mapping"],
             action_mapping=self.embodiment["action_mapping"],
         )
+
+    @property
+    def external_dataset_spec(self) -> ExternalDatasetSpecV1 | None:
+        source = self.dataset["parameters"].get("source")
+        return None if source is None else ExternalDatasetSpecV1.from_mapping(source)
+
+    @property
+    def simulation_task_spec(self) -> SimulationTaskSpecV1 | None:
+        simulation = self.task["parameters"].get("simulation")
+        return None if simulation is None else SimulationTaskSpecV1.from_mapping(simulation)
