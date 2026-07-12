@@ -288,4 +288,5 @@ jobs:
             "$root/provenance.jsonl" "$root/test-manifest.json" \
             "$root/smolvla-conformance-status.json" \
             "$root/lunavla-v3-alpha3-code-evidence.tar.gz" \
-            "$root/release-candidate.json" "$root/SHA256SUMS"
+            "$root/release-candidate.json" "$root/required-checks.json" \
+            "$root/SHA256SUMS"
