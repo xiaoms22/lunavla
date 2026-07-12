@@ -14,7 +14,7 @@ from lunavla.v3 import (
     FeatureSchema,
     FeatureSpec,
     ModelSourceContractV1,
-    Alpha2ReleaseCandidateV1,
+    Alpha3ReleaseCandidateV1,
     GpuValidationManifestV1,
     LicenseReviewV1,
     RunnerQualificationManifestV1,
@@ -53,7 +53,7 @@ PUBLIC_TYPES = {
     "WeightLicenseStatusV1": WeightLicenseStatusV1,
     "RunnerQualificationManifestV1": RunnerQualificationManifestV1,
     "GpuValidationManifestV1": GpuValidationManifestV1,
-    "Alpha2ReleaseCandidateV1": Alpha2ReleaseCandidateV1,
+    "Alpha3ReleaseCandidateV1": Alpha3ReleaseCandidateV1,
     "SmolVLAValidationCandidateV1": SmolVLAValidationCandidateV1,
     "PolicySpecV3": PolicySpecV3,
     "PolicySampleV3": PolicySampleV3,
@@ -67,7 +67,7 @@ PUBLIC_TYPES = {
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-alpha.2-code-only-candidate",
+        "release_stage": "v3.0.0-alpha.3-code-only-candidate",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()
@@ -141,6 +141,7 @@ def main() -> int:
     release_required = {
         "build==1.5.1",
         "cyclonedx-bom==7",
+        "setuptools==80.10.2",
         "torch==2.11.0+cpu",
         "torchvision==0.26.0+cpu",
         "twine==6.2.0",

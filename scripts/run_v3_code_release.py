@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import gzip
 import io
 import importlib
@@ -13,9 +14,9 @@ from typing import Any, Mapping, Sequence
 
 from lunavla.v3.artifacts import ArtifactHashRecordV1, sha256_file
 from lunavla.v3.release_contracts import (
-    ALPHA2_PACKAGE_VERSION,
-    ALPHA2_TAG,
-    Alpha2ReleaseCandidateV1,
+    ALPHA3_PACKAGE_VERSION,
+    ALPHA3_TAG,
+    Alpha3ReleaseCandidateV1,
     WeightLicenseStatusV1,
 )
 
@@ -27,7 +28,7 @@ DIFFUSION_LOCK = ROOT / "requirements-v3-diffusion-cpu.lock"
 SMOLVLA_LOCK = ROOT / "requirements-v3-smolvla-cpu.lock"
 LICENSE_STATUS = ROOT / "docs/v3/release/smolvla-license-status.json"
 DISPATCHER = ROOT / ".github/workflows/v3-code-release-dispatch.yml"
-EVIDENCE_ARCHIVE = "lunavla-v3-alpha2-code-evidence.tar.gz"
+EVIDENCE_ARCHIVE = "lunavla-v3-alpha3-code-evidence.tar.gz"
 FORBIDDEN_SUFFIXES = {".bin", ".ckpt", ".pt", ".pth", ".safetensors"}
 REQUIRED_CHECKS = {
     "CodeQL Python",
@@ -39,6 +40,56 @@ REQUIRED_CHECKS = {
     "v3-smolvla-adapter",
     "v3-v2-compat",
 }
+
+
+def normalize_sdist(path: str | Path, *, source_date_epoch: int) -> Path:
+    """Rewrite a setuptools sdist with deterministic archive metadata."""
+
+    if (
+        not isinstance(source_date_epoch, int)
+        or isinstance(source_date_epoch, bool)
+        or source_date_epoch < 0
+    ):
+        raise ValueError("source_date_epoch must be a non-negative integer")
+    source = Path(path).resolve()
+    if not source.is_file() or not source.name.endswith(".tar.gz"):
+        raise ValueError("sdist must be an existing .tar.gz file")
+    target = source.with_name(f".{source.name}.normalized.tmp")
+    try:
+        with tarfile.open(source, mode="r:gz") as incoming:
+            members = sorted(incoming.getmembers(), key=lambda member: member.name)
+            names: set[str] = set()
+            for member in members:
+                member_path = Path(member.name)
+                if member_path.is_absolute() or ".." in member_path.parts:
+                    raise ValueError(f"sdist member escapes the archive root: {member.name}")
+                if member.name in names:
+                    raise ValueError(f"sdist contains a duplicate member: {member.name}")
+                if not (member.isfile() or member.isdir()):
+                    raise ValueError(f"sdist contains an unsupported member type: {member.name}")
+                names.add(member.name)
+            with target.open("wb") as raw:
+                with gzip.GzipFile(
+                    filename="", mode="wb", fileobj=raw, mtime=source_date_epoch
+                ) as compressed:
+                    with tarfile.open(
+                        fileobj=compressed, mode="w", format=tarfile.PAX_FORMAT
+                    ) as outgoing:
+                        for member in members:
+                            normalized = copy.copy(member)
+                            normalized.uid = 0
+                            normalized.gid = 0
+                            normalized.uname = ""
+                            normalized.gname = ""
+                            normalized.mtime = source_date_epoch
+                            normalized.pax_headers = {}
+                            normalized.mode = 0o755 if member.isdir() else 0o644
+                            payload = incoming.extractfile(member) if member.isfile() else None
+                            outgoing.addfile(normalized, payload)
+        target.replace(source)
+    finally:
+        target.unlink(missing_ok=True)
+    return source
 
 
 def _json(path: str | Path) -> dict[str, Any]:
@@ -63,8 +114,8 @@ def project_version() -> str:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     package = project.get("version")
     public = getattr(importlib.import_module("lunavla"), "__version__", None)
-    if package != public or package != ALPHA2_PACKAGE_VERSION:
-        raise RuntimeError("Alpha 2 package version sources must both equal 3.0.0a2")
+    if package != public or package != ALPHA3_PACKAGE_VERSION:
+        raise RuntimeError("Alpha 3 package version sources must both equal 3.0.0a3")
     return package
 
 
@@ -98,13 +149,13 @@ def verify_test_manifest(path: str | Path, *, expected_git_sha: str) -> dict[str
         raise ValueError("test manifest does not bind the release Git SHA")
     checks = value["checks"]
     if not isinstance(checks, Mapping) or set(checks) != REQUIRED_CHECKS:
-        raise ValueError("test manifest must contain the exact Alpha 2 required checks")
+        raise ValueError("test manifest must contain the exact Alpha 3 required checks")
     if any(result != "success" for result in checks.values()):
-        raise ValueError("every Alpha 2 required check must succeed")
+        raise ValueError("every Alpha 3 required check must succeed")
     if value["pretrained_enabled"] is not False or value["weight_network_accessed"] is not False:
-        raise ValueError("Alpha 2 code release forbids pretrained weights and weight network access")
+        raise ValueError("Alpha 3 code release forbids pretrained weights and weight network access")
     if value["claim_allowed"] is not False:
-        raise ValueError("Alpha 2 code release cannot open scientific claims")
+        raise ValueError("Alpha 3 code release cannot open scientific claims")
     return value
 
 
@@ -142,7 +193,7 @@ def build_candidate(
     required_checks_path: str | Path,
     asset_root: str | Path,
     output_path: str | Path,
-) -> Alpha2ReleaseCandidateV1:
+) -> Alpha3ReleaseCandidateV1:
     require_clean_git(expected_git_sha)
     project_version()
     root = Path(asset_root).resolve()
@@ -160,8 +211,8 @@ def build_candidate(
         "weight_accessed": False,
     }:
         raise ValueError("SmolVLA conformance status does not match the fail-closed source record")
-    candidate = Alpha2ReleaseCandidateV1(
-        expected_tag=ALPHA2_TAG,
+    candidate = Alpha3ReleaseCandidateV1(
+        expected_tag=ALPHA3_TAG,
         git_sha=expected_git_sha,
         package_version=project_version(),
         public_api_sha256=sha256_file(PUBLIC_API),
@@ -177,11 +228,11 @@ def build_candidate(
     return candidate
 
 
-def verify_candidate(path: str | Path, asset_root: str | Path) -> Alpha2ReleaseCandidateV1:
-    candidate = Alpha2ReleaseCandidateV1.from_mapping(_json(path))
+def verify_candidate(path: str | Path, asset_root: str | Path) -> Alpha3ReleaseCandidateV1:
+    candidate = Alpha3ReleaseCandidateV1.from_mapping(_json(path))
     root = Path(asset_root).resolve()
     if candidate.assets != _asset_records(root):
-        raise ValueError("Alpha 2 asset inventory differs from the candidate")
+        raise ValueError("Alpha 3 asset inventory differs from the candidate")
     expected = {
         "public_api_sha256": sha256_file(PUBLIC_API),
         "core_lock_sha256": sha256_file(CORE_LOCK),
@@ -192,7 +243,7 @@ def verify_candidate(path: str | Path, asset_root: str | Path) -> Alpha2ReleaseC
     }
     for field, digest in expected.items():
         if getattr(candidate, field) != digest:
-            raise ValueError(f"Alpha 2 candidate {field} drifted")
+            raise ValueError(f"Alpha 3 candidate {field} drifted")
     verify_test_manifest(root / "test-manifest.json", expected_git_sha=candidate.git_sha)
     return candidate
 
@@ -200,8 +251,8 @@ def verify_candidate(path: str | Path, asset_root: str | Path) -> Alpha2ReleaseC
 def finalize_release(
     *, candidate_path: str | Path, asset_root: str | Path, tag: str, expected_git_sha: str
 ) -> Path:
-    if tag != ALPHA2_TAG:
-        raise ValueError(f"code-only Alpha 2 tag must be {ALPHA2_TAG}")
+    if tag != ALPHA3_TAG:
+        raise ValueError(f"code-only Alpha 3 tag must be {ALPHA3_TAG}")
     require_clean_git(expected_git_sha)
     candidate = verify_candidate(candidate_path, asset_root)
     if candidate.git_sha != expected_git_sha:
@@ -228,7 +279,7 @@ def finalize_release(
                 "schema_version": 1,
                 "tag": tag,
                 "git_sha": expected_git_sha,
-                "package_version": ALPHA2_PACKAGE_VERSION,
+                "package_version": ALPHA3_PACKAGE_VERSION,
                 "candidate_sha256": sha256_file(candidate_path),
                 "sha256sums_sha256": sha256_file(sums),
                 "claim_allowed": False,
@@ -246,6 +297,9 @@ def finalize_release(
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="run_v3_code_release.py")
     commands = parser.add_subparsers(dest="command", required=True)
+    normalize = commands.add_parser("normalize-sdist")
+    normalize.add_argument("sdist")
+    normalize.add_argument("--source-date-epoch", required=True, type=int)
     bundle = commands.add_parser("bundle")
     bundle.add_argument("--asset-root", required=True)
     build = commands.add_parser("build-candidate")
@@ -266,6 +320,12 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = _parser().parse_args(argv)
+    if arguments.command == "normalize-sdist":
+        result = normalize_sdist(
+            arguments.sdist, source_date_epoch=arguments.source_date_epoch
+        )
+        print(json.dumps({"normalized": str(result)}))
+        return 0
     if arguments.command == "bundle":
         print(json.dumps({"archive": str(write_evidence_bundle(arguments.asset_root))}))
         return 0

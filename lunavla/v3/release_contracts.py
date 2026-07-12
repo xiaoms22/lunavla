@@ -12,8 +12,8 @@ from urllib.parse import urlparse
 from .artifacts import ArtifactHashRecordV1
 
 
-ALPHA2_TAG = "v3.0.0-alpha.2"
-ALPHA2_PACKAGE_VERSION = "3.0.0a2"
+ALPHA3_TAG = "v3.0.0-alpha.3"
+ALPHA3_PACKAGE_VERSION = "3.0.0a3"
 SMOLVLA_VALIDATION_TAG = "v3.1.0-alpha.1"
 SMOLVLA_VALIDATION_PACKAGE_VERSION = "3.1.0a1"
 SMOLVLA_REPO_ID = "lerobot/smolvla_base"
@@ -511,9 +511,9 @@ class GpuValidationManifestV1:
             raise ValueError("runner_labels must uniquely include the LunaVLA GPU labels")
         object.__setattr__(self, "runner_labels", tuple(sorted(labels)))
         if self.runner_os != "Linux" or self.runner_arch != "X64":
-            raise ValueError("Alpha 2 GPU evidence requires Linux X64")
+            raise ValueError("Alpha 3 GPU evidence requires Linux X64")
         if _integer(self.gpu_count, "GPU count", minimum=1) != 1:
-            raise ValueError("Alpha 2 GPU evidence requires exactly one GPU")
+            raise ValueError("Alpha 3 GPU evidence requires exactly one GPU")
         for name in ("gpu_name", "driver_version"):
             object.__setattr__(self, name, _string(getattr(self, name), name))
         expected_versions = {
@@ -547,7 +547,7 @@ class GpuValidationManifestV1:
         if not all((self.optimizer_step_verified, self.resume_verified, self.inference_verified)):
             raise ValueError("GPU manifest requires optimizer, resume, and inference verification")
         if self.claim_allowed:
-            raise ValueError("Alpha 2 GPU smoke cannot allow scientific claims")
+            raise ValueError("Alpha 3 GPU smoke cannot allow scientific claims")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -678,7 +678,7 @@ class SmolVLAValidationCandidateV1:
 
 
 @dataclass(frozen=True)
-class Alpha2ReleaseCandidateV1:
+class Alpha3ReleaseCandidateV1:
     expected_tag: str
     git_sha: str
     package_version: str
@@ -697,13 +697,13 @@ class Alpha2ReleaseCandidateV1:
     schema_version: int = 1
 
     def __post_init__(self) -> None:
-        if _integer(self.schema_version, "Alpha 2 candidate schema_version", minimum=1) != 1:
-            raise ValueError("Alpha2ReleaseCandidateV1 schema_version must be integer 1")
-        if self.expected_tag != ALPHA2_TAG:
-            raise ValueError(f"Alpha 2 expected_tag must be {ALPHA2_TAG}")
-        object.__setattr__(self, "git_sha", _git_sha(self.git_sha, "Alpha 2 git_sha"))
-        if self.package_version != ALPHA2_PACKAGE_VERSION:
-            raise ValueError(f"Alpha 2 package_version must be {ALPHA2_PACKAGE_VERSION}")
+        if _integer(self.schema_version, "Alpha 3 candidate schema_version", minimum=1) != 1:
+            raise ValueError("Alpha3ReleaseCandidateV1 schema_version must be integer 1")
+        if self.expected_tag != ALPHA3_TAG:
+            raise ValueError(f"Alpha 3 expected_tag must be {ALPHA3_TAG}")
+        object.__setattr__(self, "git_sha", _git_sha(self.git_sha, "Alpha 3 git_sha"))
+        if self.package_version != ALPHA3_PACKAGE_VERSION:
+            raise ValueError(f"Alpha 3 package_version must be {ALPHA3_PACKAGE_VERSION}")
         for name in (
             "public_api_sha256",
             "core_lock_sha256",
@@ -714,19 +714,19 @@ class Alpha2ReleaseCandidateV1:
             "dispatcher_sha256",
         ):
             object.__setattr__(self, name, _sha256(getattr(self, name), name))
-        assets = _records(self.assets, "Alpha 2 code-only assets")
+        assets = _records(self.assets, "Alpha 3 code-only assets")
         required_names = {
-            "dist/lunavla-3.0.0a2-py3-none-any.whl",
-            "dist/lunavla-3.0.0a2.tar.gz",
+            "dist/lunavla-3.0.0a3-py3-none-any.whl",
+            "dist/lunavla-3.0.0a3.tar.gz",
             "environment-requirements.txt",
             "test-manifest.json",
             "smolvla-conformance-status.json",
             "sbom.json",
             "provenance.jsonl",
-            "lunavla-v3-alpha2-code-evidence.tar.gz",
+            "lunavla-v3-alpha3-code-evidence.tar.gz",
         }
         if not required_names.issubset(item.path for item in assets):
-            raise ValueError("Alpha 2 candidate is missing required code-only assets")
+            raise ValueError("Alpha 3 candidate is missing required code-only assets")
         for name in (
             "pretrained_enabled",
             "conformance_only",
@@ -735,9 +735,9 @@ class Alpha2ReleaseCandidateV1:
         ):
             _bool(getattr(self, name), name)
         if self.pretrained_enabled or not self.conformance_only:
-            raise ValueError("Alpha 2 must keep SmolVLA pretrained disabled and conformance-only")
+            raise ValueError("Alpha 3 must keep SmolVLA pretrained disabled and conformance-only")
         if self.claim_allowed or self.pypi_published:
-            raise ValueError("Alpha 2 cannot allow scientific claims or publish to PyPI")
+            raise ValueError("Alpha 3 cannot allow scientific claims or publish to PyPI")
         object.__setattr__(self, "assets", assets)
 
     def to_dict(self) -> dict[str, Any]:
@@ -761,9 +761,9 @@ class Alpha2ReleaseCandidateV1:
         }
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "Alpha2ReleaseCandidateV1":
-        payload = _exact(value, set(cls.__dataclass_fields__), "Alpha 2 code-only candidate")
-        payload["assets"] = _records(payload["assets"], "Alpha 2 code-only assets")
+    def from_mapping(cls, value: Mapping[str, Any]) -> "Alpha3ReleaseCandidateV1":
+        payload = _exact(value, set(cls.__dataclass_fields__), "Alpha 3 code-only candidate")
+        payload["assets"] = _records(payload["assets"], "Alpha 3 code-only assets")
         return cls(**payload)
 
     def sha256(self) -> str:

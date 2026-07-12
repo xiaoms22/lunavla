@@ -50,11 +50,11 @@ from .data import (
 )
 from .engine import EngineV3, run_alpha
 from .release_contracts import (
-    ALPHA2_PACKAGE_VERSION,
-    ALPHA2_TAG,
+    ALPHA3_PACKAGE_VERSION,
+    ALPHA3_TAG,
     SMOLVLA_VALIDATION_PACKAGE_VERSION,
     SMOLVLA_VALIDATION_TAG,
-    Alpha2ReleaseCandidateV1,
+    Alpha3ReleaseCandidateV1,
     GpuValidationManifestV1,
     LicenseReviewV1,
     RunnerQualificationManifestV1,
@@ -64,11 +64,11 @@ from .release_contracts import (
 
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
-    "ALPHA2_PACKAGE_VERSION",
-    "ALPHA2_TAG",
+    "ALPHA3_PACKAGE_VERSION",
+    "ALPHA3_TAG",
     "SMOLVLA_VALIDATION_PACKAGE_VERSION",
     "SMOLVLA_VALIDATION_TAG",
-    "Alpha2ReleaseCandidateV1",
+    "Alpha3ReleaseCandidateV1",
     "ArtifactHashRecordV1",
     "CheckpointEnvelopeV4",
     "CheckpointEnvelopeV4R2",

@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 
 from lunavla.v3 import (
-    ALPHA2_PACKAGE_VERSION,
-    ALPHA2_TAG,
-    Alpha2ReleaseCandidateV1,
+    ALPHA3_PACKAGE_VERSION,
+    ALPHA3_TAG,
+    Alpha3ReleaseCandidateV1,
     SMOLVLA_VALIDATION_PACKAGE_VERSION,
     SMOLVLA_VALIDATION_TAG,
     SmolVLAValidationCandidateV1,
@@ -164,14 +164,14 @@ def _code_candidate_assets() -> tuple[ArtifactHashRecordV1, ...]:
     return tuple(
         ArtifactHashRecordV1(path, SHA)
         for path in (
-            "dist/lunavla-3.0.0a2-py3-none-any.whl",
-            "dist/lunavla-3.0.0a2.tar.gz",
+            "dist/lunavla-3.0.0a3-py3-none-any.whl",
+            "dist/lunavla-3.0.0a3.tar.gz",
             "environment-requirements.txt",
             "test-manifest.json",
             "smolvla-conformance-status.json",
             "sbom.json",
             "provenance.jsonl",
-            "lunavla-v3-alpha2-code-evidence.tar.gz",
+            "lunavla-v3-alpha3-code-evidence.tar.gz",
         )
     )
 
@@ -236,11 +236,11 @@ def test_gpu_manifest_and_release_candidate_round_trip_fail_closed() -> None:
         SmolVLAValidationCandidateV1.from_mapping(payload)
 
 
-def test_code_only_alpha2_candidate_requires_conformance_and_no_claims() -> None:
-    candidate = Alpha2ReleaseCandidateV1(
-        expected_tag=ALPHA2_TAG,
+def test_code_only_alpha3_candidate_requires_conformance_and_no_claims() -> None:
+    candidate = Alpha3ReleaseCandidateV1(
+        expected_tag=ALPHA3_TAG,
         git_sha=GIT_SHA,
-        package_version=ALPHA2_PACKAGE_VERSION,
+        package_version=ALPHA3_PACKAGE_VERSION,
         public_api_sha256=SHA,
         core_lock_sha256=SHA,
         diffusion_lock_sha256=SHA,
@@ -250,17 +250,17 @@ def test_code_only_alpha2_candidate_requires_conformance_and_no_claims() -> None
         dispatcher_sha256=SHA,
         assets=_code_candidate_assets(),
     )
-    assert Alpha2ReleaseCandidateV1.from_mapping(candidate.to_dict()) == candidate
+    assert Alpha3ReleaseCandidateV1.from_mapping(candidate.to_dict()) == candidate
     assert candidate.pretrained_enabled is False
     assert candidate.conformance_only is True
     payload = candidate.to_dict()
     payload["pretrained_enabled"] = True
     with pytest.raises(ValueError, match="pretrained disabled"):
-        Alpha2ReleaseCandidateV1.from_mapping(payload)
+        Alpha3ReleaseCandidateV1.from_mapping(payload)
     payload = candidate.to_dict()
     payload["claim_allowed"] = True
     with pytest.raises(ValueError, match="scientific claims"):
-        Alpha2ReleaseCandidateV1.from_mapping(payload)
+        Alpha3ReleaseCandidateV1.from_mapping(payload)
 
 
 def test_current_license_and_pretrained_gate_fails_before_weight_access(tmp_path: Path) -> None:
