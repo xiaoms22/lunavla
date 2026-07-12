@@ -204,6 +204,8 @@ jobs:
       CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
       RELEASE_TAG: ${{ inputs.tag }}
       GH_TOKEN: ${{ github.token }}
+      RELEASE_SIGNER_PRINCIPAL: xiaoms22@users.noreply.github.com
+      RELEASE_SIGNER_PUBLIC_KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIf2h6lqHrejD3Iyww/xfQ5XWOVsNfi0Hg/7U2ePLaQn
     steps:
       - name: Validate finalization request
         shell: bash
@@ -233,7 +235,8 @@ jobs:
           assert value['verification']['verified'] is True
           PY
           git config gpg.format ssh
-          git config gpg.ssh.allowedSignersFile docs/v3/release/allowed_signers
+          printf '%s %s\n' "$RELEASE_SIGNER_PRINCIPAL" "$RELEASE_SIGNER_PUBLIC_KEY" > "$RUNNER_TEMP/allowed_signers"
+          git config gpg.ssh.allowedSignersFile "$RUNNER_TEMP/allowed_signers"
           git verify-tag "$RELEASE_TAG"
       - uses: actions/download-artifact@v4
         with:

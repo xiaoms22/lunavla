@@ -97,7 +97,14 @@ def test_alpha2_code_release_dispatcher_is_hosted_and_weight_free() -> None:
     assert "smolvla-conformance-status.json" in workflow
     assert "weight_network_accessed': False" in workflow
     assert "v3.0.0-alpha.2" in workflow
+    assert "RELEASE_SIGNER_PRINCIPAL" in workflow
+    assert "RELEASE_SIGNER_PUBLIC_KEY" in workflow
+    assert 'gpg.ssh.allowedSignersFile "$RUNNER_TEMP/allowed_signers"' in workflow
+    assert "verification']['verified'] is True" in workflow
     assert "self-hosted" not in workflow
+
+    signer = Path("docs/v3/release/allowed_signers").read_text(encoding="utf-8")
+    assert signer.rstrip().endswith("/7U2ePLaQn")
 
 
 def test_gpu_and_release_locks_pin_authoritative_platforms() -> None:
