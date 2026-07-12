@@ -1,0 +1,13 @@
+schema_version: 1
+study_id: fixture_policy_ladder
+train_seeds: [11, 22, 33, 44, 55]
+data_seed: 42
+analysis_seed: 202701
+bootstrap_samples: 10000
+policies: [act_v3, diffusion_v3]
+task_ids: []
+evaluation_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+routes: []
+interventions: []
+repeat_train_seed: 11
+reduced_design: false
