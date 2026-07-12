@@ -71,6 +71,8 @@ def _text(value: Any, name: str) -> str:
 
 def _typed_image(value: Any, shape: tuple[int, ...], name: str) -> npt.NDArray[np.uint8]:
     image = _numpy(value, name=name)
+    if image.ndim == 4 and image.shape[0] == 1:
+        image = image[0]
     if image.ndim == 3 and image.shape[0] in {1, 3, 4} and image.shape[-1] not in {1, 3, 4}:
         image = np.moveaxis(image, 0, -1)
     if image.dtype.kind == "f":

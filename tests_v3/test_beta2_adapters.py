@@ -159,9 +159,13 @@ def test_libero_env_dual_camera_mapping_action_range_and_failure_close() -> None
         task_language="pick the black bowl",
         env_factory=lambda **_: upstream,
         observation_processor=lambda value: {
-            "observation.images.image": value["agentview_image"],
-            "observation.images.image2": value["robot0_eye_in_hand_image"],
-            "observation.state": value["observation.state"],
+            "observation.images.image": np.moveaxis(
+                value["agentview_image"][None, ...], -1, 1
+            ),
+            "observation.images.image2": np.moveaxis(
+                value["robot0_eye_in_hand_image"][None, ...], -1, 1
+            ),
+            "observation.state": value["observation.state"][None, ...],
         },
     )
     try:

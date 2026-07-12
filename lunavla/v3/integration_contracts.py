@@ -81,6 +81,22 @@ def _stable_hash(value: Mapping[str, Any]) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+def _freeze_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({str(key): _freeze_json(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json(item) for item in value)
+    return value
+
+
+def _thaw_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _thaw_json(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_json(item) for item in value]
+    return value
+
+
 @dataclass(frozen=True)
 class ExternalDatasetSpecV1:
     repo_id: str
@@ -302,9 +318,9 @@ class IntegrationManifestV1:
         frozen_data = json.loads(json.dumps(self.data_validation, allow_nan=False))
         frozen_env = json.loads(json.dumps(self.environment_validation, allow_nan=False))
         frozen_smokes = tuple(json.loads(json.dumps(item, allow_nan=False)) for item in self.policy_smokes)
-        object.__setattr__(self, "data_validation", MappingProxyType(frozen_data))
-        object.__setattr__(self, "environment_validation", MappingProxyType(frozen_env))
-        object.__setattr__(self, "policy_smokes", tuple(MappingProxyType(item) for item in frozen_smokes))
+        object.__setattr__(self, "data_validation", _freeze_json(frozen_data))
+        object.__setattr__(self, "environment_validation", _freeze_json(frozen_env))
+        object.__setattr__(self, "policy_smokes", tuple(_freeze_json(item) for item in frozen_smokes))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -318,9 +334,9 @@ class IntegrationManifestV1:
             "runner_qualification_sha256": self.runner_qualification_sha256,
             "metrics_sha256": self.metrics_sha256,
             "runner_role": self.runner_role,
-            "data_validation": dict(self.data_validation),
-            "environment_validation": dict(self.environment_validation),
-            "policy_smokes": [dict(item) for item in self.policy_smokes],
+            "data_validation": _thaw_json(self.data_validation),
+            "environment_validation": _thaw_json(self.environment_validation),
+            "policy_smokes": [_thaw_json(item) for item in self.policy_smokes],
             "downloaded_bytes": self.downloaded_bytes,
             "claim_allowed": self.claim_allowed,
             "benchmark_claim": self.benchmark_claim,

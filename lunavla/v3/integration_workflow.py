@@ -565,10 +565,11 @@ def verify_integration(output_root: str | Path) -> IntegrationManifestV1:
         raise ValueError("integration source spec hash mismatch")
     if inventory.repo_id != config.external_dataset_spec.repo_id or inventory.revision != config.external_dataset_spec.revision:
         raise ValueError("source inventory identity does not match config")
+    manifest_payload = manifest.to_dict()
     if metrics != {
-        "data_validation": dict(manifest.data_validation),
-        "environment_validation": dict(manifest.environment_validation),
-        "policy_smokes": [dict(item) for item in manifest.policy_smokes],
+        "data_validation": manifest_payload["data_validation"],
+        "environment_validation": manifest_payload["environment_validation"],
+        "policy_smokes": manifest_payload["policy_smokes"],
     }:
         raise ValueError("metrics do not independently reproduce the integration manifest")
     if manifest.runner_role != "fixture":
