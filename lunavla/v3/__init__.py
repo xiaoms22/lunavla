@@ -101,6 +101,13 @@ from .integration_contracts import (
     IntegrationManifestV1,
     SimulationTaskSpecV1,
 )
+from .real_adapters import (
+    EpisodeSelectionV1,
+    LeRobotDatasetSourceV3,
+    LiberoSpatialEnvV3,
+    PushTEnvV3,
+    select_minimum_episode_per_task,
+)
 
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
@@ -133,6 +140,7 @@ __all__ = [
     "FeatureSpec",
     "FeatureNormalizationV1",
     "ExternalDatasetSpecV1",
+    "EpisodeSelectionV1",
     "InMemoryDatasetSourceV3",
     "GpuValidationManifestV1",
     "LicenseReviewV1",
@@ -140,6 +148,8 @@ __all__ = [
     "SmolVLAValidationCandidateV1",
     "InterventionSpecV1",
     "IntegrationManifestV1",
+    "LeRobotDatasetSourceV3",
+    "LiberoSpatialEnvV3",
     "ObservationV3",
     "ModelSourceContractV1",
     "NormalizationStatsV1",
@@ -148,6 +158,7 @@ __all__ = [
     "PolicySampleV3",
     "PolicySpecV3",
     "PromptSpecV1",
+    "PushTEnvV3",
     "PromptParityManifestV1",
     "PromptParityRecordV1",
     "RunManifestV4",
@@ -181,6 +192,7 @@ __all__ = [
     "run_diagnostic",
     "run_manifest_from_mapping",
     "split_episode_ids",
+    "select_minimum_episode_per_task",
     "verify_run_directory",
     "typed_episode_key",
     "verify_checkpoint_directory",
