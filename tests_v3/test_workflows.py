@@ -12,7 +12,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
     )
     triggers = payload["on"]
     assert set(triggers["pull_request"]["branches"]) == {
-        "main", "v3", "agent/v3-beta1-diagnostics-rebased"
+        "main", "v3", "agent/v3-beta1-diagnostics-rebased", "agent/v3-beta2-pusht-libero"
     }
     assert triggers["push"]["branches"] == ["v3"]
     names = {job["name"] for job in payload["jobs"].values()}
@@ -26,6 +26,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-secret-scan",
         "v3-smolvla-adapter",
         "v3-beta2-fixtures",
+        "v3-rc-contracts",
     }
 
 
@@ -55,6 +56,9 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "generate_v3_diagnostic_image_fixtures.py --check" in workflow
     assert "diagnostic_image_ci_design.yaml" in workflow
     assert "outputs/v3/diagnostic-image-ci" in workflow
+    assert "validate-stable-designs" in workflow
+    assert "stable_pusht_policy_design.yaml" in workflow
+    assert "tests_v3/test_stable_contracts.py" in workflow
 
 
 def test_smolvla_release_dispatcher_is_manual_self_hosted_and_fail_closed() -> None:
