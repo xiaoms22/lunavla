@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Mapping
@@ -318,6 +319,7 @@ class TeachingFixtureStableExecutor:
                 },
             )
             checkpoint_sha256 = _tree_hash(checkpoint_root)
+            shutil.rmtree(checkpoint_root)
             lock = (
                 _ROOT / "requirements-v3-diffusion-cpu.lock"
                 if policy_id == "diffusion_v3"

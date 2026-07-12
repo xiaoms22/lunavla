@@ -19,6 +19,7 @@ from .stable_contracts import (
     validate_stable_design_set,
     verify_stable_evidence_bundle,
 )
+from .stable_workflow import verify_stable_study
 
 
 PORTFOLIO_STATEMENT = (
@@ -168,7 +169,12 @@ def _load_study(root: Path, study: str) -> tuple[
 ]:
     directory = root / study
     expected = {"design.json", "rows.json", "sentinel.json", "summary.json"}
-    if not directory.is_dir() or {item.name for item in directory.iterdir()} != expected:
+    if not directory.is_dir():
+        raise ValueError(f"portfolio evidence study {study} has an invalid file set")
+    names = {item.name for item in directory.iterdir()}
+    if "artifact-inventory.json" in names:
+        verify_stable_study(directory)
+    elif names != expected:
         raise ValueError(f"portfolio evidence study {study} has an invalid file set")
     design = StableEvidenceDesignV1.from_mapping(
         json.loads((directory / "design.json").read_text(encoding="utf-8"))
@@ -207,17 +213,39 @@ def _privacy_scan(files: Sequence[tuple[str, Path]]) -> dict[str, Any]:
     }
 
 
+def _source_files(source: Path) -> tuple[tuple[str, Path], ...]:
+    allowed = (
+        "artifact-inventory.json",
+        "claim-gate.json",
+        "design.json",
+        "repeat-rows.json",
+        "rows.json",
+        "sentinel.json",
+        "statistics.json",
+        "summary.json",
+    )
+    files: list[tuple[str, Path]] = []
+    for study in sorted(_STUDIES):
+        directory = source / study
+        names = {item.name for item in directory.iterdir()} if directory.is_dir() else set()
+        selected = allowed if "artifact-inventory.json" in names else (
+            "design.json", "rows.json", "sentinel.json", "summary.json"
+        )
+        for name in selected:
+            path = directory / name
+            if not path.is_file():
+                raise ValueError(f"portfolio evidence study {study} is missing {name}")
+            files.append((f"{study}/{name}", path))
+    return tuple(files)
+
+
 def build_portfolio(
     evidence_root: str | Path, output_root: str | Path, *, overwrite: bool = False
 ) -> Path:
     source = Path(evidence_root).resolve()
     if not source.is_dir() or {item.name for item in source.iterdir()} != _STUDIES:
         raise ValueError("portfolio evidence root must contain exactly the three frozen studies")
-    source_files = tuple(
-        (path.relative_to(source).as_posix(), path)
-        for path in sorted(source.rglob("*"))
-        if path.is_file()
-    )
+    source_files = _source_files(source)
     source_scan = _privacy_scan(source_files)
     if not source_scan["passed"]:
         raise ValueError("portfolio source evidence privacy scan failed")

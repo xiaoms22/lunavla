@@ -9,6 +9,7 @@ from lunavla.v3 import (
     StableEvidenceDesignV1,
     StableEvidenceRowV1,
     StableExecutionBatchV1,
+    build_portfolio,
     expected_stable_matrix_keys,
     run_stable_study,
     verify_stable_study,
@@ -23,9 +24,16 @@ DESIGN = Path("configs/v3/stable_pusht_policy_design.yaml")
 
 
 class _DeterministicExecutor:
-    def __init__(self, *, corrupt_repeat: bool = False, fail: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        corrupt_repeat: bool = False,
+        fail: bool = False,
+        binary_artifact: bool = False,
+    ) -> None:
         self.corrupt_repeat = corrupt_repeat
         self.fail = fail
+        self.binary_artifact = binary_artifact
 
     def execute(
         self,
@@ -78,6 +86,8 @@ class _DeterministicExecutor:
             ),
             encoding="utf-8",
         )
+        if self.binary_artifact:
+            (output_dir / "checkpoint.pt").write_bytes(b"\x80LunaVLA-test-checkpoint")
         return StableExecutionBatchV1(tuple(rows), SHA, SHA)
 
 
@@ -140,3 +150,22 @@ def test_teaching_executor_runs_real_act_engine_and_repeats_exactly(
     assert first.metrics_inventory_sha256 == second.metrics_inventory_sha256
     assert len(first.rows) == 1
     assert first.rows[0].first_action_mse is not None
+    assert not any(path.name == "checkpoint" for path in (tmp_path / "first").rglob("*"))
+
+
+def test_portfolio_reads_verified_text_contracts_not_binary_execution_artifacts(
+    tmp_path: Path,
+) -> None:
+    evidence = tmp_path / "evidence"
+    for design in (
+        "configs/v3/stable_pusht_policy_design.yaml",
+        "configs/v3/stable_libero_route_design.yaml",
+        "configs/v3/stable_libero_prompt_design.yaml",
+    ):
+        run_stable_study(
+            design,
+            evidence,
+            _DeterministicExecutor(binary_artifact=True),
+        )
+    portfolio = build_portfolio(evidence, tmp_path / "portfolio")
+    assert (portfolio / "portfolio_manifest.json").is_file()

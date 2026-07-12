@@ -35,6 +35,9 @@ not become positive claims.
 The seed 11 sentinel binds the deterministic seed-11 row subset, checkpoint and behavior metrics.
 Environment-specific latency and memory remain in the separate `PolicyProfileManifestV1`; they are
 not mixed into the bit-exact stable-evidence inventory.
+Checkpoint bytes are hashed during the source/repeat comparison and then deleted. The v3.0
+evidence bundle keeps only the semantic inventory and small manifests; it does not publish model
+or optimizer checkpoints.
 
 Each study is executed from a clean checkout and verified independently:
 
