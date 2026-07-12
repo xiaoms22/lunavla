@@ -28,10 +28,8 @@
   upstream revision and model hash are recorded, while the weight license remains `unverified` and
   `pretrained_enabled=false`. Default registry creation, optimizer steps, and restore fail closed;
   CI uses only dependency-injected implementations of the documented public methods.
-- the SmolVLA GPU workflow is manual-only and targets an existing self-hosted single-NVIDIA runner.
-  The default-branch-compatible dispatcher validates public license bytes before any future weight
-  access, then binds optimizer/resume/inference evidence to a clean SHA. With the current config it
-  intentionally refuses to proceed. The reserved distribution version `3.0.0a2` is not applied
-  until the separate gate-opening PR, so v2 release tooling cannot accidentally publish v3 assets.
+- Alpha 2 uses package `3.0.0a2` and a hosted CPU code-only release. The SmolVLA GPU workflow moves
+  to v3.1 and continues to fail closed. Historical v2 manifests retain their original package
+  identity; v2 release tooling rejects a v3 package rather than relabeling old assets.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
   contracts.

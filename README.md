@@ -8,7 +8,7 @@ LunaVLA is a small, CPU-runnable imitation-learning/visuomotor-agent teaching co
 
 The stable v1.1 task is `pusht_style_point_reach`: a synthetic 2D point-reach exercise inspired by the shape of a PushT learning loop. v1.1 has no images, no T-block physics, no Transformer, and no real-robot interface. The v2 branch adds experimental modality fixtures and a teaching-scale Transformer, but LunaVLA is still not a PushT benchmark or a production VLA model.
 
-The signed [`v1.1.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v1.1.0) remains the evidence-backed NumPy teaching core, and the signed [`v2.0.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v2.0.0) freezes the unified experimental engine. The `v3` integration branch develops stricter multimodal data contracts and diagnostics in an isolated namespace. Its Alpha fixtures do not establish language, visual, state-routing, PushT, or LIBERO performance.
+The signed [`v1.1.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v1.1.0) remains the evidence-backed NumPy teaching core, and the signed [`v2.0.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v2.0.0) freezes the unified experimental engine. The protected `v3-next` integration branch develops stricter multimodal data contracts and diagnostics while `v3` preserves the earlier Alpha baseline. Its Alpha fixtures do not establish language, visual, state-routing, PushT, or LIBERO performance.
 
 ## Quick start
 

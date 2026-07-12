@@ -23,9 +23,9 @@ Implemented in this Alpha:
 - `lerobot_smolvla`, a dependency-injected public-API conformance adapter. Its fixed model revision
   and 907 MB weight hash are recorded, but `license_status=unverified`, pretrained loading is
   disabled, and no optimizer/resume claim is made.
-- strict Alpha 2 license, GPU validation and release-candidate contracts; hash-locked CUDA/release
-  profiles; and a default-branch-compatible signed-tag dispatcher. These remain inactive until a
-  separate gate-opening PR supplies explicit weight-license evidence and a qualifying runner.
+- a hosted CPU code-only Alpha 2 candidate and signed-tag dispatcher. It packages ACT, Diffusion
+  and SmolVLA public-API conformance without accessing weights. The original license/GPU contracts
+  remain fail-closed in the separate v3.1 validation track.
 
 The fake LIBERO fixture tests data shape and lifecycle only. This branch does not download real
 LeRobot or LIBERO data, download or train SmolVLA weights, or establish language, image, state-route,
