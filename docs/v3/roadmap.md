@@ -25,7 +25,9 @@
    scientific claim. Integration targets the protected `v3-next` branch after Alpha 3.
 8. **Beta 2 — staged Draft:** pinned public PushT plus LIBERO-Spatial task IDs 0–3, explicitly reported as
    a diagnostic subset rather than a full benchmark.
-9. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
+9. **CPU core hardening — in progress:** versioned environment-specific policy profiles and the
+   fixed 1,550-row deterministic teaching evidence matrix, without GPU or pretrained weights.
+10. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
    signed assets, SBOM, provenance, and checksums.
 
 No release requires a target success rate. Negative or neutral evidence remains publishable; an

@@ -38,6 +38,8 @@ Implemented in the current candidate:
   both always record `claim_allowed=false`.
 - four byte-reproducible 16×16 synthetic PNG fixtures with a hash manifest. Real-data thumbnails
   remain prohibited.
+- versioned CPU profiling with fixed 5-run warmup, 20 measurements, latency, throughput and peak
+  RSS manifests. Measurements are environment-specific and cannot support policy rankings.
 
 The fake LIBERO fixture tests data shape and lifecycle only. This branch does not download real
 LeRobot or LIBERO data, download or train SmolVLA weights, or establish language, image, state-route,
@@ -52,4 +54,5 @@ Its reduced diagnostic fixtures remain framework-only and cannot open a scientif
 - [Capability matrix](capability_matrix.md)
 - [Alpha 3 release process](alpha3_release_process.md)
 - [SmolVLA runner qualification](smolvla_runner_qualification.md)
+- [CPU profiling](cpu_profiling.md)
 - [Machine-readable public contract](public_api_contract.json)

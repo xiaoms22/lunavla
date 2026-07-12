@@ -29,6 +29,8 @@ from lunavla.v3 import (
     NormalizationStatsV1,
     ObservationV3,
     PolicyBatchV3,
+    PolicyProfileDesignV1,
+    PolicyProfileManifestV1,
     PolicySampleV3,
     PolicySpecV3,
     PromptParityManifestV1,
@@ -69,6 +71,8 @@ PUBLIC_TYPES = {
     "PolicySpecV3": PolicySpecV3,
     "PolicySampleV3": PolicySampleV3,
     "PolicyBatchV3": PolicyBatchV3,
+    "PolicyProfileDesignV1": PolicyProfileDesignV1,
+    "PolicyProfileManifestV1": PolicyProfileManifestV1,
     "TrainStepResultV3": TrainStepResultV3,
     "FeatureNormalizationV1": FeatureNormalizationV1,
     "NormalizationStatsV1": NormalizationStatsV1,
@@ -102,6 +106,11 @@ def main() -> int:
     if descriptor() != expected:
         raise SystemExit("v3 public API descriptor drifted")
     for path in sorted((ROOT / "configs/v3").glob("*.yaml")):
+        if path.name.startswith("profile_"):
+            PolicyProfileDesignV1.from_mapping(
+                __import__("yaml").safe_load(path.read_text(encoding="utf-8"))
+            )
+            continue
         if path.name.endswith("_design.yaml"):
             DiagnosticDesignV1.from_mapping(
                 __import__("yaml").safe_load(path.read_text(encoding="utf-8"))
