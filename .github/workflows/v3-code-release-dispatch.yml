@@ -26,7 +26,7 @@ on:
       tag:
         description: Signed annotated tag for finalization
         required: false
-        default: v3.0.0-alpha.2
+        default: v3.0.0-alpha.3
         type: string
 
 permissions:
@@ -41,7 +41,7 @@ concurrency:
 
 jobs:
   candidate:
-    name: v3-alpha2-code-candidate
+    name: v3-alpha3-code-candidate
     if: ${{ inputs.phase == 'candidate' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -142,7 +142,9 @@ jobs:
           set -euo pipefail
           root="$RUNNER_TEMP/release-assets"
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
-          python -m build --outdir "$root/dist"
+          python -m build --no-isolation --outdir "$root/dist"
+          python scripts/run_v3_code_release.py normalize-sdist "$root"/dist/*.tar.gz \
+            --source-date-epoch "$SOURCE_DATE_EPOCH"
           uv pip freeze > "$root/environment-requirements.txt"
           cyclonedx-py requirements "$root/environment-requirements.txt" \
             --output-reproducible --output-file "$root/sbom.json"
@@ -183,19 +185,19 @@ jobs:
         with:
           subject-path: |
             ${{ runner.temp }}/release-assets/dist/*
-            ${{ runner.temp }}/release-assets/lunavla-v3-alpha2-code-evidence.tar.gz
+            ${{ runner.temp }}/release-assets/lunavla-v3-alpha3-code-evidence.tar.gz
             ${{ runner.temp }}/release-assets/release-candidate.json
             ${{ runner.temp }}/release-assets/sbom.json
             ${{ runner.temp }}/release-assets/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: lunavla-v3-alpha2-code-candidate-${{ inputs.expected_sha }}
+          name: lunavla-v3-alpha3-code-candidate-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/release-assets/
           if-no-files-found: error
           retention-days: 30
 
   finalize:
-    name: v3-alpha2-code-finalize
+    name: v3-alpha3-code-finalize
     if: ${{ inputs.phase == 'finalize' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -213,7 +215,7 @@ jobs:
           set -euo pipefail
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$CANDIDATE_RUN_ID" =~ ^[1-9][0-9]*$ ]]
-          test "$RELEASE_TAG" = v3.0.0-alpha.2
+          test "$RELEASE_TAG" = v3.0.0-alpha.3
           test "${{ inputs.source_ref }}" = "$RELEASE_TAG"
       - uses: actions/checkout@v4
         with:
@@ -240,7 +242,7 @@ jobs:
           git verify-tag "$RELEASE_TAG"
       - uses: actions/download-artifact@v4
         with:
-          name: lunavla-v3-alpha2-code-candidate-${{ inputs.expected_sha }}
+          name: lunavla-v3-alpha3-code-candidate-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/release-assets
           github-token: ${{ github.token }}
           run-id: ${{ inputs.candidate_run_id }}
@@ -263,7 +265,10 @@ jobs:
           python scripts/run_v3_code_release.py verify-candidate \
             "$root/release-candidate.json" --asset-root "$root"
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
-          python -m build --outdir "$RUNNER_TEMP/reproduced-dist"
+          python -m build --no-isolation --outdir "$RUNNER_TEMP/reproduced-dist"
+          python scripts/run_v3_code_release.py normalize-sdist \
+            "$RUNNER_TEMP"/reproduced-dist/*.tar.gz \
+            --source-date-epoch "$SOURCE_DATE_EPOCH"
           for artifact in "$root"/dist/*; do
             cmp --silent "$artifact" "$RUNNER_TEMP/reproduced-dist/$(basename "$artifact")"
           done
@@ -277,10 +282,10 @@ jobs:
           root="$RUNNER_TEMP/release-assets"
           ! gh release view "$RELEASE_TAG" >/dev/null 2>&1
           gh release create "$RELEASE_TAG" --draft --prerelease \
-            --title "LunaVLA v3.0.0-alpha.2 — CPU policy contracts" \
+            --title "LunaVLA v3.0.0-alpha.3 — CPU policy contracts" \
             --notes "Code-only prerelease: ACT and Diffusion CPU paths plus a SmolVLA public-API conformance adapter. No pretrained weight, policy-performance, modality, task, or robot-deployment claim." \
             "$root/dist/"* "$root/environment-requirements.txt" "$root/sbom.json" \
             "$root/provenance.jsonl" "$root/test-manifest.json" \
             "$root/smolvla-conformance-status.json" \
-            "$root/lunavla-v3-alpha2-code-evidence.tar.gz" \
+            "$root/lunavla-v3-alpha3-code-evidence.tar.gz" \
             "$root/release-candidate.json" "$root/SHA256SUMS"
