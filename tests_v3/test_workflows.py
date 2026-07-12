@@ -24,6 +24,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-v2-compat",
         "v3-secret-scan",
         "v3-smolvla-adapter",
+        "v3-rc-contracts",
     }
 
 
@@ -55,6 +56,9 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "outputs/v3/diagnostic-image-ci" in workflow
     assert "profile-run configs/v3/profile_numpy_cpu.yaml" in workflow
     assert "profile-verify" in workflow
+    assert "validate-stable-designs" in workflow
+    assert "stable_pusht_policy_design.yaml" in workflow
+    assert "tests_v3/test_stable_contracts.py" in workflow
 
 
 def test_v31_smolvla_dispatcher_is_manual_self_hosted_and_fail_closed() -> None:
