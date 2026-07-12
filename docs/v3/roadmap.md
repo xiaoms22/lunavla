@@ -30,8 +30,11 @@
    bounded ACT/Diffusion Engine smokes, and a manual dual-runner dispatcher. PR tests are offline;
    no authoritative or secondary runner manifest has been produced. The four LIBERO tasks remain
    a diagnostic subset rather than a full benchmark.
-9. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
-   signed assets, SBOM, provenance, and checksums.
+9. **RC/stable — preparation implemented in a stacked Draft:** strict predeclared 300/800/1,000-row
+   evidence designs, fail-closed evidence summaries, same-merge-SHA stable candidate binding,
+   migration/model/data/safety documents, and asset/SBOM/provenance/checksum requirements. The
+   public API is not yet frozen, no five-seed run has executed, and no RC/stable tag may be created
+   before the Alpha 2, Beta 1, Beta 2 and external runner/license gates complete.
 
 No release requires a target success rate. Negative or neutral evidence remains publishable; an
 incomplete or mixed-provenance matrix cannot open a claim.

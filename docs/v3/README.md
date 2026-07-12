@@ -1,4 +1,4 @@
-# LunaVLA v3 Beta 2 stacked integration draft
+# LunaVLA v3 RC/stable preparation stacked draft
 
 This branch builds the policy and artifact contracts needed by the Alpha 2 strategy ladder on top
 of the merged Alpha 1 foundation. It preserves the frozen v2 public API and lightweight v1.x path.
@@ -44,6 +44,9 @@ Implemented in the current draft:
   exactly-once PushT/LIBERO environment adapters;
 - `source-preflight`, `integration-run`, and `integration-verify` commands, with an offline PR
   fixture gate and a separate manual single-A100 dispatcher. The real dispatcher has not run.
+- predeclared stable evidence contracts for the exact 300-row PushT policy, 800-row LIBERO route,
+  and 1,000-row LIBERO prompt matrices, plus strict evidence-summary and stable-release candidate
+  verification. These contracts do not assert that the studies or release have run.
 
 The PR fixture tests contracts, mapping, lifecycle, atomic output and tamper detection without
 network access. No authoritative real-data/GPU manifest exists yet, so the public connectivity
@@ -60,4 +63,9 @@ tag is created from the current integration-branch baseline.
 - [Alpha 2 release process](alpha2_release_process.md)
 - [SmolVLA runner qualification](smolvla_runner_qualification.md)
 - [Beta 2 bounded integration](beta2_integration.md)
+- [RC and stable release boundary](rc_stable_release.md)
+- [v2 to v3 migration guide](migration_v2_to_v3.md)
+- [Pre-RC model card](model_card.md)
+- [Pre-RC data card](data_card.md)
+- [Security, privacy and safety boundary](security_and_safety.md)
 - [Machine-readable public contract](public_api_contract.json)

@@ -52,3 +52,5 @@
   not enter v1.x, v2, Alpha 1/2, or Beta 1 CPU quickstarts.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 2
   contracts.
+- RC preparation adds machine-readable stable evidence and release-candidate contracts only. It
+  does not change v1/v2 serialization or promote any Draft v3 contract to a frozen stable API.
