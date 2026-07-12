@@ -1,4 +1,4 @@
-# v3 Beta 1 draft capability matrix
+# v3 Beta 1 diagnostic candidate capability matrix
 
 | Area | Current status | Boundary |
 | --- | --- | --- |

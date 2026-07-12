@@ -2,6 +2,20 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
+## v3.0.0-beta.1 — diagnostic integration candidate
+
+### Added
+
+- Added canonical prompt rendering, explicit state routes, typed interventions, same-split donor banks, and train/eval/deploy preprocessing parity checks.
+- Added schema-4 revision-3 diagnostic manifests, EvidenceManifest v2, per-step traces, independent matrix recomputation, and static reports.
+- Added the reduced 40-pair NumPy route/prompt fixture and independent four-pair ACT image-shuffle fixture with deterministic synthetic thumbnails.
+
+### Boundaries
+
+- Every Beta 1 result remains `claim_allowed=false`; reduced fixtures establish framework integrity only.
+- No instruction-following, state-route, visual-contribution, task-performance, or robot-deployment claim is made.
+- SmolVLA remains conformance-only with unverified weight licensing and pretrained access disabled.
+
 ## v3.0.0-alpha.3 — code-only release candidate
 
 ### Added
