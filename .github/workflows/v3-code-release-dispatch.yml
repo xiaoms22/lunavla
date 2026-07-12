@@ -1,0 +1,281 @@
+name: V3 Code-Only Release Dispatcher
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Build a candidate or finalize a signed tag
+        required: true
+        default: candidate
+        type: choice
+        options: [candidate, finalize]
+      source_ref:
+        description: Reviewed source ref or signed tag
+        required: true
+        default: v3-next
+        type: string
+      expected_sha:
+        description: Immutable 40-character release commit
+        required: true
+        type: string
+      candidate_run_id:
+        description: Candidate workflow run ID for finalization
+        required: false
+        default: ""
+        type: string
+      tag:
+        description: Signed annotated tag for finalization
+        required: false
+        default: v3.0.0-alpha.2
+        type: string
+
+permissions:
+  actions: read
+  attestations: write
+  contents: write
+  id-token: write
+
+concurrency:
+  group: v3-code-release-${{ inputs.phase }}-${{ inputs.expected_sha }}
+  cancel-in-progress: false
+
+jobs:
+  candidate:
+    name: v3-alpha2-code-candidate
+    if: ${{ inputs.phase == 'candidate' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Validate immutable request
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${{ inputs.source_ref }}" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$ ]]
+          [[ "${{ inputs.source_ref }}" != refs/pull* ]]
+          [[ "${{ inputs.source_ref }}" != *..* && "${{ inputs.source_ref }}" != *//* ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify source and default-branch dispatcher identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --depth=1 origin main
+          git show origin/main:.github/workflows/v3-code-release-dispatch.yml \
+            > "$RUNNER_TEMP/main-v3-code-release-dispatch.yml"
+          cmp --silent .github/workflows/v3-code-release-dispatch.yml \
+            "$RUNNER_TEMP/main-v3-code-release-dispatch.yml"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install hash-locked release CPU profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v3-release-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Recompute required checks and code-only status
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/release-assets"
+          install -d -m 0700 "$root"
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${EXPECTED_SHA}/check-runs?per_page=100" \
+            > "$root/required-checks.json"
+          ROOT="$root" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['ROOT'])
+          checks = json.loads((root / 'required-checks.json').read_text())['check_runs']
+          required = {
+              'v3-contracts', 'v3-data', 'v3-engine-cpu', 'v3-v2-compat',
+              'v3-secret-scan', 'CodeQL Python', 'v3-diffusion-cpu',
+              'v3-smolvla-adapter',
+          }
+          success = {
+              row['name'] for row in checks
+              if row.get('status') == 'completed' and row.get('conclusion') == 'success'
+          }
+          missing = sorted(required - success)
+          if missing:
+              raise SystemExit(f'required checks are not green: {missing}')
+          manifest = {
+              'schema_version': 1,
+              'git_sha': os.environ['EXPECTED_SHA'],
+              'checks': {name: 'success' for name in sorted(required)},
+              'pretrained_enabled': False,
+              'weight_network_accessed': False,
+              'claim_allowed': False,
+          }
+          (root / 'test-manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+          status = json.loads(Path('docs/v3/release/smolvla-license-status.json').read_text())
+          conformance = {
+              'schema_version': 1,
+              'repo_id': status['repo_id'],
+              'revision': status['revision'],
+              'license_status': status['license_status'],
+              'spdx_license': status['spdx_license'],
+              'pretrained_enabled': False,
+              'conformance_only': True,
+              'weight_accessed': False,
+          }
+          (root / 'smolvla-conformance-status.json').write_text(
+              json.dumps(conformance, indent=2, sort_keys=True) + '\n'
+          )
+          PY
+      - name: Build and verify code-only assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/release-assets"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          python -m build --outdir "$root/dist"
+          python -m pip freeze --all > "$root/environment-requirements.txt"
+          cyclonedx-py requirements "$root/environment-requirements.txt" \
+            --output-reproducible --outfile "$root/sbom.json"
+          EXPECTED_SHA="$EXPECTED_SHA" ROOT="$root" python - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path(os.environ['ROOT'], 'provenance.jsonl').write_text(json.dumps({
+              'schema_version': 1,
+              'git_sha': os.environ['EXPECTED_SHA'],
+              'workflow': 'v3-code-release-dispatch',
+              'weight_accessed': False,
+              'pypi_published': False,
+          }, sort_keys=True) + '\n')
+          PY
+          uv venv "$RUNNER_TEMP/wheel-smoke" --python 3.12
+          uv pip install --python "$RUNNER_TEMP/wheel-smoke/bin/python" "$root"/dist/*.whl
+          "$RUNNER_TEMP/wheel-smoke/bin/lunavla-v3" --help >/dev/null
+          for config in act_fake_libero_cpu diffusion_fake_libero_cpu smolvla_conformance_cpu; do
+            "$RUNNER_TEMP/wheel-smoke/bin/lunavla-v3" validate-config \
+              "configs/v3/${config}.yaml" >/dev/null
+          done
+          python scripts/run_v3_code_release.py bundle --asset-root "$root"
+          python scripts/run_v3_code_release.py build-candidate \
+            --expected-git-sha "$EXPECTED_SHA" \
+            --required-checks "$root/required-checks.json" \
+            --asset-root "$root" --out "$root/release-candidate.json"
+          python scripts/run_v3_code_release.py verify-candidate \
+            "$root/release-candidate.json" --asset-root "$root"
+          (
+            cd "$root"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z \
+              | xargs -0 shasum -a 256 | sed 's#  \./#  #' > SHA256SUMS
+          )
+          test -z "$(find "$root" -type f \( -name '*.pt' -o -name '*.safetensors' \
+            -o -name '*.ckpt' -o -name '*.bin' \) -print -quit)"
+      - name: Attest candidate assets
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            ${{ runner.temp }}/release-assets/dist/*
+            ${{ runner.temp }}/release-assets/lunavla-v3-alpha2-code-evidence.tar.gz
+            ${{ runner.temp }}/release-assets/release-candidate.json
+            ${{ runner.temp }}/release-assets/sbom.json
+            ${{ runner.temp }}/release-assets/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lunavla-v3-alpha2-code-candidate-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/release-assets/
+          if-no-files-found: error
+          retention-days: 30
+
+  finalize:
+    name: v3-alpha2-code-finalize
+    if: ${{ inputs.phase == 'finalize' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Validate finalization request
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CANDIDATE_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          test "$RELEASE_TAG" = v3.0.0-alpha.2
+          test "${{ inputs.source_ref }}" = "$RELEASE_TAG"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify signed annotated tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
+          tag_object="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq .object.sha)"
+          gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object}" > "$RUNNER_TEMP/tag.json"
+          python - <<'PY'
+          import json, os
+          value = json.load(open(os.environ['RUNNER_TEMP'] + '/tag.json'))
+          assert value['tag'] == os.environ['RELEASE_TAG']
+          assert value['object']['sha'] == os.environ['EXPECTED_SHA']
+          assert value['verification']['verified'] is True
+          PY
+          git config gpg.format ssh
+          git config gpg.ssh.allowedSignersFile docs/v3/release/allowed_signers
+          git verify-tag "$RELEASE_TAG"
+      - uses: actions/download-artifact@v4
+        with:
+          name: lunavla-v3-alpha2-code-candidate-${{ inputs.expected_sha }}
+          path: ${{ runner.temp }}/release-assets
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.candidate_run_id }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Reproduce and finalize
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v3-release-cpu.lock \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+          root="$RUNNER_TEMP/release-assets"
+          python scripts/run_v3_code_release.py verify-candidate \
+            "$root/release-candidate.json" --asset-root "$root"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          python -m build --outdir "$RUNNER_TEMP/reproduced-dist"
+          for artifact in "$root"/dist/*; do
+            cmp --silent "$artifact" "$RUNNER_TEMP/reproduced-dist/$(basename "$artifact")"
+          done
+          python scripts/run_v3_code_release.py finalize-release \
+            "$root/release-candidate.json" --asset-root "$root" \
+            --tag "$RELEASE_TAG" --expected-git-sha "$EXPECTED_SHA"
+      - name: Create draft prerelease only
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/release-assets"
+          ! gh release view "$RELEASE_TAG" >/dev/null 2>&1
+          gh release create "$RELEASE_TAG" --draft --prerelease \
+            --title "LunaVLA v3.0.0-alpha.2 — CPU policy contracts" \
+            --notes "Code-only prerelease: ACT and Diffusion CPU paths plus a SmolVLA public-API conformance adapter. No pretrained weight, policy-performance, modality, task, or robot-deployment claim." \
+            "$root/dist/"* "$root/environment-requirements.txt" "$root/sbom.json" \
+            "$root/provenance.jsonl" "$root/test-manifest.json" \
+            "$root/smolvla-conformance-status.json" \
+            "$root/lunavla-v3-alpha2-code-evidence.tar.gz" \
+            "$root/release-candidate.json" "$root/SHA256SUMS"
