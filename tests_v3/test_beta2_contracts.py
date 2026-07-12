@@ -59,6 +59,7 @@ def test_libero_task_subset_and_feature_contract_are_pinned() -> None:
     source = config.external_dataset_spec
     simulation = config.simulation_task_spec
     assert source is not None and source.task_ids == LIBERO_SPATIAL_DATASET_TASK_IDS
+    assert len(source.file_hashes) == 10
     assert simulation is not None and simulation.init_state_ids == (0,)
     features = config.feature_schema
     assert tuple(item.name for item in features.by_role("image")) == (

@@ -62,7 +62,17 @@ dataset:
       video_backend: pyav
       return_uint8: true
       max_download_bytes: 402653184
-      file_hashes: {}
+      file_hashes:
+        data/chunk-000/file-309.parquet: ffdd6a09033288835468f13c9dc287d1e64c2bce209d1ec4caef07a7ad9df719
+        data/chunk-000/file-310.parquet: 0397b96357c7daaf5d100bf1d14efda43df89c4ea91c8a8265e2f3a17ee31199
+        data/chunk-000/file-311.parquet: 6deac0ec06e8eb112ac7e6f64a823155fbac617a51caf08b389476054546ee31
+        meta/episodes/chunk-000/file-000.parquet: 324db6d3f8efbfb340177507c11bfa2e78b1753c46802b3700fa8c8b4be461db
+        meta/info.json: 630630a1a4f07fc9fc1f1b2b7987ed3bd034bd8cffaaf8a0e6939ae9c468445d
+        meta/tasks.parquet: 80bbbcdf623b7447c0f187af8ea70aa3a5c0018aaf56adba1731aeddcf18f5ff
+        videos/observation.images.image/chunk-000/file-027.mp4: 0577ca3a9c6bf32939d2b1e74394fcced609419abb671f9d398c6bf145a9746f
+        videos/observation.images.image/chunk-000/file-028.mp4: e477e24ad8a47f203e0c5f34e20d8e834f95560b7753c017f8638b96effd3c90
+        videos/observation.images.image2/chunk-000/file-027.mp4: 1c77000de301901563fba32ce6692a5e204dbabd8b149e10d9c56815ebc9e10a
+        videos/observation.images.image2/chunk-000/file-028.mp4: 299df9ba350bd8aa8080ef3512f9df8d506332501b3abd479729ce7ead25f41c
 embodiment:
   id: libero_spatial
   task_id: libero_spatial_subset
