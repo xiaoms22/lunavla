@@ -363,8 +363,6 @@ class StableEvidenceRowV1:
     final_metric: float
     smoothness: float
     first_action_mse: float | None
-    latency_ms: float
-    peak_memory_bytes: int
     failure_count: int
     schema_version: int = 1
 
@@ -395,11 +393,10 @@ class StableEvidenceRowV1:
         ):
             object.__setattr__(self, name, _sha256(getattr(self, name), name))
         _boolean(self.success, "row success")
-        for name in ("final_metric", "smoothness", "latency_ms"):
+        for name in ("final_metric", "smoothness"):
             object.__setattr__(self, name, _finite(getattr(self, name), name))
         if self.first_action_mse is not None:
             object.__setattr__(self, "first_action_mse", _finite(self.first_action_mse, "first_action_mse"))
-        object.__setattr__(self, "peak_memory_bytes", _integer(self.peak_memory_bytes, "peak_memory_bytes"))
         object.__setattr__(self, "failure_count", _integer(self.failure_count, "failure_count"))
 
     @property
@@ -432,8 +429,6 @@ class StableEvidenceRowV1:
             "final_metric": self.final_metric,
             "smoothness": self.smoothness,
             "first_action_mse": self.first_action_mse,
-            "latency_ms": self.latency_ms,
-            "peak_memory_bytes": self.peak_memory_bytes,
             "failure_count": self.failure_count,
         }
 
@@ -648,6 +643,23 @@ def expected_stable_matrix_keys(design: StableEvidenceDesignV1) -> tuple[tuple[A
     )
 
 
+def stable_row_inventory_sha256(rows: Sequence[StableEvidenceRowV1]) -> str:
+    actual_rows = tuple(rows)
+    if any(not isinstance(row, StableEvidenceRowV1) for row in actual_rows):
+        raise TypeError("stable evidence rows must contain StableEvidenceRowV1 values")
+    return _stable_hash(
+        {
+            "rows": [
+                row.to_dict()
+                for row in sorted(
+                    actual_rows,
+                    key=lambda item: json.dumps(item.matrix_key, separators=(",", ":")),
+                )
+            ]
+        }
+    )
+
+
 def build_stable_evidence_summary(
     design: StableEvidenceDesignV1,
     rows: Sequence[StableEvidenceRowV1],
@@ -672,16 +684,9 @@ def build_stable_evidence_summary(
         and actual == expected
         and all(row.study_id == design.study_id for row in actual_rows)
     )
-    inventory = _stable_hash(
-        {
-            "rows": [
-                row.to_dict()
-                for row in sorted(
-                    actual_rows,
-                    key=lambda item: json.dumps(item.matrix_key, separators=(",", ":")),
-                )
-            ]
-        }
+    inventory = stable_row_inventory_sha256(actual_rows)
+    repeat_inventory = stable_row_inventory_sha256(
+        tuple(row for row in actual_rows if row.train_seed == design.repeat_train_seed)
     )
     dependencies: dict[str, set[str]] = {}
     upstreams: dict[str, set[str]] = {}
@@ -702,7 +707,7 @@ def build_stable_evidence_summary(
     sentinel_verified = (
         sentinel.study_id == design.study_id
         and sentinel.train_seed == design.repeat_train_seed
-        and sentinel.source_row_inventory_sha256 == inventory
+        and sentinel.source_row_inventory_sha256 == repeat_inventory
         and sentinel.verified
     )
     reasons: list[str] = []
