@@ -143,7 +143,7 @@ jobs:
           root="$RUNNER_TEMP/release-assets"
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
           python -m build --outdir "$root/dist"
-          python -m pip freeze --all > "$root/environment-requirements.txt"
+          uv pip freeze > "$root/environment-requirements.txt"
           cyclonedx-py requirements "$root/environment-requirements.txt" \
             --output-reproducible --outfile "$root/sbom.json"
           EXPECTED_SHA="$EXPECTED_SHA" ROOT="$root" python - <<'PY'
