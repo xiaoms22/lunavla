@@ -1,4 +1,4 @@
-# LunaVLA v3 Beta 1 diagnostic integration candidate
+# LunaVLA v3 Beta 2 hosted CPU integration candidate
 
 This branch builds the policy and artifact contracts introduced by the Alpha 2 strategy ladder on top
 of the merged Alpha 1 foundation. It preserves the frozen v2 public API and lightweight v1.x path.
@@ -38,10 +38,19 @@ Implemented in the current candidate:
   both always record `claim_allowed=false`.
 - four byte-reproducible 16×16 synthetic PNG fixtures with a hash manifest. Real-data thumbnails
   remain prohibited.
+- config contract revision 3 plus strict `ExternalDatasetSpecV1`, `SimulationTaskSpecV1`, and
+  `IntegrationManifestV1` contracts for pinned PushT and LIBERO-Spatial suite-local task IDs
+  0–3;
+- LeRobot v3 frame mapping, two-camera LIBERO state/action mapping, source download caps, and
+  exactly-once PushT/LIBERO environment adapters;
+- `source-preflight`, `integration-run`, and `integration-verify` commands, with an offline PR
+  fixture gate and a separate manual GitHub-hosted Linux CPU dispatcher. The real dispatcher has
+  not run on this candidate SHA.
 
-The fake LIBERO fixture tests data shape and lifecycle only. This branch does not download real
-LeRobot or LIBERO data, download or train SmolVLA weights, or establish language, image, state-route,
-PushT, LIBERO, ACT, or Diffusion performance.
+The PR fixture tests contracts, mapping, lifecycle, atomic output and tamper detection without
+network access. No same-SHA real-data/CPU manifest exists yet, so the public connectivity
+wording remains closed. This branch does not download or train SmolVLA weights or establish
+language, image, state-route, PushT, LIBERO, ACT, or Diffusion performance.
 
 This work targets the protected `v3-next` integration branch after the signed Alpha 3 prerelease.
 Its reduced diagnostic fixtures remain framework-only and cannot open a scientific claim.
@@ -52,4 +61,5 @@ Its reduced diagnostic fixtures remain framework-only and cannot open a scientif
 - [Capability matrix](capability_matrix.md)
 - [Alpha 3 release process](alpha3_release_process.md)
 - [SmolVLA runner qualification](smolvla_runner_qualification.md)
+- [Beta 2 bounded integration](beta2_integration.md)
 - [Machine-readable public contract](public_api_contract.json)

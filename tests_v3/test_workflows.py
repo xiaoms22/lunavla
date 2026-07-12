@@ -23,6 +23,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-v2-compat",
         "v3-secret-scan",
         "v3-smolvla-adapter",
+        "v3-beta2-fixtures",
     }
 
 
@@ -132,3 +133,26 @@ def test_gpu_and_release_locks_pin_authoritative_platforms() -> None:
     assert "cyclonedx-bom==7" in release
     assert "setuptools==80.10.2" in release
     assert "nvidia-" not in release and "triton==" not in release
+
+
+def test_beta2_dispatcher_and_lock_are_manual_bounded_and_fail_closed() -> None:
+    path = Path(".github/workflows/v3-beta2-integration-dispatch.yml")
+    payload = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+    assert set(payload["on"]) == {"workflow_dispatch"}
+    job = payload["jobs"]["bounded-integration"]
+    assert job["runs-on"] == "ubuntu-latest"
+    workflow = path.read_text(encoding="utf-8")
+    assert "requirements-v3-beta2-integration-cpu.lock" in workflow
+    assert "LUNAVLA_HOSTED_CPU" in workflow
+    assert "self-hosted" not in workflow
+    assert "qualification_run_id" not in workflow
+    assert "source-preflight" in workflow
+    assert "integration-run" in workflow and "integration-verify" in workflow
+    assert "claim_allowed" not in workflow
+    lock = Path("requirements-v3-beta2-integration-cpu.lock").read_text(encoding="utf-8")
+    for requirement in (
+        "hf-libero==0.1.4", "lerobot==0.6.0", "torch==2.11.0+cpu",
+        "torchvision==0.26.0+cpu", "gym-pusht==0.1.6", "av==15.1.0",
+    ):
+        assert requirement in lock
+    assert "nvidia-" not in lock and "triton==" not in lock

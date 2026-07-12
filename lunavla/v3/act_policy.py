@@ -34,11 +34,15 @@ def act_policy_spec(config: ExperimentConfig) -> PolicySpecV3:
         raise ValueError("act_policy_spec requires policy.type=act_v3")
     parameters = config.policy["parameters"]
     state_feature = str(parameters["state_feature"])
-    camera_feature = parameters["camera_feature"]
+    camera_features = tuple(
+        str(item) for item in parameters.get("camera_features", ())
+    )
+    if not camera_features and parameters["camera_feature"] is not None:
+        camera_features = (str(parameters["camera_feature"]),)
     required = ["state"]
     if int(parameters["instruction_dim"]) > 0:
         required.append("instruction")
-    if camera_feature is not None:
+    if camera_features:
         required.insert(0, "image")
     return PolicySpecV3(
         policy_id=POLICY_ID,
@@ -47,7 +51,7 @@ def act_policy_spec(config: ExperimentConfig) -> PolicySpecV3:
             "lunavla/native", "act_v3-alpha2", {}, "not_required", False
         ),
         required_modalities=tuple(required),
-        camera_order=() if camera_feature is None else (str(camera_feature),),
+        camera_order=camera_features,
         state_order=(state_feature,),
         history=int(parameters["history"]),
         chunk_size=int(parameters["chunk_size"]),
@@ -71,7 +75,10 @@ def _transformer_config(config: ExperimentConfig, spec: PolicySpecV3) -> Transfo
     image_shape = None
     if spec.camera_order:
         image_by_name = {item.name: item for item in config.feature_schema.by_role("image")}
-        image_shape = image_by_name[spec.camera_order[0]].shape
+        shapes = [image_by_name[name].shape for name in spec.camera_order]
+        if len({(shape[0], shape[2]) for shape in shapes}) != 1:
+            raise ValueError("ACT multi-camera composition requires equal heights and channels")
+        image_shape = (shapes[0][0], sum(shape[1] for shape in shapes), shapes[0][2])
     clip = config.training["gradient_clip_norm"]
     return TransformerPolicyConfig(
         state_dim=state_by_name[spec.state_order[0]].shape[0],
@@ -102,14 +109,14 @@ class ActPolicyV3:
         spec: PolicySpecV3,
         normalization: NormalizationStatsV1,
         state_feature: str,
-        camera_feature: str | None,
+        camera_features: tuple[str, ...],
         temporal_ensemble_decay: float | None,
     ) -> None:
         self.policy = policy
         self.spec = spec
         self.normalization = normalization
         self.state_feature = state_feature
-        self.camera_feature = camera_feature
+        self.camera_features = camera_features
         self._ensembler = (
             None
             if temporal_ensemble_decay is None
@@ -135,10 +142,12 @@ class ActPolicyV3:
         if stats is not None:
             state = stats.normalize(state)
         image = None
-        if self.camera_feature is not None:
-            if tuple(observation.images) != (self.camera_feature,):
+        if self.camera_features:
+            if tuple(observation.images) != self.camera_features:
                 raise ValueError("ACT observation camera order does not match PolicySpecV3")
-            image = observation.images[self.camera_feature]
+            image = np.concatenate(
+                [observation.images[name] for name in self.camera_features], axis=1
+            )
         elif observation.images:
             raise ValueError("ACT cannot silently discard image features")
         return Observation(state, instruction=observation.instruction, image=image)
@@ -213,7 +222,7 @@ def _create(
         spec=spec,
         normalization=normalization,
         state_feature=str(parameters["state_feature"]),
-        camera_feature=parameters["camera_feature"],
+        camera_features=spec.camera_order,
         temporal_ensemble_decay=parameters["temporal_ensemble_decay"],
     )
 
@@ -243,7 +252,7 @@ def _restore(
         spec=spec,
         normalization=normalization,
         state_feature=str(parameters["state_feature"]),
-        camera_feature=parameters["camera_feature"],
+        camera_features=spec.camera_order,
         temporal_ensemble_decay=parameters["temporal_ensemble_decay"],
     )
 

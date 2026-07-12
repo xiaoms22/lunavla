@@ -2,6 +2,20 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
+## v3.0.0-beta.2 — hosted CPU integration candidate
+
+### Added
+
+- Added strict public-source and simulation contracts for pinned PushT episode 0 and LIBERO-Spatial task IDs 0–3.
+- Added real LeRobot frame mapping, PushT/LIBERO environment adapters, and bounded ACT/Diffusion optimizer smokes through the unified Engine.
+- Added source preflight, atomic integration execution, independent verification, and a hash-locked GitHub-hosted Linux CPU workflow.
+
+### Boundaries
+
+- The networked workflow establishes public-data and simulator connectivity only; `claim_allowed=false` and `benchmark_claim=false` are immutable.
+- No dataset, video, cache, checkpoint, model weight, policy comparison, task benchmark, or deployment claim is published.
+- SmolVLA pretrained validation remains deferred to v3.1 and is not a Beta 2 dependency.
+
 ## v3.0.0-beta.1 — diagnostic integration candidate
 
 ### Added

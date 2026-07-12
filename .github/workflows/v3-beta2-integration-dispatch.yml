@@ -1,0 +1,140 @@
+name: V3 Beta 2 Hosted CPU Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Reviewed branch or immutable commit in this repository
+        required: true
+        default: agent/v3-beta2-pusht-libero-cpu
+        type: string
+      expected_sha:
+        description: Immutable 40-character lowercase source commit SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: v3-beta2-hosted-cpu-${{ inputs.expected_sha }}
+  cancel-in-progress: false
+
+jobs:
+  bounded-integration:
+    name: v3-beta2-hosted-cpu
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      LUNAVLA_HOSTED_CPU: "true"
+      MUJOCO_GL: egl
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Validate immutable request
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${{ inputs.source_ref }}" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$ ]]
+          [[ "${{ inputs.source_ref }}" != refs/pull* ]]
+          [[ "${{ inputs.source_ref }}" != *..* && "${{ inputs.source_ref }}" != *//* ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify source and default-branch dispatcher identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD^{commit})" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          git fetch --depth=1 origin main
+          git show origin/main:.github/workflows/v3-beta2-integration-dispatch.yml \
+            > "$RUNNER_TEMP/main-v3-beta2-integration-dispatch.yml"
+          cmp --silent .github/workflows/v3-beta2-integration-dispatch.yml \
+            "$RUNNER_TEMP/main-v3-beta2-integration-dispatch.yml"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install hash-locked Linux CPU integration profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12
+          uv pip sync requirements-v3-beta2-integration-cpu.lock \
+            --require-hashes --strict --torch-backend cpu
+          uv pip install --no-deps --no-build-isolation --editable .
+          uv pip check
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Assert authoritative CPU-only runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --no-sync python - <<'PY'
+          import importlib.metadata as md
+          import numpy
+          import torch
+          import torchvision
+
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          assert numpy.__version__ == "2.2.6"
+          assert torch.__version__ == "2.11.0+cpu"
+          assert torch.version.cuda is None
+          assert not torch.cuda.is_available()
+          assert torchvision.__version__ == "0.26.0+cpu"
+          assert md.version("lerobot") == "0.6.0"
+          assert md.version("hf-libero") == "0.1.4"
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in md.distributions()
+              if dist.metadata["Name"]
+          }
+          forbidden = forbidden_cpu_packages(installed)
+          assert not forbidden, f"CUDA/NCCL/Triton packages installed: {sorted(forbidden)}"
+          PY
+      - name: Run bounded real PushT and LIBERO-Spatial integrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache="$RUNNER_TEMP/lunavla-beta2-cache"
+          evidence="$RUNNER_TEMP/lunavla-beta2-evidence"
+          install -d -m 0700 "$cache" "$evidence"
+          lunavla-v3 source-preflight configs/v3/beta2_pusht_integration.yaml \
+            > "$evidence/pusht-preflight.json"
+          lunavla-v3 integration-run configs/v3/beta2_pusht_integration.yaml \
+            --cache-dir "$cache/pusht" --out "$evidence/pusht"
+          lunavla-v3 integration-verify "$evidence/pusht"
+          lunavla-v3 source-preflight configs/v3/beta2_libero_integration.yaml \
+            > "$evidence/libero-preflight.json"
+          lunavla-v3 integration-run configs/v3/beta2_libero_integration.yaml \
+            --cache-dir "$cache/libero" --out "$evidence/libero"
+          lunavla-v3 integration-verify "$evidence/libero"
+          test -z "$(find "$evidence" -type f \( -name '*.mp4' -o -name '*.safetensors' \
+            -o -name '*.pt' -o -name '*.ckpt' \) -print -quit)"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+      - name: Attest connectivity-only manifests
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            ${{ runner.temp }}/lunavla-beta2-evidence/pusht/integration_manifest.json
+            ${{ runner.temp }}/lunavla-beta2-evidence/libero/integration_manifest.json
+      - name: Upload small evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-beta2-hosted-cpu-${{ inputs.expected_sha }}
+          path: |
+            ${{ runner.temp }}/lunavla-beta2-evidence/pusht-preflight.json
+            ${{ runner.temp }}/lunavla-beta2-evidence/libero-preflight.json
+            ${{ runner.temp }}/lunavla-beta2-evidence/pusht/*.json
+            ${{ runner.temp }}/lunavla-beta2-evidence/pusht/dependency-lock.txt
+            ${{ runner.temp }}/lunavla-beta2-evidence/libero/*.json
+            ${{ runner.temp }}/lunavla-beta2-evidence/libero/dependency-lock.txt
+          if-no-files-found: error
+          retention-days: 30

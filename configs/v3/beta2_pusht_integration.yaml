@@ -1,0 +1,95 @@
+schema_version: 3
+contract_revision: 3
+project_name: lunavla-v3-beta2-pusht-integration
+engine: lunavla_v3
+policy:
+  type: act_v3
+  parameters:
+    state_feature: state.proprioception
+    camera_feature: camera.primary
+    instruction_dim: 0
+    history: 1
+    chunk_size: 4
+    horizon: 4
+    execution_steps: 1
+    d_model: 64
+    nhead: 4
+    num_encoder_layers: 2
+    num_decoder_layers: 2
+    dim_feedforward: 128
+    latent_dim: 16
+    dropout: 0.0
+    kl_weight: 0.01
+    sample_latent_during_training: true
+    temporal_ensemble_decay: 0.01
+task:
+  id: lerobot_pusht
+  parameters:
+    simulation:
+      schema_version: 1
+      environment_id: gym_pusht/PushT-v0
+      suite: pusht
+      task_ids: []
+      init_state_ids: [0]
+      control_mode: absolute
+      camera_mapping: {pixels: camera.primary}
+      state_mapping: {agent_pos: state.proprioception}
+      action_mapping: {action: action.primary}
+      max_steps: 3
+      headless: true
+dataset:
+  type: lerobot_pusht
+  split: train
+  seed: 42
+  parameters:
+    source:
+      schema_version: 1
+      repo_id: lerobot/pusht
+      revision: b1c3ecbae7f244acc039a3dbc255a00dad1372b9
+      license: Apache-2.0
+      task_ids: []
+      episodes: [0]
+      episode_selection: explicit
+      video_backend: pyav
+      return_uint8: true
+      max_download_bytes: 12582912
+      file_hashes:
+        data/chunk-000/file-000.parquet: 9abc0431f12d10c33b5b37b1bf1e6e557c8ae1c8c29fb86658969e48fcbbbf01
+        meta/episodes/chunk-000/file-000.parquet: bc1226f33d3d1635ec1954f9942073709be8e106fde5f4f16b9d52edc4e0ebc4
+        videos/observation.image/chunk-000/file-000.mp4: f58d11857651dad5983c021b56a50a68a6ce19068834c1fb5cac099219fb3a78
+embodiment:
+  id: lerobot_pusht
+  task_id: lerobot_pusht
+  control_rate_hz: 10.0
+  camera_mapping: {observation.image: camera.primary}
+  state_mapping: {observation.state: state.proprioception}
+  action_mapping: {action: action.primary}
+features:
+  schema_version: 1
+  items:
+    - {name: camera.primary, role: image, dtype: uint8, shape: [96, 96, 3], unit: pixel, frame: pusht_camera, rate_hz: 10.0, normalization: none, source_key: observation.image, required_by: [act_v3]}
+    - {name: state.proprioception, role: state, dtype: float32, shape: [2], unit: pixel, frame: pusht_world, rate_hz: 10.0, normalization: minmax, source_key: observation.state, required_by: [act_v3]}
+    - {name: action.primary, role: action, dtype: float32, shape: [2], unit: pixel, frame: pusht_world, rate_hz: 10.0, normalization: minmax, source_key: action, required_by: [act_v3]}
+training:
+  device: cpu
+  seed: 11
+  batch_size: 1
+  steps: 1
+  learning_rate: 0.0003
+  optimizer: {type: adam, parameters: {}}
+  scheduler: {type: constant, parameters: {}}
+  precision: float32
+  gradient_clip_norm: 10.0
+  resume: {enabled: false, checkpoint: null, strict: true}
+evaluation: {execution_mode: receding_horizon, episodes: 1, seed: 1000, seeds: [1000], max_steps: 3}
+diagnostics: {enabled: false}
+prompt:
+  enabled: false
+  renderer_id: lunavla.canonical_json
+  renderer_version: 1
+  assistant_target: action_chunk
+  neutral_token: "[MASKED]"
+  camera_order: [camera.primary]
+  public_slots: {}
+routing: {mode: expert_only, state_features: [state.proprioception]}
+artifacts: {output_dir: outputs/v3/beta2-pusht, checkpoint_name: act_v3.pt}

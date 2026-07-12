@@ -1,0 +1,112 @@
+schema_version: 3
+contract_revision: 3
+project_name: lunavla-v3-beta2-libero-spatial-integration
+engine: lunavla_v3
+policy:
+  type: diffusion_v3
+  parameters:
+    state_feature: state.proprioception
+    camera_features: [camera.agentview, camera.wrist]
+    unused_modalities: [instruction]
+    history: 2
+    chunk_size: 4
+    horizon: 8
+    execution_steps: 4
+    n_action_steps: 4
+    noise_scheduler_type: DDIM
+    num_train_timesteps: 16
+    num_inference_steps: 8
+    prediction_type: epsilon
+    do_mask_loss_for_padding: true
+    noise_seed: 202611
+    down_dims: [32, 64, 128]
+    kernel_size: 3
+    n_groups: 8
+    diffusion_step_embed_dim: 32
+    spatial_softmax_num_keypoints: 8
+    vision_backbone: resnet18
+    use_group_norm: true
+    use_separate_rgb_encoder_per_camera: true
+    pretrained_backbone_weights: null
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: true
+    clip_sample_range: 1.0
+task:
+  id: libero_spatial_subset
+  parameters:
+    simulation:
+      schema_version: 1
+      environment_id: libero
+      suite: libero_spatial
+      task_ids: [0, 1, 2, 3]
+      init_state_ids: [0]
+      control_mode: relative
+      camera_mapping: {observation.images.image: camera.agentview, observation.images.image2: camera.wrist}
+      state_mapping: {observation.state: state.proprioception}
+      action_mapping: {action: action.primary}
+      max_steps: 3
+      headless: true
+dataset:
+  type: lerobot_libero_spatial
+  split: train
+  seed: 42
+  parameters:
+    source:
+      schema_version: 1
+      repo_id: lerobot/libero
+      revision: a1aaacb7f6cd6ee5fb43120f673cebb0cfea7dd4
+      license: Apache-2.0
+      task_ids: [34, 37, 38, 35]
+      episodes: []
+      episode_selection: minimum_per_task
+      video_backend: pyav
+      return_uint8: true
+      max_download_bytes: 402653184
+      file_hashes:
+        data/chunk-000/file-309.parquet: ffdd6a09033288835468f13c9dc287d1e64c2bce209d1ec4caef07a7ad9df719
+        data/chunk-000/file-310.parquet: 0397b96357c7daaf5d100bf1d14efda43df89c4ea91c8a8265e2f3a17ee31199
+        data/chunk-000/file-311.parquet: 6deac0ec06e8eb112ac7e6f64a823155fbac617a51caf08b389476054546ee31
+        meta/episodes/chunk-000/file-000.parquet: 324db6d3f8efbfb340177507c11bfa2e78b1753c46802b3700fa8c8b4be461db
+        meta/info.json: 630630a1a4f07fc9fc1f1b2b7987ed3bd034bd8cffaaf8a0e6939ae9c468445d
+        meta/tasks.parquet: 80bbbcdf623b7447c0f187af8ea70aa3a5c0018aaf56adba1731aeddcf18f5ff
+        videos/observation.images.image/chunk-000/file-027.mp4: 0577ca3a9c6bf32939d2b1e74394fcced609419abb671f9d398c6bf145a9746f
+        videos/observation.images.image/chunk-000/file-028.mp4: e477e24ad8a47f203e0c5f34e20d8e834f95560b7753c017f8638b96effd3c90
+        videos/observation.images.image2/chunk-000/file-027.mp4: 1c77000de301901563fba32ce6692a5e204dbabd8b149e10d9c56815ebc9e10a
+        videos/observation.images.image2/chunk-000/file-028.mp4: 299df9ba350bd8aa8080ef3512f9df8d506332501b3abd479729ce7ead25f41c
+embodiment:
+  id: libero_spatial
+  task_id: libero_spatial_subset
+  control_rate_hz: 10.0
+  camera_mapping: {observation.images.image: camera.agentview, observation.images.image2: camera.wrist}
+  state_mapping: {observation.state: state.proprioception}
+  action_mapping: {action: action.primary}
+features:
+  schema_version: 1
+  items:
+    - {name: camera.agentview, role: image, dtype: uint8, shape: [256, 256, 3], unit: pixel, frame: agentview_camera, rate_hz: 10.0, normalization: none, source_key: observation.images.image, required_by: [diffusion_v3]}
+    - {name: camera.wrist, role: image, dtype: uint8, shape: [256, 256, 3], unit: pixel, frame: wrist_camera, rate_hz: 10.0, normalization: none, source_key: observation.images.image2, required_by: [diffusion_v3]}
+    - {name: state.proprioception, role: state, dtype: float32, shape: [8], unit: normalized, frame: robot, rate_hz: 10.0, normalization: minmax, source_key: observation.state, required_by: [diffusion_v3]}
+    - {name: action.primary, role: action, dtype: float32, shape: [7], unit: normalized_relative, frame: robot, rate_hz: 10.0, normalization: minmax, source_key: action, required_by: [diffusion_v3]}
+training:
+  device: cpu
+  seed: 11
+  batch_size: 1
+  steps: 1
+  learning_rate: 0.0003
+  optimizer: {type: adamw, parameters: {weight_decay: 0.000001, betas: [0.95, 0.999], eps: 0.00000001}}
+  scheduler: {type: constant, parameters: {}}
+  precision: float32
+  gradient_clip_norm: 10.0
+  resume: {enabled: false, checkpoint: null, strict: true}
+evaluation: {execution_mode: open_loop_chunk, episodes: 1, seed: 1000, seeds: [1000], max_steps: 3}
+diagnostics: {enabled: false}
+prompt:
+  enabled: false
+  renderer_id: lunavla.canonical_json
+  renderer_version: 1
+  assistant_target: action_chunk
+  neutral_token: "[MASKED]"
+  camera_order: [camera.agentview, camera.wrist]
+  public_slots: {}
+routing: {mode: expert_only, state_features: [state.proprioception]}
+artifacts: {output_dir: outputs/v3/beta2-libero, checkpoint_name: diffusion_v3}
