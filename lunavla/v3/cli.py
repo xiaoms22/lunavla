@@ -17,6 +17,7 @@ from .diagnostic_workflow import (
 from .engine import dataset_for_config, run_alpha
 from .migration import migrate_v2_mapping
 from .profiling import run_profile, verify_profile
+from .portfolio import build_portfolio, verify_portfolio
 from .stable_contracts import (
     StableEvidenceDesignV1,
     StableEvidenceRowV1,
@@ -75,6 +76,12 @@ def _parser() -> argparse.ArgumentParser:
     profile_run.add_argument("--overwrite", action="store_true")
     profile_verify = subparsers.add_parser("profile-verify")
     profile_verify.add_argument("output_root")
+    portfolio_build = subparsers.add_parser("portfolio-build")
+    portfolio_build.add_argument("evidence_root")
+    portfolio_build.add_argument("--out", required=True)
+    portfolio_build.add_argument("--overwrite", action="store_true")
+    portfolio_verify = subparsers.add_parser("portfolio-verify")
+    portfolio_verify.add_argument("output_root")
     stable_designs = subparsers.add_parser("validate-stable-designs")
     stable_designs.add_argument("designs", nargs="+")
     stable_evidence = subparsers.add_parser("verify-stable-evidence")
@@ -145,6 +152,38 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "policy_id": profile_manifest.policy_id,
                     "release_eligible": profile_manifest.release_eligible,
                     "comparative_claim_allowed": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "portfolio-build":
+        output = build_portfolio(
+            arguments.evidence_root,
+            arguments.out,
+            overwrite=arguments.overwrite,
+        )
+        portfolio_manifest = verify_portfolio(output)
+        print(
+            json.dumps(
+                {
+                    "output_dir": str(output),
+                    "release_eligible": portfolio_manifest.release_eligible,
+                    "total_rows": portfolio_manifest.total_rows,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "portfolio-verify":
+        portfolio_manifest = verify_portfolio(arguments.output_root)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "git_sha": portfolio_manifest.git_sha,
+                    "release_eligible": portfolio_manifest.release_eligible,
+                    "total_rows": portfolio_manifest.total_rows,
                 },
                 sort_keys=True,
             )

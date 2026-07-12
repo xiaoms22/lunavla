@@ -59,6 +59,9 @@
     "PolicyProfileManifestV1": {
       "signature": "(git_sha: 'str', git_dirty: 'bool', design_sha256: 'str', config_sha256: 'str', dependency_lock_sha256: 'str', environment_sha256: 'str', metrics_sha256: 'str', policy_id: 'str', device: 'str', warmup: 'int', measurements: 'int', batch_size: 'int', threads: 'int', release_eligible: 'bool', comparative_claim_allowed: 'bool', statement: 'str', schema_version: 'int' = 1) -> None"
     },
+    "PortfolioBundleV1": {
+      "signature": "(git_sha: 'str', evidence_summaries: 'tuple[ArtifactHashRecordV1, ...]', total_rows: 'int', capability_statements: 'tuple[str, ...]', limitations: 'tuple[str, ...]', privacy_scan_sha256: 'str', files: 'tuple[ArtifactHashRecordV1, ...]', source_homogeneous: 'bool', release_eligible: 'bool', schema_version: 'int' = 1) -> None"
+    },
     "TrainStepResultV3": {
       "signature": "(loss: 'float', loss_components: 'Mapping[str, float]', gradient_norm: 'float | None', learning_rate: 'float', step: 'int', finite: 'bool', timing_ms: 'Mapping[str, float]') -> None"
     },

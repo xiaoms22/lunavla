@@ -15,4 +15,3 @@ v2 NumPy checkpoints remain read-only. Tensor checkpoints are never relabelled a
 `diffusion_v3` or `lerobot_smolvla`; retraining is required when architectures are incompatible.
 Run manifests and checkpoint envelopes retain their original revision and are verified without
 rewriting historical bytes.
-
