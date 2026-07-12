@@ -58,6 +58,7 @@ Its reduced diagnostic fixtures remain framework-only and cannot open a scientif
 - [Alpha 3 release process](alpha3_release_process.md)
 - [SmolVLA runner qualification](smolvla_runner_qualification.md)
 - [CPU profiling](cpu_profiling.md)
+- [Verified learner portfolio export](portfolio_export.md)
 - [RC and stable release boundary](rc_stable_release.md)
 - [v2 to v3 migration guide](migration_v2_to_v3.md)
 - [Pre-RC model card](model_card.md)
