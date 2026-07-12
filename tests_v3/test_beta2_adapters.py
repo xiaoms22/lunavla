@@ -45,10 +45,12 @@ def test_lerobot_source_maps_frames_without_raw_metadata_leakage() -> None:
     episodes = source.load()
     assert received == {
         "repo_id": "lerobot/pusht",
+        "root": None,
         "revision": "b1c3ecbae7f244acc039a3dbc255a00dad1372b9",
         "episodes": [0],
         "video_backend": "pyav",
         "download_videos": True,
+        "return_uint8": True,
     }
     assert len(episodes) == 1 and len(episodes[0].transitions) == 3
     assert episodes[0].transitions[-1].terminated
@@ -156,6 +158,11 @@ def test_libero_env_dual_camera_mapping_action_range_and_failure_close() -> None
         init_state_id=0,
         task_language="pick the black bowl",
         env_factory=lambda **_: upstream,
+        observation_processor=lambda value: {
+            "observation.images.image": value["agentview_image"],
+            "observation.images.image2": value["robot0_eye_in_hand_image"],
+            "observation.state": value["observation.state"],
+        },
     )
     try:
         observation = env.reset(seed=1000)

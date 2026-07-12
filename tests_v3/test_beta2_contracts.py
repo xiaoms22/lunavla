@@ -93,10 +93,12 @@ def test_simulation_and_manifest_contracts_are_frozen_and_fail_closed() -> None:
     manifest = IntegrationManifestV1(
         git_sha="1" * 40,
         git_dirty=False,
+        config_sha256="6" * 64,
         dependency_lock_sha256="2" * 64,
         source_spec_sha256="3" * 64,
         source_inventory_sha256="4" * 64,
         runner_qualification_sha256="5" * 64,
+        metrics_sha256="7" * 64,
         runner_role="fixture",
         data_validation=data,
         environment_validation={"closed": True},

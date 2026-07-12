@@ -259,10 +259,12 @@ class SimulationTaskSpecV1:
 class IntegrationManifestV1:
     git_sha: str
     git_dirty: bool
+    config_sha256: str
     dependency_lock_sha256: str
     source_spec_sha256: str
     source_inventory_sha256: str
     runner_qualification_sha256: str
+    metrics_sha256: str
     runner_role: str
     data_validation: Mapping[str, Any]
     environment_validation: Mapping[str, Any]
@@ -281,8 +283,8 @@ class IntegrationManifestV1:
         if not isinstance(self.git_dirty, bool):
             raise TypeError("git_dirty must be boolean")
         for name in (
-            "dependency_lock_sha256", "source_spec_sha256", "source_inventory_sha256",
-            "runner_qualification_sha256",
+            "config_sha256", "dependency_lock_sha256", "source_spec_sha256",
+            "source_inventory_sha256", "runner_qualification_sha256", "metrics_sha256",
         ):
             value = getattr(self, name)
             if not isinstance(value, str) or not _SHA256.fullmatch(value):
@@ -309,10 +311,12 @@ class IntegrationManifestV1:
             "schema_version": self.schema_version,
             "git_sha": self.git_sha,
             "git_dirty": self.git_dirty,
+            "config_sha256": self.config_sha256,
             "dependency_lock_sha256": self.dependency_lock_sha256,
             "source_spec_sha256": self.source_spec_sha256,
             "source_inventory_sha256": self.source_inventory_sha256,
             "runner_qualification_sha256": self.runner_qualification_sha256,
+            "metrics_sha256": self.metrics_sha256,
             "runner_role": self.runner_role,
             "data_validation": dict(self.data_validation),
             "environment_validation": dict(self.environment_validation),
@@ -326,9 +330,9 @@ class IntegrationManifestV1:
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "IntegrationManifestV1":
         fields = {
-            "schema_version", "git_sha", "git_dirty", "dependency_lock_sha256",
+            "schema_version", "git_sha", "git_dirty", "config_sha256", "dependency_lock_sha256",
             "source_spec_sha256", "source_inventory_sha256", "runner_qualification_sha256",
-            "runner_role", "data_validation", "environment_validation", "policy_smokes",
+            "metrics_sha256", "runner_role", "data_validation", "environment_validation", "policy_smokes",
             "downloaded_bytes", "claim_allowed", "benchmark_claim", "statement",
         }
         payload = _exact(value, fields, "IntegrationManifestV1")

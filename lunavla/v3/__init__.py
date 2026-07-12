@@ -108,6 +108,14 @@ from .real_adapters import (
     PushTEnvV3,
     select_minimum_episode_per_task,
 )
+from .integration_workflow import (
+    IntegrationRuntime,
+    SourceFileRecordV1,
+    SourceInventoryV1,
+    preflight_source,
+    run_integration,
+    verify_integration,
+)
 
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
@@ -148,6 +156,7 @@ __all__ = [
     "SmolVLAValidationCandidateV1",
     "InterventionSpecV1",
     "IntegrationManifestV1",
+    "IntegrationRuntime",
     "LeRobotDatasetSourceV3",
     "LiberoSpatialEnvV3",
     "ObservationV3",
@@ -167,6 +176,8 @@ __all__ = [
     "RoutedObservationV1",
     "StateRouteSpecV1",
     "SimulationTaskSpecV1",
+    "SourceFileRecordV1",
+    "SourceInventoryV1",
     "TaskEnvV3",
     "TransitionV3",
     "TrainStepResultV3",
@@ -189,11 +200,14 @@ __all__ = [
     "observation_from_v2",
     "observation_to_v2",
     "run_alpha",
+    "run_integration",
     "run_diagnostic",
     "run_manifest_from_mapping",
     "split_episode_ids",
     "select_minimum_episode_per_task",
     "verify_run_directory",
+    "verify_integration",
+    "preflight_source",
     "typed_episode_key",
     "verify_checkpoint_directory",
     "verify_diagnostic_output",
