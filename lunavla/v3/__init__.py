@@ -55,6 +55,8 @@ from .release_contracts import (
     Alpha2ReleaseCandidateV1,
     GpuValidationManifestV1,
     LicenseReviewV1,
+    RunnerQualificationManifestV1,
+    WeightLicenseStatusV1,
 )
 
 __all__ = [
@@ -79,6 +81,7 @@ __all__ = [
     "InMemoryDatasetSourceV3",
     "GpuValidationManifestV1",
     "LicenseReviewV1",
+    "RunnerQualificationManifestV1",
     "ObservationV3",
     "ModelSourceContractV1",
     "NormalizationStatsV1",
@@ -92,6 +95,7 @@ __all__ = [
     "TransitionV3",
     "TrainStepResultV3",
     "VLAPolicyV3",
+    "WeightLicenseStatusV1",
     "audit_episodes",
     "checkpoint_envelope_from_mapping",
     "fit_normalization_stats",

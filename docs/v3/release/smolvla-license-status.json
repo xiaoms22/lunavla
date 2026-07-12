@@ -1,0 +1,29 @@
+{
+  "checked_at": "2026-07-12",
+  "conformance_only": true,
+  "license_status": "unverified",
+  "owner_authorization_is_license_evidence": false,
+  "owner_authorization_scope": "local_evaluation_only",
+  "pretrained_enabled": false,
+  "release_eligible": false,
+  "repo_id": "lerobot/smolvla_base",
+  "reviewer": "xiaoms22",
+  "revision": "d06fce6e38c25c04ac5a6319eefb9fae0e257cb2",
+  "schema_version": 1,
+  "source_snapshots": [
+    {
+      "path": "docs/v3/release/smolvla-file-inventory-observation.json",
+      "sha256": "51c190bc9713aba85996d617216252acae81a6c6d992ae2d150b8cda65e53bd0"
+    },
+    {
+      "path": "docs/v3/release/smolvla-model-card-observation.json",
+      "sha256": "4a1a9d7681da7ce3b301cae86b0ceac93961f7a48e0026c4d75982c1e74411f2"
+    },
+    {
+      "path": "docs/v3/release/smolvla-repository-metadata-observation.json",
+      "sha256": "a4ee4687f80798d1e0c75a77a2a77a06fe430888b26a38eb3d6ede7de17604ef"
+    }
+  ],
+  "spdx_license": "NOASSERTION",
+  "weight_sha256": "7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb"
+}

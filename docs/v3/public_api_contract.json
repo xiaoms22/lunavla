@@ -29,6 +29,12 @@
     "LicenseReviewV1": {
       "signature": "(repo_id: 'str', revision: 'str', spdx_license: 'str', evidence_url: 'str', evidence_sha256: 'str', scope: 'str', reviewer: 'str', reviewed_at: 'str', schema_version: 'int' = 1) -> None"
     },
+    "WeightLicenseStatusV1": {
+      "signature": "(repo_id: 'str', revision: 'str', weight_sha256: 'str', license_status: 'str', spdx_license: 'str', pretrained_enabled: 'bool', conformance_only: 'bool', owner_authorization_scope: 'str', owner_authorization_is_license_evidence: 'bool', release_eligible: 'bool', source_snapshots: 'tuple[ArtifactHashRecordV1, ...]', reviewer: 'str', checked_at: 'str', schema_version: 'int' = 1) -> None"
+    },
+    "RunnerQualificationManifestV1": {
+      "signature": "(role: 'str', git_sha: 'str', dependency_lock_sha256: 'str', container_image_sha256: 'str', runner_name_sha256: 'str', runner_labels: 'tuple[str, ...]', runner_os: 'str', runner_os_version: 'str', runner_arch: 'str', python_version: 'str', cpu_count: 'int', memory_bytes: 'int', disk_free_bytes: 'int', gpu_count: 'int', cuda_visible_device_count: 'int', gpu_name: 'str', gpu_uuid_sha256: 'str', driver_version: 'str', cuda_runtime: 'str', torch_version: 'str', torchvision_version: 'str', network_hosts: 'tuple[str, ...]', workspace_clean: 'bool', container_isolated: 'bool', private_mounts_detected: 'bool', ephemeral_declared: 'bool', weight_accessed: 'bool', release_eligible: 'bool', claim_allowed: 'bool', checked_at: 'str', schema_version: 'int' = 1) -> None"
+    },
     "GpuValidationManifestV1": {
       "signature": "(git_sha: 'str', package_version: 'str', license_review_sha256: 'str', model_source_sha256: 'str', dependency_lock_sha256: 'str', dispatcher_sha256: 'str', runner_labels: 'tuple[str, ...]', runner_os: 'str', runner_arch: 'str', gpu_count: 'int', gpu_name: 'str', gpu_uuid_sha256: 'str', driver_version: 'str', cuda_runtime: 'str', torch_version: 'str', torchvision_version: 'str', downloaded_files: 'tuple[ArtifactHashRecordV1, ...]', model_bytes: 'int', train_seed: 'int', loss_before: 'float', loss_after: 'float', gradient_norm: 'float', checkpoint_sha256: 'str', restored_action_sha256: 'str', resume_rtol: 'float', resume_atol: 'float', optimizer_step_verified: 'bool', resume_verified: 'bool', inference_verified: 'bool', claim_allowed: 'bool' = False, schema_version: 'int' = 1) -> None"
     },

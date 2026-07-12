@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from lunavla.v3.artifacts import sha256_file
 from lunavla.v3 import (
     EmbodimentSpec,
     EpisodeRecordV3,
@@ -16,6 +17,8 @@ from lunavla.v3 import (
     Alpha2ReleaseCandidateV1,
     GpuValidationManifestV1,
     LicenseReviewV1,
+    RunnerQualificationManifestV1,
+    WeightLicenseStatusV1,
     NormalizationStatsV1,
     ObservationV3,
     PolicyBatchV3,
@@ -34,6 +37,7 @@ SMOLVLA_LOCK = ROOT / "requirements-v3-smolvla-cpu.lock"
 SMOLVLA_GPU_LOCK = ROOT / "requirements-v3-smolvla-gpu-cu128.lock"
 RELEASE_LOCK = ROOT / "requirements-v3-release-cpu.lock"
 RELEASE_DISPATCHER = ROOT / ".github/workflows/v3-alpha2-release-dispatch.yml"
+LICENSE_STATUS = ROOT / "docs/v3/release/smolvla-license-status.json"
 PUBLIC_TYPES = {
     "FeatureSpec": FeatureSpec,
     "FeatureSchema": FeatureSchema,
@@ -44,6 +48,8 @@ PUBLIC_TYPES = {
     "ExperimentConfig": ExperimentConfig,
     "ModelSourceContractV1": ModelSourceContractV1,
     "LicenseReviewV1": LicenseReviewV1,
+    "WeightLicenseStatusV1": WeightLicenseStatusV1,
+    "RunnerQualificationManifestV1": RunnerQualificationManifestV1,
     "GpuValidationManifestV1": GpuValidationManifestV1,
     "Alpha2ReleaseCandidateV1": Alpha2ReleaseCandidateV1,
     "PolicySpecV3": PolicySpecV3,
@@ -72,6 +78,15 @@ def main() -> int:
         raise SystemExit("v3 public API descriptor drifted")
     for path in sorted((ROOT / "configs/v3").glob("*.yaml")):
         ExperimentConfig.load(path)
+    status = WeightLicenseStatusV1.from_mapping(
+        json.loads(LICENSE_STATUS.read_text(encoding="utf-8"))
+    )
+    for snapshot in status.source_snapshots:
+        path = ROOT / snapshot.path
+        if not path.is_file():
+            raise SystemExit(f"SmolVLA license source snapshot is missing: {snapshot.path}")
+        if sha256_file(path) != snapshot.sha256:
+            raise SystemExit(f"SmolVLA license source snapshot hash drifted: {snapshot.path}")
     if LOCK_ALIAS.read_text(encoding="utf-8").splitlines()[-1] != "-r requirements-v2-core-cpu.lock":
         raise SystemExit("v3 CPU lock alias drifted")
     diffusion_lock = DIFFUSION_LOCK.read_text(encoding="utf-8").lower()
