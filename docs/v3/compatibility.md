@@ -43,3 +43,7 @@
   artifact readers.
 - v1.x quickstart does not gain LeRobot, LIBERO, PyTorch, or GPU dependencies from Alpha 3 or
   Beta 1 diagnostic contracts.
+- RC preparation adds machine-readable stable evidence and release-candidate contracts only. It
+  does not change v1/v2 serialization or promote any Draft v3 contract to a frozen stable API.
+- CPU profile and teaching-evidence contracts do not add SmolVLA weights, CUDA, real datasets or
+  LIBERO runtime dependencies to v1.x or the NumPy quickstart.

@@ -27,8 +27,9 @@
    a diagnostic subset rather than a full benchmark.
 9. **CPU core hardening — in progress:** versioned environment-specific policy profiles and the
    fixed 1,550-row deterministic teaching evidence matrix, without GPU or pretrained weights.
-10. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
-   signed assets, SBOM, provenance, and checksums.
+10. **RC/stable — preparation in a stacked Draft:** fail-closed evidence summaries,
+   same-main-merge-SHA release binding, migration/model/data/safety documents, and
+   asset/SBOM/provenance/checksum requirements. No five-seed run or stable tag exists yet.
 
 No release requires a target success rate. Negative or neutral evidence remains publishable; an
 incomplete or mixed-provenance matrix cannot open a claim.
