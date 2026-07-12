@@ -14,6 +14,7 @@ from lunavla.v3 import (
     EmbodimentSpec,
     EpisodeRecordV3,
     EvidenceManifestV2,
+    ExternalDatasetSpecV1,
     ExperimentConfig,
     FailureRecordV1,
     FeatureNormalizationV1,
@@ -22,6 +23,7 @@ from lunavla.v3 import (
     ModelSourceContractV1,
     Alpha3ReleaseCandidateV1,
     GpuValidationManifestV1,
+    IntegrationManifestV1,
     LicenseReviewV1,
     RunnerQualificationManifestV1,
     SmolVLAValidationCandidateV1,
@@ -35,6 +37,7 @@ from lunavla.v3 import (
     PromptParityRecordV1,
     PromptSpecV1,
     StateRouteSpecV1,
+    SimulationTaskSpecV1,
     InterventionSpecV1,
     TrainStepResultV3,
     TransitionV3,
@@ -50,6 +53,8 @@ SMOLVLA_GPU_LOCK = ROOT / "requirements-v3-smolvla-gpu-cu128.lock"
 RELEASE_LOCK = ROOT / "requirements-v3-release-cpu.lock"
 CODE_RELEASE_DISPATCHER = ROOT / ".github/workflows/v3-code-release-dispatch.yml"
 SMOLVLA_VALIDATION_DISPATCHER = ROOT / ".github/workflows/v3-alpha2-release-dispatch.yml"
+BETA2_LOCK = ROOT / "requirements-v3-beta2-integration-cu128.lock"
+BETA2_DISPATCHER = ROOT / ".github/workflows/v3-beta2-integration-dispatch.yml"
 LICENSE_STATUS = ROOT / "docs/v3/release/smolvla-license-status.json"
 PUBLIC_TYPES = {
     "FeatureSpec": FeatureSpec,
@@ -83,13 +88,16 @@ PUBLIC_TYPES = {
     "DiagnosticTraceRowV1": DiagnosticTraceRowV1,
     "FailureRecordV1": FailureRecordV1,
     "EvidenceManifestV2": EvidenceManifestV2,
+    "ExternalDatasetSpecV1": ExternalDatasetSpecV1,
+    "SimulationTaskSpecV1": SimulationTaskSpecV1,
+    "IntegrationManifestV1": IntegrationManifestV1,
 }
 
 
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-beta.1-diagnostics-candidate",
+        "release_stage": "v3.0.0-beta.2-stacked-draft",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()
@@ -182,6 +190,24 @@ def main() -> int:
         raise SystemExit("v3 code release dispatcher is missing its manual entrypoint")
     if "workflow_dispatch:" not in SMOLVLA_VALIDATION_DISPATCHER.read_text(encoding="utf-8"):
         raise SystemExit("v3.1 SmolVLA validation dispatcher is missing its manual entrypoint")
+    beta2_lock = BETA2_LOCK.read_text(encoding="utf-8").lower()
+    beta2_required = {
+        "accelerate==1.14.0",
+        "av==15.1.0",
+        "diffusers==0.35.2",
+        "gym-pusht==0.1.6",
+        "hf-libero==0.1.4",
+        "lerobot==0.6.0",
+        "numpy==2.2.6",
+        "torch==2.11.0+cu128",
+        "torchvision==0.26.0+cu128",
+        "transformers==5.5.4",
+    }
+    missing = sorted(item for item in beta2_required if item not in beta2_lock)
+    if missing:
+        raise SystemExit(f"v3 Beta 2 integration lock is stale; missing {missing}")
+    if "workflow_dispatch:" not in BETA2_DISPATCHER.read_text(encoding="utf-8"):
+        raise SystemExit("v3 Beta 2 integration dispatcher is missing its manual entrypoint")
     print("v3 alpha contracts, configs, and CPU lock are valid")
     return 0
 
