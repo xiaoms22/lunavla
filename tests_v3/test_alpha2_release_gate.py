@@ -10,6 +10,9 @@ from lunavla.v3 import (
     ALPHA2_PACKAGE_VERSION,
     ALPHA2_TAG,
     Alpha2ReleaseCandidateV1,
+    SMOLVLA_VALIDATION_PACKAGE_VERSION,
+    SMOLVLA_VALIDATION_TAG,
+    SmolVLAValidationCandidateV1,
     GpuValidationManifestV1,
     LicenseReviewV1,
     RunnerQualificationManifestV1,
@@ -109,7 +112,7 @@ def _license_review(evidence_sha256: str = SHA) -> LicenseReviewV1:
 def _gpu_manifest() -> GpuValidationManifestV1:
     return GpuValidationManifestV1(
         git_sha=GIT_SHA,
-        package_version=ALPHA2_PACKAGE_VERSION,
+        package_version=SMOLVLA_VALIDATION_PACKAGE_VERSION,
         license_review_sha256=SHA,
         model_source_sha256=SHA,
         dependency_lock_sha256=SHA,
@@ -146,13 +149,29 @@ def _candidate_assets() -> tuple[ArtifactHashRecordV1, ...]:
     return tuple(
         ArtifactHashRecordV1(path, SHA)
         for path in (
-            "dist/lunavla-3.0.0a2-py3-none-any.whl",
-            "dist/lunavla-3.0.0a2.tar.gz",
+            "dist/lunavla-3.1.0a1-py3-none-any.whl",
+            "dist/lunavla-3.1.0a1.tar.gz",
             "environment-requirements.txt",
             "gpu-validation-manifest.json",
             "gpu-attestation-bundle.jsonl",
             "lunavla-v3-alpha2-evidence.tar.gz",
             "sbom.json",
+        )
+    )
+
+
+def _code_candidate_assets() -> tuple[ArtifactHashRecordV1, ...]:
+    return tuple(
+        ArtifactHashRecordV1(path, SHA)
+        for path in (
+            "dist/lunavla-3.0.0a2-py3-none-any.whl",
+            "dist/lunavla-3.0.0a2.tar.gz",
+            "environment-requirements.txt",
+            "test-manifest.json",
+            "smolvla-conformance-status.json",
+            "sbom.json",
+            "provenance.jsonl",
+            "lunavla-v3-alpha2-code-evidence.tar.gz",
         )
     )
 
@@ -197,23 +216,50 @@ def test_gpu_manifest_and_release_candidate_round_trip_fail_closed() -> None:
     assert GpuValidationManifestV1.from_mapping(gpu.to_dict()) == gpu
     assert gpu.claim_allowed is False
 
-    candidate = Alpha2ReleaseCandidateV1(
-        expected_tag=ALPHA2_TAG,
+    candidate = SmolVLAValidationCandidateV1(
+        expected_tag=SMOLVLA_VALIDATION_TAG,
         git_sha=GIT_SHA,
-        package_version=ALPHA2_PACKAGE_VERSION,
+        package_version=SMOLVLA_VALIDATION_PACKAGE_VERSION,
         gpu_manifest_sha256=SHA,
         gpu_attestation_sha256=SHA,
         required_checks_sha256=SHA,
         dispatcher_sha256=SHA,
         assets=_candidate_assets(),
     )
-    assert Alpha2ReleaseCandidateV1.from_mapping(candidate.to_dict()) == candidate
+    assert SmolVLAValidationCandidateV1.from_mapping(candidate.to_dict()) == candidate
     assert candidate.claim_allowed is False
     assert candidate.pypi_published is False
 
     payload = candidate.to_dict()
     payload["expected_tag"] = "v3.0.0-alpha.1"
     with pytest.raises(ValueError, match="expected_tag"):
+        SmolVLAValidationCandidateV1.from_mapping(payload)
+
+
+def test_code_only_alpha2_candidate_requires_conformance_and_no_claims() -> None:
+    candidate = Alpha2ReleaseCandidateV1(
+        expected_tag=ALPHA2_TAG,
+        git_sha=GIT_SHA,
+        package_version=ALPHA2_PACKAGE_VERSION,
+        public_api_sha256=SHA,
+        core_lock_sha256=SHA,
+        diffusion_lock_sha256=SHA,
+        smolvla_lock_sha256=SHA,
+        weight_license_status_sha256=SHA,
+        required_checks_sha256=SHA,
+        dispatcher_sha256=SHA,
+        assets=_code_candidate_assets(),
+    )
+    assert Alpha2ReleaseCandidateV1.from_mapping(candidate.to_dict()) == candidate
+    assert candidate.pretrained_enabled is False
+    assert candidate.conformance_only is True
+    payload = candidate.to_dict()
+    payload["pretrained_enabled"] = True
+    with pytest.raises(ValueError, match="pretrained disabled"):
+        Alpha2ReleaseCandidateV1.from_mapping(payload)
+    payload = candidate.to_dict()
+    payload["claim_allowed"] = True
+    with pytest.raises(ValueError, match="scientific claims"):
         Alpha2ReleaseCandidateV1.from_mapping(payload)
 
 

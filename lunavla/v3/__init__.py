@@ -52,10 +52,13 @@ from .engine import EngineV3, run_alpha
 from .release_contracts import (
     ALPHA2_PACKAGE_VERSION,
     ALPHA2_TAG,
+    SMOLVLA_VALIDATION_PACKAGE_VERSION,
+    SMOLVLA_VALIDATION_TAG,
     Alpha2ReleaseCandidateV1,
     GpuValidationManifestV1,
     LicenseReviewV1,
     RunnerQualificationManifestV1,
+    SmolVLAValidationCandidateV1,
     WeightLicenseStatusV1,
 )
 
@@ -63,6 +66,8 @@ __all__ = [
     "CONFIG_SCHEMA_VERSION",
     "ALPHA2_PACKAGE_VERSION",
     "ALPHA2_TAG",
+    "SMOLVLA_VALIDATION_PACKAGE_VERSION",
+    "SMOLVLA_VALIDATION_TAG",
     "Alpha2ReleaseCandidateV1",
     "ArtifactHashRecordV1",
     "CheckpointEnvelopeV4",
@@ -82,6 +87,7 @@ __all__ = [
     "GpuValidationManifestV1",
     "LicenseReviewV1",
     "RunnerQualificationManifestV1",
+    "SmolVLAValidationCandidateV1",
     "ObservationV3",
     "ModelSourceContractV1",
     "NormalizationStatsV1",

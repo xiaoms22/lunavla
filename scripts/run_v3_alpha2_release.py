@@ -22,9 +22,9 @@ from lunavla.v3.artifacts import ArtifactHashRecordV1, sha256_file
 from lunavla.v3.engine import EngineV3, dataset_for_config
 from lunavla.v3.policy import ModelSourceContractV1, PolicyBatchV3
 from lunavla.v3.release_contracts import (
-    ALPHA2_PACKAGE_VERSION,
-    ALPHA2_TAG,
-    Alpha2ReleaseCandidateV1,
+    SMOLVLA_VALIDATION_PACKAGE_VERSION,
+    SMOLVLA_VALIDATION_TAG,
+    SmolVLAValidationCandidateV1,
     GpuValidationManifestV1,
     LicenseReviewV1,
 )
@@ -236,8 +236,8 @@ def gpu_smoke(
         config_path=config_path,
         enable_pretrained_gate=enable_pretrained_gate,
     )
-    if project_version() != ALPHA2_PACKAGE_VERSION:
-        raise RuntimeError(f"GPU smoke requires package version {ALPHA2_PACKAGE_VERSION}")
+    if project_version() != SMOLVLA_VALIDATION_PACKAGE_VERSION:
+        raise RuntimeError(f"GPU smoke requires package version {SMOLVLA_VALIDATION_PACKAGE_VERSION}")
     config = ExperimentConfig.load(config_path)
     records = verify_model_snapshot(snapshot_dir, config)
 
@@ -343,18 +343,18 @@ def build_candidate(
     required_checks_path: str | Path,
     asset_root: str | Path,
     output_path: str | Path,
-) -> Alpha2ReleaseCandidateV1:
+) -> SmolVLAValidationCandidateV1:
     require_clean_git(expected_git_sha)
-    if project_version() != ALPHA2_PACKAGE_VERSION:
-        raise RuntimeError(f"Alpha 2 candidate requires package version {ALPHA2_PACKAGE_VERSION}")
+    if project_version() != SMOLVLA_VALIDATION_PACKAGE_VERSION:
+        raise RuntimeError(f"Alpha 2 candidate requires package version {SMOLVLA_VALIDATION_PACKAGE_VERSION}")
     root = Path(asset_root).resolve()
     if not root.is_dir():
         raise NotADirectoryError(f"release asset root does not exist: {root}")
     gpu_manifest = GpuValidationManifestV1.from_mapping(_json(gpu_manifest_path))
     if gpu_manifest.git_sha != expected_git_sha:
         raise ValueError("GPU manifest does not bind the release source SHA")
-    candidate = Alpha2ReleaseCandidateV1(
-        expected_tag=ALPHA2_TAG,
+    candidate = SmolVLAValidationCandidateV1(
+        expected_tag=SMOLVLA_VALIDATION_TAG,
         git_sha=expected_git_sha,
         package_version=project_version(),
         gpu_manifest_sha256=sha256_file(gpu_manifest_path),
@@ -367,8 +367,8 @@ def build_candidate(
     return candidate
 
 
-def verify_candidate(path: str | Path, asset_root: str | Path) -> Alpha2ReleaseCandidateV1:
-    candidate = Alpha2ReleaseCandidateV1.from_mapping(_json(path))
+def verify_candidate(path: str | Path, asset_root: str | Path) -> SmolVLAValidationCandidateV1:
+    candidate = SmolVLAValidationCandidateV1.from_mapping(_json(path))
     root = Path(asset_root).resolve()
     actual = _asset_records(root)
     if actual != candidate.assets:
@@ -412,8 +412,8 @@ def finalize_release(
     tag: str,
     expected_git_sha: str,
 ) -> Path:
-    if tag != ALPHA2_TAG:
-        raise ValueError(f"Alpha 2 release tag must be {ALPHA2_TAG}")
+    if tag != SMOLVLA_VALIDATION_TAG:
+        raise ValueError(f"Alpha 2 release tag must be {SMOLVLA_VALIDATION_TAG}")
     require_clean_git(expected_git_sha)
     candidate = verify_candidate(candidate_path, asset_root)
     if candidate.git_sha != expected_git_sha:
@@ -444,7 +444,7 @@ def finalize_release(
             "schema_version": 1,
             "tag": tag,
             "git_sha": expected_git_sha,
-            "package_version": ALPHA2_PACKAGE_VERSION,
+            "package_version": SMOLVLA_VALIDATION_PACKAGE_VERSION,
             "candidate_sha256": sha256_file(candidate_path),
             "sha256sums_sha256": sha256_file(sums),
             "claim_allowed": False,
