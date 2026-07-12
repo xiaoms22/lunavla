@@ -1,4 +1,4 @@
-# LunaVLA v3 Beta 2 stacked integration draft
+# LunaVLA v3 Beta 2 hosted CPU integration candidate
 
 This branch builds the policy and artifact contracts introduced by the Alpha 2 strategy ladder on top
 of the merged Alpha 1 foundation. It preserves the frozen v2 public API and lightweight v1.x path.
@@ -43,10 +43,11 @@ Implemented in the current candidate:
 - LeRobot v3 frame mapping, two-camera LIBERO state/action mapping, source download caps, and
   exactly-once PushT/LIBERO environment adapters;
 - `source-preflight`, `integration-run`, and `integration-verify` commands, with an offline PR
-  fixture gate and a separate manual single-A100 dispatcher. The real dispatcher has not run.
+  fixture gate and a separate manual GitHub-hosted Linux CPU dispatcher. The real dispatcher has
+  not run on this candidate SHA.
 
 The PR fixture tests contracts, mapping, lifecycle, atomic output and tamper detection without
-network access. No authoritative real-data/GPU manifest exists yet, so the public connectivity
+network access. No same-SHA real-data/CPU manifest exists yet, so the public connectivity
 wording remains closed. This branch does not download or train SmolVLA weights or establish
 language, image, state-route, PushT, LIBERO, ACT, or Diffusion performance.
 

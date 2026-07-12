@@ -98,9 +98,9 @@ def test_simulation_and_manifest_contracts_are_frozen_and_fail_closed() -> None:
         dependency_lock_sha256="2" * 64,
         source_spec_sha256="3" * 64,
         source_inventory_sha256="4" * 64,
-        runner_qualification_sha256="5" * 64,
+        runtime_environment_sha256="5" * 64,
         metrics_sha256="7" * 64,
-        runner_role="fixture",
+        execution_environment="fixture",
         data_validation=data,
         environment_validation={"closed": True},
         policy_smokes=({"policy": "act_v3", "finite": True},),
@@ -117,4 +117,8 @@ def test_simulation_and_manifest_contracts_are_frozen_and_fail_closed() -> None:
     payload = copy.deepcopy(manifest.to_dict())
     payload["claim_allowed"] = True
     with pytest.raises(ValueError, match="cannot open"):
+        IntegrationManifestV1.from_mapping(payload)
+    payload = copy.deepcopy(manifest.to_dict())
+    payload["execution_environment"] = "authoritative"
+    with pytest.raises(ValueError, match="hosted_cpu or fixture"):
         IntegrationManifestV1.from_mapping(payload)

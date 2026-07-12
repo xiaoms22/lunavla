@@ -1,4 +1,4 @@
-# v3 Beta 2 stacked draft capability matrix
+# v3 Beta 2 hosted CPU candidate capability matrix
 
 | Area | Current status | Boundary |
 | --- | --- | --- |
@@ -11,9 +11,9 @@
 | LeRobot Diffusion adapter | Public APIs, DDIM, processors, masked loss, exact CPU resume | Fake-data chain only; no performance claim |
 | Fake PushT/LIBERO | Implemented as fixtures | Connectivity and lifecycle only |
 | SmolVLA adapter | Public-API conformance fixture and pinned model identity | Pretrained, optimizer, resume, and inference gates closed |
-| Alpha 3 release supply chain | Hosted CPU code-only candidate, locked build backend, signed tag, SBOM, provenance and checksums | No weight access, performance claim or PyPI publication |
+| Alpha 3 release supply chain | Published hosted CPU code-only prerelease, locked build backend, signed tag, SBOM, provenance and checksums | No weight access, performance claim or PyPI publication |
 | SmolVLA v3.1 validation | Strict license/GPU contracts and CUDA lock retained fail-closed | No runner, license review, weight access or validation release |
-| Real PushT/LIBERO subset | Pinned contracts, adapters, CLI and manual dispatcher implemented; offline fixtures pass | No runner manifest yet; no benchmark statement |
+| Real PushT/LIBERO subset | Pinned contracts, adapters, CLI and hosted CPU dispatcher implemented; offline fixtures pass | Same-SHA networked manifest pending; no benchmark statement |
 | Bounded integration evidence | Atomic IntegrationManifest v1 and independent hash verification | `claim_allowed=false`, `benchmark_claim=false`; real workflow pending |
 | Prompt/state diagnostics | Canonical train/eval/deploy renderer, four routes, five prompt arms, typed donor/pair hashes | 40 reduced NumPy pairs only; no modality or routing claim |
 | Image diagnostic smoke | ACT control/image-shuffle, step-wise image donors, four synthetic thumbnails | Four reduced pairs; no visual-contribution claim |

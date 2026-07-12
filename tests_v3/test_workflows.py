@@ -140,15 +140,19 @@ def test_beta2_dispatcher_and_lock_are_manual_bounded_and_fail_closed() -> None:
     payload = yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
     assert set(payload["on"]) == {"workflow_dispatch"}
     job = payload["jobs"]["bounded-integration"]
-    assert job["runs-on"] == ["self-hosted", "linux", "x64", "gpu", "lunavla-v3"]
+    assert job["runs-on"] == "ubuntu-latest"
     workflow = path.read_text(encoding="utf-8")
-    assert "requirements-v3-beta2-integration-cu128.lock" in workflow
+    assert "requirements-v3-beta2-integration-cpu.lock" in workflow
+    assert "LUNAVLA_HOSTED_CPU" in workflow
+    assert "self-hosted" not in workflow
+    assert "qualification_run_id" not in workflow
     assert "source-preflight" in workflow
     assert "integration-run" in workflow and "integration-verify" in workflow
     assert "claim_allowed" not in workflow
-    lock = Path("requirements-v3-beta2-integration-cu128.lock").read_text(encoding="utf-8")
+    lock = Path("requirements-v3-beta2-integration-cpu.lock").read_text(encoding="utf-8")
     for requirement in (
-        "hf-libero==0.1.4", "lerobot==0.6.0", "torch==2.11.0+cu128",
-        "torchvision==0.26.0+cu128", "gym-pusht==0.1.6", "av==15.1.0",
+        "hf-libero==0.1.4", "lerobot==0.6.0", "torch==2.11.0+cpu",
+        "torchvision==0.26.0+cpu", "gym-pusht==0.1.6", "av==15.1.0",
     ):
         assert requirement in lock
+    assert "nvidia-" not in lock and "triton==" not in lock

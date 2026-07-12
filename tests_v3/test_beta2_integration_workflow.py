@@ -79,8 +79,8 @@ def test_integration_run_is_atomic_fail_closed_and_tamper_evident(
 ) -> None:
     config_path = Path("configs/v3/beta2_pusht_integration.yaml")
     config = ExperimentConfig.load(config_path)
-    qualification = tmp_path / "fixture-qualification.json"
-    qualification.write_text('{"fixture":true}\n', encoding="utf-8")
+    runtime_environment = tmp_path / "fixture-runtime-environment.json"
+    runtime_environment.write_text('{"fixture":true}\n', encoding="utf-8")
     lock = tmp_path / "integration.lock"
     lock.write_text("fixture==1 --hash=sha256:" + "1" * 64 + "\n", encoding="utf-8")
     monkeypatch.setattr(workflow, "_LOCK", lock)
@@ -95,7 +95,7 @@ def test_integration_run_is_atomic_fail_closed_and_tamper_evident(
                 {"policy_id": "act_v3", "loss": 1.0, "gradient_norm": 1.0, "finite": True},
                 {"policy_id": "diffusion_v3", "loss": 1.0, "gradient_norm": 1.0, "finite": True},
             ),
-            qualification,
+            runtime_environment,
             "fixture",
         )
 
@@ -145,6 +145,15 @@ def test_integration_failure_preserves_no_partial_generation(
         )
     assert not output.exists()
     assert not list(tmp_path.glob(".failed.staging-*"))
+
+
+def test_real_runtime_requires_explicit_hosted_cpu_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("LUNAVLA_HOSTED_CPU", raising=False)
+    config = ExperimentConfig.load("configs/v3/beta2_pusht_integration.yaml")
+    with pytest.raises(RuntimeError, match="LUNAVLA_HOSTED_CPU"):
+        workflow._default_runtime(config, tmp_path)
 
 
 def test_multi_camera_act_payload_consumes_every_declared_camera() -> None:

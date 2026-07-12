@@ -1,6 +1,6 @@
-# Beta 2 bounded PushT and LIBERO integration
+# Beta 2 hosted CPU PushT and LIBERO integration
 
-Beta 2 is a stacked Draft implementation. It adds real public-source and simulation paths without
+Beta 2 is a hosted CPU integration candidate. It adds real public-source and simulation paths without
 opening a benchmark, modality, policy-ranking, or robot-deployment claim.
 
 ## Immutable sources
@@ -30,11 +30,12 @@ data provenance remain separately documented as MIT and CC BY 4.0.
 These tests are deterministic and offline. They do not establish that the Hub files or MuJoCo
 environment have run on the current Git SHA.
 
-## What the manual dispatcher must prove
+## What the hosted manual dispatcher must prove
 
-The workflow accepts only a same-SHA `RunnerQualificationManifestV1` on an ephemeral runner with
-labels `self-hosted`, `linux`, `x64`, `gpu`, `lunavla-v3`. Exactly one A100 must be visible through
-both `nvidia-smi` and PyTorch. The workflow then:
+The workflow runs on GitHub-hosted Ubuntu from the default branch and accepts only an immutable
+same-SHA source ref whose dispatcher bytes match `main`. Its hash-locked Linux x64 environment
+must report Torch `2.11.0+cpu`, torchvision `0.26.0+cpu`, LeRobot `0.6.0`, hf-libero `0.1.4`, and
+no CUDA, NCCL or Triton packages. The workflow then:
 
 1. validates Hub revision, file identity and download caps;
 2. decodes PushT episode 0 and one deterministic episode for each LIBERO task ID 0–3;
@@ -42,11 +43,11 @@ both `nvidia-smi` and PyTorch. The workflow then:
 4. runs one finite ACT and Diffusion optimizer step through `EngineV3` for each task family;
 5. uploads only configs, inventories, metrics, locks and integration manifests.
 
-It never uploads videos, datasets, caches, model weights or checkpoints. The authoritative cloud
-and secondary development runner must produce the same Git, dependency-lock and source hashes.
+It never uploads videos, datasets, caches, model weights or checkpoints. It uploads and attests
+only the two connectivity manifests, metrics and file-hash inventories.
 
 ## Current gate state
 
-No qualified runner is registered and no real Beta 2 integration manifest has been produced. The
-Alpha 2 SmolVLA weight license remains `NOASSERTION/unverified`; pretrained access, Alpha 2 tag,
-Beta merge and all release operations remain closed.
+No same-SHA hosted CPU integration manifest has been produced for this candidate yet. The SmolVLA
+weight license remains `NOASSERTION/unverified`; pretrained access remains closed and is unrelated
+to the Beta 2 public-data connectivity gate.

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_stage": "v3.0.0-beta.2-stacked-draft",
+  "release_stage": "v3.0.0-beta.2-hosted-cpu-candidate",
   "contracts": {
     "FeatureSpec": {
       "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
@@ -102,7 +102,7 @@
       "signature": "(environment_id: 'str', suite: 'str', task_ids: 'tuple[int, ...]', init_state_ids: 'tuple[int, ...]', control_mode: 'str', camera_mapping: 'Mapping[str, str]', state_mapping: 'Mapping[str, str]', action_mapping: 'Mapping[str, str]', max_steps: 'int', headless: 'bool', schema_version: 'int' = 1) -> None"
     },
     "IntegrationManifestV1": {
-      "signature": "(git_sha: 'str', git_dirty: 'bool', config_sha256: 'str', dependency_lock_sha256: 'str', source_spec_sha256: 'str', source_inventory_sha256: 'str', runner_qualification_sha256: 'str', metrics_sha256: 'str', runner_role: 'str', data_validation: 'Mapping[str, Any]', environment_validation: 'Mapping[str, Any]', policy_smokes: 'tuple[Mapping[str, Any], ...]', downloaded_bytes: 'int', claim_allowed: 'bool', benchmark_claim: 'bool', statement: 'str', schema_version: 'int' = 1) -> None"
+      "signature": "(git_sha: 'str', git_dirty: 'bool', config_sha256: 'str', dependency_lock_sha256: 'str', source_spec_sha256: 'str', source_inventory_sha256: 'str', runtime_environment_sha256: 'str', metrics_sha256: 'str', execution_environment: 'str', data_validation: 'Mapping[str, Any]', environment_validation: 'Mapping[str, Any]', policy_smokes: 'tuple[Mapping[str, Any], ...]', downloaded_bytes: 'int', claim_allowed: 'bool', benchmark_claim: 'bool', statement: 'str', schema_version: 'int' = 1) -> None"
     }
   }
 }

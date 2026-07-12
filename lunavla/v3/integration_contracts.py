@@ -279,9 +279,9 @@ class IntegrationManifestV1:
     dependency_lock_sha256: str
     source_spec_sha256: str
     source_inventory_sha256: str
-    runner_qualification_sha256: str
+    runtime_environment_sha256: str
     metrics_sha256: str
-    runner_role: str
+    execution_environment: str
     data_validation: Mapping[str, Any]
     environment_validation: Mapping[str, Any]
     policy_smokes: tuple[Mapping[str, Any], ...]
@@ -300,13 +300,13 @@ class IntegrationManifestV1:
             raise TypeError("git_dirty must be boolean")
         for name in (
             "config_sha256", "dependency_lock_sha256", "source_spec_sha256",
-            "source_inventory_sha256", "runner_qualification_sha256", "metrics_sha256",
+            "source_inventory_sha256", "runtime_environment_sha256", "metrics_sha256",
         ):
             value = getattr(self, name)
             if not isinstance(value, str) or not _SHA256.fullmatch(value):
                 raise ValueError(f"{name} must be a lowercase SHA-256")
-        if self.runner_role not in {"authoritative", "secondary", "fixture"}:
-            raise ValueError("runner_role must be authoritative, secondary, or fixture")
+        if self.execution_environment not in {"hosted_cpu", "fixture"}:
+            raise ValueError("execution_environment must be hosted_cpu or fixture")
         if isinstance(self.downloaded_bytes, bool) or not isinstance(self.downloaded_bytes, int):
             raise TypeError("downloaded_bytes must be an integer")
         if self.downloaded_bytes < 0:
@@ -331,9 +331,9 @@ class IntegrationManifestV1:
             "dependency_lock_sha256": self.dependency_lock_sha256,
             "source_spec_sha256": self.source_spec_sha256,
             "source_inventory_sha256": self.source_inventory_sha256,
-            "runner_qualification_sha256": self.runner_qualification_sha256,
+            "runtime_environment_sha256": self.runtime_environment_sha256,
             "metrics_sha256": self.metrics_sha256,
-            "runner_role": self.runner_role,
+            "execution_environment": self.execution_environment,
             "data_validation": _thaw_json(self.data_validation),
             "environment_validation": _thaw_json(self.environment_validation),
             "policy_smokes": [_thaw_json(item) for item in self.policy_smokes],
@@ -347,8 +347,8 @@ class IntegrationManifestV1:
     def from_mapping(cls, value: Mapping[str, Any]) -> "IntegrationManifestV1":
         fields = {
             "schema_version", "git_sha", "git_dirty", "config_sha256", "dependency_lock_sha256",
-            "source_spec_sha256", "source_inventory_sha256", "runner_qualification_sha256",
-            "metrics_sha256", "runner_role", "data_validation", "environment_validation", "policy_smokes",
+            "source_spec_sha256", "source_inventory_sha256", "runtime_environment_sha256",
+            "metrics_sha256", "execution_environment", "data_validation", "environment_validation", "policy_smokes",
             "downloaded_bytes", "claim_allowed", "benchmark_claim", "statement",
         }
         payload = _exact(value, fields, "IntegrationManifestV1")

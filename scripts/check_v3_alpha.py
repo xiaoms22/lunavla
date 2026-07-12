@@ -53,7 +53,7 @@ SMOLVLA_GPU_LOCK = ROOT / "requirements-v3-smolvla-gpu-cu128.lock"
 RELEASE_LOCK = ROOT / "requirements-v3-release-cpu.lock"
 CODE_RELEASE_DISPATCHER = ROOT / ".github/workflows/v3-code-release-dispatch.yml"
 SMOLVLA_VALIDATION_DISPATCHER = ROOT / ".github/workflows/v3-alpha2-release-dispatch.yml"
-BETA2_LOCK = ROOT / "requirements-v3-beta2-integration-cu128.lock"
+BETA2_LOCK = ROOT / "requirements-v3-beta2-integration-cpu.lock"
 BETA2_DISPATCHER = ROOT / ".github/workflows/v3-beta2-integration-dispatch.yml"
 LICENSE_STATUS = ROOT / "docs/v3/release/smolvla-license-status.json"
 PUBLIC_TYPES = {
@@ -97,7 +97,7 @@ PUBLIC_TYPES = {
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-beta.2-stacked-draft",
+        "release_stage": "v3.0.0-beta.2-hosted-cpu-candidate",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()
@@ -199,13 +199,15 @@ def main() -> int:
         "hf-libero==0.1.4",
         "lerobot==0.6.0",
         "numpy==2.2.6",
-        "torch==2.11.0+cu128",
-        "torchvision==0.26.0+cu128",
+        "torch==2.11.0+cpu",
+        "torchvision==0.26.0+cpu",
         "transformers==5.5.4",
     }
     missing = sorted(item for item in beta2_required if item not in beta2_lock)
     if missing:
         raise SystemExit(f"v3 Beta 2 integration lock is stale; missing {missing}")
+    if any(item in beta2_lock for item in forbidden):
+        raise SystemExit("v3 Beta 2 integration lock contains an accelerator-only package")
     if "workflow_dispatch:" not in BETA2_DISPATCHER.read_text(encoding="utf-8"):
         raise SystemExit("v3 Beta 2 integration dispatcher is missing its manual entrypoint")
     print("v3 alpha contracts, configs, and CPU lock are valid")

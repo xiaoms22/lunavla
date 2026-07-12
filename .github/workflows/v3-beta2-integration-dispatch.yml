@@ -1,4 +1,4 @@
-name: V3 Beta 2 Integration Dispatcher
+name: V3 Beta 2 Hosted CPU Integration
 
 on:
   workflow_dispatch:
@@ -6,24 +6,10 @@ on:
       source_ref:
         description: Reviewed branch or immutable commit in this repository
         required: true
-        default: agent/v3-beta2-pusht-libero
+        default: agent/v3-beta2-pusht-libero-cpu
         type: string
       expected_sha:
         description: Immutable 40-character lowercase source commit SHA
-        required: true
-        type: string
-      runner_role:
-        description: Qualified runner role
-        required: true
-        default: authoritative
-        type: choice
-        options: [authoritative, secondary]
-      qualification_run_id:
-        description: Successful Alpha 2 runner-preflight workflow run ID
-        required: true
-        type: string
-      expected_qualification_sha256:
-        description: SHA-256 of RunnerQualificationManifestV1
         required: true
         type: string
 
@@ -34,18 +20,17 @@ permissions:
   attestations: write
 
 concurrency:
-  group: v3-beta2-${{ inputs.runner_role }}-${{ inputs.expected_sha }}
+  group: v3-beta2-hosted-cpu-${{ inputs.expected_sha }}
   cancel-in-progress: false
 
 jobs:
   bounded-integration:
-    name: v3-beta2-${{ inputs.runner_role }}
-    runs-on: [self-hosted, linux, x64, gpu, lunavla-v3]
+    name: v3-beta2-hosted-cpu
+    runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
       EXPECTED_SHA: ${{ inputs.expected_sha }}
-      EXPECTED_QUALIFICATION_SHA256: ${{ inputs.expected_qualification_sha256 }}
-      RUNNER_ROLE: ${{ inputs.runner_role }}
+      LUNAVLA_HOSTED_CPU: "true"
       MUJOCO_GL: egl
       PYTHONUNBUFFERED: "1"
     steps:
@@ -54,12 +39,9 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$EXPECTED_QUALIFICATION_SHA256" =~ ^[0-9a-f]{64}$ ]]
-          [[ "${{ inputs.qualification_run_id }}" =~ ^[1-9][0-9]*$ ]]
           [[ "${{ inputs.source_ref }}" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$ ]]
           [[ "${{ inputs.source_ref }}" != refs/pull* ]]
           [[ "${{ inputs.source_ref }}" != *..* && "${{ inputs.source_ref }}" != *//* ]]
-          test "$LUNAVLA_EPHEMERAL_RUNNER" = true
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.source_ref }}
@@ -76,58 +58,46 @@ jobs:
             > "$RUNNER_TEMP/main-v3-beta2-integration-dispatch.yml"
           cmp --silent .github/workflows/v3-beta2-integration-dispatch.yml \
             "$RUNNER_TEMP/main-v3-beta2-integration-dispatch.yml"
-      - name: Download the same-SHA runner qualification
-        uses: actions/download-artifact@v4
-        with:
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ inputs.qualification_run_id }}
-          name: v3-runner-${{ inputs.runner_role }}-${{ inputs.expected_sha }}
-          path: ${{ runner.temp }}/runner-qualification
-      - name: Verify qualification hash and identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          qualification="$RUNNER_TEMP/runner-qualification/runner-qualification-manifest.json"
-          test "$(sha256sum "$qualification" | cut -d' ' -f1)" = "$EXPECTED_QUALIFICATION_SHA256"
-          python - <<'PY'
-          import json, os
-          path = os.path.join(os.environ['RUNNER_TEMP'], 'runner-qualification', 'runner-qualification-manifest.json')
-          value = json.load(open(path))
-          assert value['git_sha'] == os.environ['EXPECTED_SHA']
-          assert value['role'] == os.environ['RUNNER_ROLE']
-          PY
-          echo "LUNAVLA_RUNNER_QUALIFICATION=$qualification" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install the hash-locked CUDA 12.8 integration profile
+      - name: Install hash-locked Linux CPU integration profile
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip "uv==0.11.26"
           uv venv --python 3.12
-          uv pip sync requirements-v3-beta2-integration-cu128.lock \
-            --require-hashes --strict --torch-backend cu128
+          uv pip sync requirements-v3-beta2-integration-cpu.lock \
+            --require-hashes --strict --torch-backend cpu
           uv pip install --no-deps --no-build-isolation --editable .
           uv pip check
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
-          uv run --no-sync python scripts/run_v3_runner_preflight.py verify \
-            "$LUNAVLA_RUNNER_QUALIFICATION"
-      - name: Assert isolated single-A100 runtime
+      - name: Assert authoritative CPU-only runtime
         shell: bash
         run: |
           set -euo pipefail
-          test "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l | tr -d ' ')" = 1
           uv run --no-sync python - <<'PY'
           import importlib.metadata as md
-          import torch, torchvision
-          assert torch.cuda.device_count() == 1
-          assert 'A100' in torch.cuda.get_device_name(0)
-          assert torch.__version__ == '2.11.0+cu128'
-          assert torchvision.__version__ == '0.26.0+cu128'
-          assert md.version('lerobot') == '0.6.0'
-          assert md.version('hf-libero') == '0.1.4'
+          import numpy
+          import torch
+          import torchvision
+
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+
+          assert numpy.__version__ == "2.2.6"
+          assert torch.__version__ == "2.11.0+cpu"
+          assert torch.version.cuda is None
+          assert not torch.cuda.is_available()
+          assert torchvision.__version__ == "0.26.0+cpu"
+          assert md.version("lerobot") == "0.6.0"
+          assert md.version("hf-libero") == "0.1.4"
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in md.distributions()
+              if dist.metadata["Name"]
+          }
+          forbidden = forbidden_cpu_packages(installed)
+          assert not forbidden, f"CUDA/NCCL/Triton packages installed: {sorted(forbidden)}"
           PY
       - name: Run bounded real PushT and LIBERO-Spatial integrations
         shell: bash
@@ -146,7 +116,8 @@ jobs:
           lunavla-v3 integration-run configs/v3/beta2_libero_integration.yaml \
             --cache-dir "$cache/libero" --out "$evidence/libero"
           lunavla-v3 integration-verify "$evidence/libero"
-          test -z "$(find "$evidence" -type f \( -name '*.mp4' -o -name '*.safetensors' -o -name '*.pt' \) -print -quit)"
+          test -z "$(find "$evidence" -type f \( -name '*.mp4' -o -name '*.safetensors' \
+            -o -name '*.pt' -o -name '*.ckpt' \) -print -quit)"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
       - name: Attest connectivity-only manifests
         uses: actions/attest-build-provenance@v2
@@ -157,7 +128,7 @@ jobs:
       - name: Upload small evidence only
         uses: actions/upload-artifact@v4
         with:
-          name: v3-beta2-${{ inputs.runner_role }}-${{ inputs.expected_sha }}
+          name: v3-beta2-hosted-cpu-${{ inputs.expected_sha }}
           path: |
             ${{ runner.temp }}/lunavla-beta2-evidence/pusht-preflight.json
             ${{ runner.temp }}/lunavla-beta2-evidence/libero-preflight.json

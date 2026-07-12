@@ -23,10 +23,10 @@
    40-pair NumPy route/prompt matrix and an independent four-pair ACT image-shuffle smoke with
    synthetic thumbnails. These reduced fixtures prove only framework integrity and cannot open a
    scientific claim. Beta 1 is integrated on protected `v3-next` after Alpha 3.
-8. **Beta 2 — implemented in a stacked Draft PR, real gate pending:** pinned public PushT plus
+8. **Beta 2 — hosted CPU integration candidate, real gate pending:** pinned public PushT plus
    LIBERO-Spatial task IDs 0–3, strict source/task/manifest contracts, real-format adapters,
-   bounded ACT/Diffusion Engine smokes, and a manual dual-runner dispatcher. PR tests are offline;
-   no authoritative or secondary runner manifest has been produced. The four LIBERO tasks remain
+   bounded ACT/Diffusion Engine smokes, and a manual GitHub-hosted Linux CPU dispatcher. PR tests
+   are offline; no same-SHA hosted integration manifest has been produced. The four LIBERO tasks remain
    a diagnostic subset rather than a full benchmark.
 9. **RC/stable — planned:** frozen contracts, five-seed controlled evidence, post-merge verification,
    signed assets, SBOM, provenance, and checksums.

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import importlib.metadata as metadata
 import json
 import os
+import platform
 import shutil
 import subprocess
 import tempfile
@@ -26,11 +28,8 @@ from .integration_contracts import (
     IntegrationManifestV1,
 )
 from .real_adapters import LeRobotDatasetSourceV3, LiberoSpatialEnvV3, PushTEnvV3
-from .release_contracts import RunnerQualificationManifestV1
-
-
 _ROOT = Path(__file__).resolve().parents[2]
-_LOCK = _ROOT / "requirements-v3-beta2-integration-cu128.lock"
+_LOCK = _ROOT / "requirements-v3-beta2-integration-cpu.lock"
 _SHA256 = __import__("re").compile(r"^[0-9a-f]{64}$")
 
 
@@ -417,8 +416,8 @@ class IntegrationRuntime:
     episodes: tuple[EpisodeRecordV3, ...]
     environment_validation: Mapping[str, Any]
     policy_smokes: tuple[Mapping[str, Any], ...]
-    runner_qualification_path: Path
-    runner_role: str
+    runtime_environment_path: Path
+    execution_environment: str
 
 
 def _git_state() -> tuple[str, bool]:
@@ -436,15 +435,36 @@ def _git_state() -> tuple[str, bool]:
 
 
 def _default_runtime(config: ExperimentConfig, cache_dir: Path) -> IntegrationRuntime:
-    qualification_path = Path(os.environ.get("LUNAVLA_RUNNER_QUALIFICATION", ""))
-    if not qualification_path.is_file():
-        raise FileNotFoundError("LUNAVLA_RUNNER_QUALIFICATION must name a qualification manifest")
-    qualification = RunnerQualificationManifestV1.from_mapping(
-        json.loads(qualification_path.read_text(encoding="utf-8"))
-    )
+    if os.environ.get("LUNAVLA_HOSTED_CPU") != "true":
+        raise RuntimeError("real integration requires LUNAVLA_HOSTED_CPU=true")
+    import torch
+    import torchvision
+
     sha, dirty = _git_state()
-    if dirty or qualification.git_sha != sha:
-        raise ValueError("runner qualification must match the clean integration checkout")
+    if dirty:
+        raise ValueError("hosted CPU integration requires a clean Git checkout")
+    machine = platform.machine().lower()
+    if platform.system() != "Linux" or machine not in {"x86_64", "amd64"}:
+        raise RuntimeError("hosted CPU integration requires Linux x86_64")
+    if torch.version.cuda is not None or torch.cuda.is_available():
+        raise RuntimeError("hosted CPU integration forbids CUDA")
+    runtime_environment_path = _write_json(
+        cache_dir / "runtime-environment.json",
+        {
+            "schema_version": 1,
+            "git_sha": sha,
+            "execution_environment": "hosted_cpu",
+            "platform_system": platform.system(),
+            "platform_machine": machine,
+            "python_version": platform.python_version(),
+            "torch_version": torch.__version__,
+            "torchvision_version": torchvision.__version__,
+            "cuda_available": False,
+            "cpu_count": os.cpu_count() or 1,
+            "lerobot_version": metadata.version("lerobot"),
+            "hf_libero_version": metadata.version("hf-libero"),
+        },
+    )
     inventory = preflight_source(config, metadata_cache=cache_dir / "hub-metadata")
     episodes = load_real_episodes(config, cache_dir / "dataset")
     return IntegrationRuntime(
@@ -452,8 +472,8 @@ def _default_runtime(config: ExperimentConfig, cache_dir: Path) -> IntegrationRu
         episodes,
         run_environment_smoke(config),
         run_policy_smokes(config, episodes),
-        qualification_path,
-        qualification.role,
+        runtime_environment_path,
+        "hosted_cpu",
     )
 
 
@@ -484,8 +504,8 @@ def run_integration(
         inventory_path = _write_json(staging / "source_inventory.json", runtime.inventory.to_dict())
         lock_path = staging / "dependency-lock.txt"
         shutil.copyfile(_LOCK, lock_path)
-        qualification_path = staging / "runner-qualification.json"
-        shutil.copyfile(runtime.runner_qualification_path, qualification_path)
+        runtime_environment_path = staging / "runtime-environment.json"
+        shutil.copyfile(runtime.runtime_environment_path, runtime_environment_path)
         frame_counts = [len(episode.transitions) for episode in runtime.episodes]
         expected_counts = [161] if config.task["id"] == "lerobot_pusht" else None
         if expected_counts is not None and frame_counts != expected_counts:
@@ -514,9 +534,9 @@ def run_integration(
             dependency_lock_sha256=_sha256_file(lock_path),
             source_spec_sha256=config.external_dataset_spec.sha256(),  # type: ignore[union-attr]
             source_inventory_sha256=_sha256_file(inventory_path),
-            runner_qualification_sha256=_sha256_file(qualification_path),
+            runtime_environment_sha256=_sha256_file(runtime_environment_path),
             metrics_sha256=_sha256_file(metrics_path),
-            runner_role=runtime.runner_role,
+            execution_environment=runtime.execution_environment,
             data_validation=data_validation,
             environment_validation=runtime.environment_validation,
             policy_smokes=runtime.policy_smokes,
@@ -537,7 +557,7 @@ def verify_integration(output_root: str | Path) -> IntegrationManifestV1:
     output = Path(output_root).expanduser().resolve()
     expected = {
         "resolved_config.json", "source_inventory.json", "dependency-lock.txt",
-        "runner-qualification.json", "metrics.json", "integration_manifest.json",
+        "runtime-environment.json", "metrics.json", "integration_manifest.json",
     }
     if not output.is_dir() or {item.name for item in output.iterdir()} != expected:
         raise ValueError("integration output must contain the exact contracted artifact set")
@@ -555,7 +575,7 @@ def verify_integration(output_root: str | Path) -> IntegrationManifestV1:
         "config_sha256": _sha256_file(output / "resolved_config.json"),
         "dependency_lock_sha256": _sha256_file(output / "dependency-lock.txt"),
         "source_inventory_sha256": _sha256_file(output / "source_inventory.json"),
-        "runner_qualification_sha256": _sha256_file(output / "runner-qualification.json"),
+        "runtime_environment_sha256": _sha256_file(output / "runtime-environment.json"),
         "metrics_sha256": _sha256_file(output / "metrics.json"),
     }
     for name, digest in checks.items():
@@ -572,12 +592,31 @@ def verify_integration(output_root: str | Path) -> IntegrationManifestV1:
         "policy_smokes": manifest_payload["policy_smokes"],
     }:
         raise ValueError("metrics do not independently reproduce the integration manifest")
-    if manifest.runner_role != "fixture":
-        qualification = RunnerQualificationManifestV1.from_mapping(
-            json.loads((output / "runner-qualification.json").read_text(encoding="utf-8"))
+    if manifest.execution_environment == "hosted_cpu":
+        runtime_environment = json.loads(
+            (output / "runtime-environment.json").read_text(encoding="utf-8")
         )
-        if qualification.git_sha != manifest.git_sha or qualification.role != manifest.runner_role:
-            raise ValueError("runner qualification identity does not match integration manifest")
+        expected_fields = {
+            "schema_version", "git_sha", "execution_environment", "platform_system",
+            "platform_machine", "python_version", "torch_version", "torchvision_version",
+            "cuda_available", "cpu_count", "lerobot_version", "hf_libero_version",
+        }
+        if not isinstance(runtime_environment, Mapping) or set(runtime_environment) != expected_fields:
+            raise ValueError("hosted CPU runtime environment fields are invalid")
+        if (
+            runtime_environment["schema_version"] != 1
+            or isinstance(runtime_environment["schema_version"], bool)
+            or runtime_environment["git_sha"] != manifest.git_sha
+            or runtime_environment["execution_environment"] != "hosted_cpu"
+            or runtime_environment["platform_system"] != "Linux"
+            or runtime_environment["platform_machine"] not in {"x86_64", "amd64"}
+            or runtime_environment["cuda_available"] is not False
+            or runtime_environment["torch_version"] != "2.11.0+cpu"
+            or runtime_environment["torchvision_version"] != "0.26.0+cpu"
+            or runtime_environment["lerobot_version"] != "0.6.0"
+            or runtime_environment["hf_libero_version"] != "0.1.4"
+        ):
+            raise ValueError("hosted CPU runtime environment does not match its contract")
     return manifest
 
 
