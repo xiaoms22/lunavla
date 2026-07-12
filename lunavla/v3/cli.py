@@ -16,6 +16,7 @@ from .diagnostic_workflow import (
 )
 from .engine import dataset_for_config, run_alpha
 from .migration import migrate_v2_mapping
+from .profiling import run_profile, verify_profile
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -46,6 +47,11 @@ def _parser() -> argparse.ArgumentParser:
     diagnostic_report = subparsers.add_parser("diagnostic-report")
     diagnostic_report.add_argument("output_root")
     diagnostic_report.add_argument("--out", required=True)
+    profile_run = subparsers.add_parser("profile-run")
+    profile_run.add_argument("design")
+    profile_run.add_argument("--overwrite", action="store_true")
+    profile_verify = subparsers.add_parser("profile-verify")
+    profile_verify.add_argument("output_root")
     return parser
 
 
@@ -93,6 +99,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.command == "diagnostic-report":
         output = write_diagnostic_report(arguments.output_root, arguments.out)
         print(json.dumps({"report_dir": str(output)}, sort_keys=True))
+        return 0
+    if arguments.command == "profile-run":
+        output = run_profile(arguments.design, overwrite=arguments.overwrite)
+        print(json.dumps({"output_dir": str(output), "comparative_claim_allowed": False}))
+        return 0
+    if arguments.command == "profile-verify":
+        profile_manifest = verify_profile(arguments.output_root)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "policy_id": profile_manifest.policy_id,
+                    "release_eligible": profile_manifest.release_eligible,
+                    "comparative_claim_allowed": False,
+                },
+                sort_keys=True,
+            )
+        )
         return 0
     raise AssertionError("unreachable command")
 

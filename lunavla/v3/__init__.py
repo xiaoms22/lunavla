@@ -86,6 +86,13 @@ from .release_contracts import (
     SmolVLAValidationCandidateV1,
     WeightLicenseStatusV1,
 )
+from .profiling import (
+    PROFILE_STATEMENT,
+    PolicyProfileDesignV1,
+    PolicyProfileManifestV1,
+    run_profile,
+    verify_profile,
+)
 
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
@@ -127,9 +134,12 @@ __all__ = [
     "ModelSourceContractV1",
     "NormalizationStatsV1",
     "PolicyBatchV3",
+    "PolicyProfileDesignV1",
+    "PolicyProfileManifestV1",
     "PolicyRegistryV3",
     "PolicySampleV3",
     "PolicySpecV3",
+    "PROFILE_STATEMENT",
     "PromptSpecV1",
     "PromptParityManifestV1",
     "PromptParityRecordV1",
@@ -152,10 +162,12 @@ __all__ = [
     "run_alpha",
     "run_diagnostic",
     "run_manifest_from_mapping",
+    "run_profile",
     "split_episode_ids",
     "verify_run_directory",
     "typed_episode_key",
     "verify_checkpoint_directory",
     "verify_diagnostic_output",
+    "verify_profile",
     "write_diagnostic_report",
 ]

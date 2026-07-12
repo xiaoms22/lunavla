@@ -18,6 +18,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-contracts",
         "v3-data",
         "v3-engine-cpu",
+        "v3-profile-cpu",
         "v3-diagnostics-cpu",
         "v3-diffusion-cpu",
         "v3-v2-compat",
@@ -52,6 +53,8 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "generate_v3_diagnostic_image_fixtures.py --check" in workflow
     assert "diagnostic_image_ci_design.yaml" in workflow
     assert "outputs/v3/diagnostic-image-ci" in workflow
+    assert "profile-run configs/v3/profile_numpy_cpu.yaml" in workflow
+    assert "profile-verify" in workflow
 
 
 def test_v31_smolvla_dispatcher_is_manual_self_hosted_and_fail_closed() -> None:
