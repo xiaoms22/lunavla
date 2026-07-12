@@ -40,6 +40,9 @@ from lunavla.v3 import (
     InterventionSpecV1,
     TrainStepResultV3,
     TransitionV3,
+    StableEvidenceDesignV1,
+    StableEvidenceSummaryV1,
+    StableReleaseCandidateV1,
 )
 
 
@@ -88,13 +91,16 @@ PUBLIC_TYPES = {
     "ExternalDatasetSpecV1": ExternalDatasetSpecV1,
     "SimulationTaskSpecV1": SimulationTaskSpecV1,
     "IntegrationManifestV1": IntegrationManifestV1,
+    "StableEvidenceDesignV1": StableEvidenceDesignV1,
+    "StableEvidenceSummaryV1": StableEvidenceSummaryV1,
+    "StableReleaseCandidateV1": StableReleaseCandidateV1,
 }
 
 
 def descriptor() -> dict[str, Any]:
     return {
         "schema_version": 1,
-        "release_stage": "v3.0.0-beta.2-stacked-draft",
+        "release_stage": "v3.0.0-rc-preparation-stacked-draft",
         "contracts": {
             name: {"signature": str(inspect.signature(value))}
             for name, value in PUBLIC_TYPES.items()
@@ -107,6 +113,10 @@ def main() -> int:
     if descriptor() != expected:
         raise SystemExit("v3 public API descriptor drifted")
     for path in sorted((ROOT / "configs/v3").glob("*.yaml")):
+        if path.name.startswith("stable_") and path.name.endswith("_design.yaml"):
+            design = StableEvidenceDesignV1.load(path)
+            design.validate_stable_matrix()
+            continue
         if path.name.endswith("_design.yaml"):
             DiagnosticDesignV1.from_mapping(
                 __import__("yaml").safe_load(path.read_text(encoding="utf-8"))

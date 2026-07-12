@@ -1,0 +1,13 @@
+schema_version: 1
+study_id: libero_state_routes
+train_seeds: [11, 22, 33, 44, 55]
+data_seed: 42
+analysis_seed: 202701
+bootstrap_samples: 10000
+policies: [lerobot_smolvla]
+task_ids: [0, 1, 2, 3]
+evaluation_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+routes: [none, expert_only, prompt_only, dual]
+interventions: []
+repeat_train_seed: 11
+reduced_design: false

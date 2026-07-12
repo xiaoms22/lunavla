@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_stage": "v3.0.0-beta.2-stacked-draft",
+  "release_stage": "v3.0.0-rc-preparation-stacked-draft",
   "contracts": {
     "FeatureSpec": {
       "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
@@ -100,6 +100,15 @@
     },
     "IntegrationManifestV1": {
       "signature": "(git_sha: 'str', git_dirty: 'bool', config_sha256: 'str', dependency_lock_sha256: 'str', source_spec_sha256: 'str', source_inventory_sha256: 'str', runner_qualification_sha256: 'str', metrics_sha256: 'str', runner_role: 'str', data_validation: 'Mapping[str, Any]', environment_validation: 'Mapping[str, Any]', policy_smokes: 'tuple[Mapping[str, Any], ...]', downloaded_bytes: 'int', claim_allowed: 'bool', benchmark_claim: 'bool', statement: 'str', schema_version: 'int' = 1) -> None"
+    },
+    "StableEvidenceDesignV1": {
+      "signature": "(study_id: 'str', train_seeds: 'tuple[int, ...]', data_seed: 'int', analysis_seed: 'int', bootstrap_samples: 'int', policies: 'tuple[str, ...]', task_ids: 'tuple[int, ...]', evaluation_ids: 'tuple[int, ...]', routes: 'tuple[str, ...]', interventions: 'tuple[str, ...]', repeat_train_seed: 'int', reduced_design: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "StableEvidenceSummaryV1": {
+      "signature": "(study_id: 'str', design_sha256: 'str', git_sha: 'str', dependency_lock_sha256: 'str', upstream_identity_sha256: 'str', row_inventory_sha256: 'str', statistics_sha256: 'str', sentinel_sha256: 'str', expected_rows: 'int', observed_rows: 'int', matrix_complete: 'bool', homogeneous_source: 'bool', sentinel_verified: 'bool', claim_gate_sha256: 'str', release_eligible: 'bool', gate_reasons: 'tuple[str, ...]', schema_version: 'int' = 1) -> None"
+    },
+    "StableReleaseCandidateV1": {
+      "signature": "(expected_tag: 'str', package_version: 'str', git_sha: 'str', merge_sha: 'str', public_api_sha256: 'str', migration_report_sha256: 'str', alpha2_gpu_manifest_sha256: 'str', license_review_sha256: 'str', authoritative_runner_sha256: 'str', secondary_runner_sha256: 'str', integration_manifests: 'tuple[ArtifactHashRecordV1, ...]', evidence_manifests: 'tuple[ArtifactHashRecordV1, ...]', required_checks_sha256: 'str', sbom_sha256: 'str', provenance_sha256: 'str', checksums_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', signed_tag_verified: 'bool', post_merge_evidence: 'bool', privacy_scan_verified: 'bool', pypi_published: 'bool', schema_version: 'int' = 1) -> None"
     }
   }
 }
