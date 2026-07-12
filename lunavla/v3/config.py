@@ -56,7 +56,7 @@ _NUMPY_PARAMETER_FIELDS = {
     "state_feature", "unused_modalities", "history", "horizon", "execution_steps",
 }
 _ACT_PARAMETER_FIELDS = {
-    "state_feature", "camera_feature", "instruction_dim", "chunk_size", "history",
+    "state_feature", "camera_feature", "camera_features", "instruction_dim", "chunk_size", "history",
     "horizon", "execution_steps", "d_model", "nhead", "num_encoder_layers",
     "num_decoder_layers", "dim_feedforward", "latent_dim", "dropout", "kl_weight",
     "sample_latent_during_training", "temporal_ensemble_decay",
@@ -347,6 +347,23 @@ class ExperimentConfig:
                 ):
                     raise ValueError("policy.parameters.camera_feature must be non-empty or null")
                 policy["parameters"]["camera_feature"] = camera_feature
+                camera_features = policy["parameters"].get("camera_features")
+                if camera_features is not None:
+                    if (
+                        isinstance(camera_features, (str, bytes, Mapping))
+                        or not isinstance(camera_features, Sequence)
+                    ):
+                        raise TypeError("policy.parameters.camera_features must be a sequence")
+                    camera_values = list(camera_features)
+                    if not camera_values or any(
+                        not isinstance(item, str) or not item for item in camera_values
+                    ):
+                        raise ValueError("act_v3 camera_features requires non-empty names")
+                    if len(camera_values) != len(set(camera_values)):
+                        raise ValueError("act_v3 camera_features cannot contain duplicates")
+                    if camera_feature is not None:
+                        raise ValueError("act_v3 cannot declare both camera_feature and camera_features")
+                    policy["parameters"]["camera_features"] = camera_values
                 if policy["parameters"]["d_model"] % policy["parameters"]["nhead"]:
                     raise ValueError("act_v3 d_model must be divisible by nhead")
                 for name in ("dropout", "kl_weight"):
@@ -640,16 +657,21 @@ class ExperimentConfig:
             if policy["type"] == "act_v3":
                 camera_features = {item.name: item for item in feature_schema.by_role("image")}
                 camera_feature = policy["parameters"]["camera_feature"]
-                if camera_feature is not None and camera_feature not in camera_features:
-                    raise ValueError("act_v3 camera_feature is not declared by FeatureSchema")
-                if camera_feature is not None:
-                    camera_shape = camera_features[camera_feature].shape
+                configured = (
+                    tuple(policy["parameters"]["camera_features"])
+                    if "camera_features" in policy["parameters"]
+                    else (() if camera_feature is None else (camera_feature,))
+                )
+                if configured != tuple(camera_features):
+                    if not configured and camera_features:
+                        raise ValueError("act_v3 cannot silently discard declared image features")
+                    raise ValueError("act_v3 camera features must exactly match FeatureSchema order")
+                for name in configured:
+                    camera_shape = camera_features[name].shape
                     if len(camera_shape) != 3 or camera_shape[-1] != 3:
-                        raise ValueError("act_v3 Alpha 2 requires an HWC RGB camera feature")
-                if camera_feature is None and camera_features:
+                        raise ValueError("act_v3 requires HWC RGB camera features")
+                if camera_feature is None and not configured and camera_features:
                     raise ValueError("act_v3 cannot silently discard declared image features")
-                if len(camera_features) > 1:
-                    raise ValueError("act_v3 Alpha 2 supports exactly zero or one camera")
             if policy["type"] == "diffusion_v3":
                 camera_features = {item.name: item for item in feature_schema.by_role("image")}
                 configured = tuple(policy["parameters"]["camera_features"])
@@ -893,8 +915,11 @@ class ExperimentConfig:
             raise ValueError("routing.state_features must reference declared state features")
 
         expected_cameras: tuple[str, ...] = ()
-        if policy["type"] == "act_v3" and policy_parameters.get("camera_feature") is not None:
-            expected_cameras = (str(policy_parameters["camera_feature"]),)
+        if policy["type"] == "act_v3":
+            if "camera_features" in policy_parameters:
+                expected_cameras = tuple(str(item) for item in policy_parameters["camera_features"])
+            elif policy_parameters.get("camera_feature") is not None:
+                expected_cameras = (str(policy_parameters["camera_feature"]),)
         elif policy["type"] in {"diffusion_v3", "lerobot_smolvla"}:
             expected_cameras = tuple(str(item) for item in policy_parameters["camera_features"])
         elif "legacy" in parameters and policy_parameters.get("image_shape") is not None:

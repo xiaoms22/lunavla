@@ -41,7 +41,7 @@ task:
       task_ids: [0, 1, 2, 3]
       init_state_ids: [0]
       control_mode: relative
-      camera_mapping: {agentview_image: camera.agentview, robot0_eye_in_hand_image: camera.wrist}
+      camera_mapping: {observation.images.image: camera.agentview, observation.images.image2: camera.wrist}
       state_mapping: {observation.state: state.proprioception}
       action_mapping: {action: action.primary}
       max_steps: 3

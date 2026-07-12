@@ -16,6 +16,11 @@ from .diagnostic_workflow import (
 )
 from .engine import dataset_for_config, run_alpha
 from .migration import migrate_v2_mapping
+from .integration_workflow import (
+    print_source_preflight,
+    run_integration,
+    verify_integration,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -46,6 +51,14 @@ def _parser() -> argparse.ArgumentParser:
     diagnostic_report = subparsers.add_parser("diagnostic-report")
     diagnostic_report.add_argument("output_root")
     diagnostic_report.add_argument("--out", required=True)
+    source_preflight = subparsers.add_parser("source-preflight")
+    source_preflight.add_argument("config")
+    integration_run = subparsers.add_parser("integration-run")
+    integration_run.add_argument("config")
+    integration_run.add_argument("--cache-dir", required=True)
+    integration_run.add_argument("--out", required=True)
+    integration_verify = subparsers.add_parser("integration-verify")
+    integration_verify.add_argument("output_root")
     return parser
 
 
@@ -93,6 +106,31 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.command == "diagnostic-report":
         output = write_diagnostic_report(arguments.output_root, arguments.out)
         print(json.dumps({"report_dir": str(output)}, sort_keys=True))
+        return 0
+    if arguments.command == "source-preflight":
+        print(json.dumps(print_source_preflight(arguments.config), sort_keys=True))
+        return 0
+    if arguments.command == "integration-run":
+        output = run_integration(
+            arguments.config,
+            cache_dir=arguments.cache_dir,
+            output_root=arguments.out,
+        )
+        print(json.dumps({"output_dir": str(output), "claim_allowed": False}, sort_keys=True))
+        return 0
+    if arguments.command == "integration-verify":
+        integration_manifest = verify_integration(arguments.output_root)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "git_sha": integration_manifest.git_sha,
+                    "claim_allowed": integration_manifest.claim_allowed,
+                    "benchmark_claim": integration_manifest.benchmark_claim,
+                },
+                sort_keys=True,
+            )
+        )
         return 0
     raise AssertionError("unreachable command")
 

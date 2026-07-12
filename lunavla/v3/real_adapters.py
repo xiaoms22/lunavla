@@ -6,6 +6,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol
 
 import numpy as np
@@ -161,6 +162,7 @@ class LeRobotDatasetSourceV3:
         schema: FeatureSchema,
         *,
         dataset_factory: DatasetFactory | None = None,
+        root: str | Path | None = None,
         metadata: Sequence[Mapping[str, Any]] = (),
         expected_task_languages: Mapping[int, str] | None = None,
     ) -> None:
@@ -168,6 +170,7 @@ class LeRobotDatasetSourceV3:
         self.spec = spec
         self.schema = schema
         self._factory = dataset_factory
+        self._root = None if root is None else Path(root)
         if spec.episode_selection == "explicit":
             self.selection = EpisodeSelectionV1(
                 {0: spec.episodes[0]},
@@ -223,10 +226,12 @@ class LeRobotDatasetSourceV3:
         factory = self._factory or self._default_factory
         rows = factory(
             repo_id=self.spec.repo_id,
+            root=self._root,
             revision=self.spec.revision,
             episodes=list(self.selection.episodes),
             video_backend=self.spec.video_backend,
             download_videos=True,
+            return_uint8=self.spec.return_uint8,
         )
         grouped: dict[int, list[Mapping[str, Any]]] = defaultdict(list)
         selected = set(self.selection.episodes)
@@ -302,7 +307,14 @@ class LeRobotDatasetSourceV3:
 
 
 class _EnvV3Base:
-    def __init__(self, env: Any, schema: FeatureSchema, spec: SimulationTaskSpecV1) -> None:
+    def __init__(
+        self,
+        env: Any,
+        schema: FeatureSchema,
+        spec: SimulationTaskSpecV1,
+        *,
+        observation_processor: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+    ) -> None:
         self._env = env
         self._schema = schema
         self._spec = spec
@@ -310,6 +322,7 @@ class _EnvV3Base:
         self._current: ObservationV3 | None = None
         self._step = 0
         self._episode_id: str | int = "unset"
+        self._observation_processor = observation_processor or (lambda value: value)
 
     @property
     def close_count(self) -> int:
@@ -327,14 +340,21 @@ class _EnvV3Base:
         self.close()
 
     def _map(self, raw: Mapping[str, Any], *, instruction: str | None) -> ObservationV3:
+        processed = self._observation_processor(raw)
+        if not isinstance(processed, Mapping):
+            raise TypeError("observation processor must return a mapping")
         images: dict[str, Array] = {}
         state: dict[str, Array] = {}
         for source_key, target in self._spec.camera_mapping.items():
             feature = next(item for item in self._schema.by_role("image") if item.name == target)
-            images[target] = _typed_image(_lookup(raw, source_key), feature.shape, source_key)
+            images[target] = _typed_image(
+                _lookup(processed, source_key), feature.shape, source_key
+            )
         for source_key, target in self._spec.state_mapping.items():
             feature = next(item for item in self._schema.by_role("state") if item.name == target)
-            state[target] = _typed_vector(_lookup(raw, source_key), feature.shape, source_key)
+            state[target] = _typed_vector(
+                _lookup(processed, source_key), feature.shape, source_key
+            )
         observation = ObservationV3(
             images,
             state,
@@ -415,6 +435,7 @@ class LiberoSpatialEnvV3(_EnvV3Base):
         init_state_id: int,
         task_language: str,
         env_factory: Callable[..., Any],
+        observation_processor: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
     ) -> None:
         if spec.environment_id != "libero" or spec.suite != "libero_spatial":
             raise ValueError("LiberoSpatialEnvV3 requires the pinned libero_spatial suite")
@@ -429,7 +450,23 @@ class LiberoSpatialEnvV3(_EnvV3Base):
             init_state_id=init_state_id,
             headless=spec.headless,
         )
-        super().__init__(env, schema, spec)
+        if observation_processor is None:
+            observation_processor = self._official_observation_processor()
+        super().__init__(env, schema, spec, observation_processor=observation_processor)
+
+    @staticmethod
+    def _official_observation_processor() -> Callable[[Mapping[str, Any]], Mapping[str, Any]]:
+        utils = importlib.import_module("lerobot.envs.utils")
+        processors = importlib.import_module("lerobot.processor.env_processor")
+        pipeline_module = importlib.import_module("lerobot.processor.pipeline")
+        pipeline = pipeline_module.PolicyProcessorPipeline(
+            steps=[processors.LiberoProcessorStep()]
+        )
+
+        def process(raw: Mapping[str, Any]) -> Mapping[str, Any]:
+            return pipeline(utils.preprocess_observation(dict(raw)))
+
+        return process
 
     def reset(self, *, seed: int | None = None) -> ObservationV3:
         self._episode_id = f"task-{self.task_id}-init-{self.init_state_id}"
