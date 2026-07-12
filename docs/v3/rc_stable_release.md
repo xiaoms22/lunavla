@@ -36,6 +36,17 @@ The seed 11 sentinel binds the deterministic seed-11 row subset, checkpoint and 
 Environment-specific latency and memory remain in the separate `PolicyProfileManifestV1`; they are
 not mixed into the bit-exact stable-evidence inventory.
 
+Each study is executed from a clean checkout and verified independently:
+
+```bash
+lunavla-v3 stable-run configs/v3/stable_pusht_policy_design.yaml --out outputs/v3/stable
+lunavla-v3 stable-run configs/v3/stable_libero_route_design.yaml --out outputs/v3/stable
+lunavla-v3 stable-run configs/v3/stable_libero_prompt_design.yaml --out outputs/v3/stable
+lunavla-v3 stable-verify outputs/v3/stable/fixture_policy_ladder
+lunavla-v3 stable-verify outputs/v3/stable/fixture_state_routes
+lunavla-v3 stable-verify outputs/v3/stable/fixture_prompt_interventions
+```
+
 ## External gates kept separate
 
 SmolVLA weight validation and GPU evidence move to v3.1. v3.0 keeps only the public-API conformance

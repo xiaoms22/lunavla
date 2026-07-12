@@ -55,7 +55,10 @@ jobs:
       - run: uv sync --frozen --extra dev
       - name: Verify predeclared matrices and fail-closed release contracts
         run: |
-          uv run --no-sync pytest tests_v3/test_stable_contracts.py tests_v3/test_portfolio.py
+          uv run --no-sync pytest \
+            tests_v3/test_stable_contracts.py \
+            tests_v3/test_stable_workflow.py \
+            tests_v3/test_portfolio.py
           uv run --no-sync lunavla-v3 validate-stable-designs \
             configs/v3/stable_pusht_policy_design.yaml \
             configs/v3/stable_libero_route_design.yaml \

@@ -44,6 +44,7 @@ from lunavla.v3 import (
     StableEvidenceDesignV1,
     StableEvidenceRowV1,
     StableEvidenceSummaryV1,
+    StableExecutionBatchV1,
     StableRepeatSentinelV1,
     StableReleaseCandidateV1,
 )
@@ -97,6 +98,7 @@ PUBLIC_TYPES = {
     "StableEvidenceDesignV1": StableEvidenceDesignV1,
     "StableEvidenceRowV1": StableEvidenceRowV1,
     "StableEvidenceSummaryV1": StableEvidenceSummaryV1,
+    "StableExecutionBatchV1": StableExecutionBatchV1,
     "StableRepeatSentinelV1": StableRepeatSentinelV1,
     "StableReleaseCandidateV1": StableReleaseCandidateV1,
 }
