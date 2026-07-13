@@ -145,7 +145,7 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: ${{ runner.temp }}/v3-runner-qualification/runner-qualification-manifest.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: v3-runner-${{ inputs.runner_role }}-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/v3-runner-qualification/runner-qualification-manifest.json
@@ -287,7 +287,7 @@ jobs:
           cp -- "$BUNDLE_PATH" \
             "$RUNNER_TEMP/v3-alpha2-gpu-evidence/gpu-attestation-bundle.jsonl"
           test "$(find "$RUNNER_TEMP/v3-alpha2-gpu-evidence" -type f | wc -l | tr -d ' ')" = 2
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: v3-alpha2-gpu-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/v3-alpha2-gpu-evidence/
@@ -411,7 +411,7 @@ jobs:
             ${{ runner.temp }}/release-assets/release-candidate.json
             ${{ runner.temp }}/release-assets/sbom.json
             ${{ runner.temp }}/release-assets/SHA256SUMS
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: lunavla-v3-alpha2-candidate-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/release-assets/
