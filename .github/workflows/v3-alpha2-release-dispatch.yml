@@ -85,7 +85,7 @@ jobs:
           [[ "$SOURCE_REF" != *..* && "$SOURCE_REF" != *//* && "$SOURCE_REF" != */ ]]
           test "$LUNAVLA_EPHEMERAL_RUNNER" = true
           test "$LUNAVLA_CONTAINER_IMAGE_SHA256" = "$EXPECTED_CONTAINER_IMAGE_SHA256"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref }}
           fetch-depth: 1
@@ -174,7 +174,7 @@ jobs:
           [[ "$SOURCE_REF" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,254}$ ]]
           [[ "$SOURCE_REF" != refs/pull && "$SOURCE_REF" != refs/pull/* ]]
           [[ "$SOURCE_REF" != *..* && "$SOURCE_REF" != *//* && "$SOURCE_REF" != */ ]]
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref }}
           fetch-depth: 1
@@ -305,7 +305,7 @@ jobs:
       EXPECTED_SHA: ${{ inputs.expected_sha }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref }}
           fetch-depth: 1
@@ -437,7 +437,7 @@ jobs:
           [[ "$GPU_RUN_ID" =~ ^[1-9][0-9]*$ ]]
           test "$RELEASE_TAG" = v3.1.0-alpha.1
           test "${{ inputs.source_ref }}" = "$RELEASE_TAG"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.tag }}
           fetch-depth: 1
