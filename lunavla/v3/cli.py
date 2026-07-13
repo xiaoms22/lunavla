@@ -31,6 +31,15 @@ from .stable_contracts import (
 )
 from .stable_executor import TeachingFixtureStableExecutor
 from .stable_workflow import run_stable_study, verify_stable_study
+from .v31_contracts import VLMBackendSpecV1
+from .v31_tasks import make_v31_task_dataset
+from .v31_vlm import (
+    TransformersFrozenExtractor,
+    build_frozen_feature_cache,
+    preflight_local_model,
+    run_qwen_observational_smoke,
+    verify_frozen_feature_cache,
+)
 
 
 def _json_mapping(path: str | Path) -> dict[str, object]:
@@ -104,6 +113,22 @@ def _parser() -> argparse.ArgumentParser:
     release_candidate = subparsers.add_parser("verify-release-candidate")
     release_candidate.add_argument("candidate")
     release_candidate.add_argument("--asset-root")
+    vlm_preflight = subparsers.add_parser("vlm-preflight")
+    vlm_preflight.add_argument("spec")
+    vlm_preflight.add_argument("--model-root", required=True)
+    vlm_cache = subparsers.add_parser("vlm-cache")
+    vlm_cache.add_argument("spec")
+    vlm_cache.add_argument("--model-root", required=True)
+    vlm_cache.add_argument("--out", required=True)
+    vlm_cache.add_argument("--processor-sha256", required=True)
+    vlm_cache.add_argument("--device-environment-sha256", required=True)
+    vlm_cache.add_argument("--overwrite", action="store_true")
+    vlm_cache_verify = subparsers.add_parser("vlm-cache-verify")
+    vlm_cache_verify.add_argument("cache_root")
+    qwen_smoke = subparsers.add_parser("qwen-observational-smoke")
+    qwen_smoke.add_argument("spec")
+    qwen_smoke.add_argument("--model-root", required=True)
+    qwen_smoke.add_argument("--out", required=True)
     return parser
 
 
@@ -130,11 +155,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             raise IndexError("episode index is out of range")
         target = Path(arguments.out)
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(episodes[arguments.episode].to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        target.write_text(
+            json.dumps(episodes[arguments.episode].to_dict(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
         return 0
     if arguments.command == "run":
         result = run_alpha(ExperimentConfig.load(arguments.config), overwrite=arguments.overwrite)
-        print(json.dumps({"output_dir": str(result.output_dir), "metrics": result.metrics}, sort_keys=True))
+        print(
+            json.dumps(
+                {"output_dir": str(result.output_dir), "metrics": result.metrics}, sort_keys=True
+            )
+        )
         return 0
     if arguments.command == "verify-run":
         manifest = verify_run_directory(arguments.run_dir)
@@ -146,7 +178,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if arguments.command == "diagnostic-verify":
         evidence = verify_diagnostic_output(arguments.output_root)
-        print(json.dumps({"valid": True, "claim_allowed": evidence["claim_allowed"]}, sort_keys=True))
+        print(
+            json.dumps({"valid": True, "claim_allowed": evidence["claim_allowed"]}, sort_keys=True)
+        )
         return 0
     if arguments.command == "diagnostic-report":
         output = write_diagnostic_report(arguments.output_root, arguments.out)
@@ -205,7 +239,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.command == "validate-stable-designs":
         designs = tuple(StableEvidenceDesignV1.load(path) for path in arguments.designs)
         rows = validate_stable_design_set(designs)
-        print(json.dumps({"valid": True, "rows": rows, "total_rows": sum(rows.values())}, sort_keys=True))
+        print(
+            json.dumps(
+                {"valid": True, "rows": rows, "total_rows": sum(rows.values())}, sort_keys=True
+            )
+        )
         return 0
     if arguments.command == "verify-stable-evidence":
         design = StableEvidenceDesignV1.load(arguments.design)
@@ -289,6 +327,45 @@ def main(argv: Sequence[str] | None = None) -> int:
                 sort_keys=True,
             )
         )
+        return 0
+    if arguments.command == "vlm-preflight":
+        spec = VLMBackendSpecV1.from_mapping(_json_mapping(arguments.spec))
+        preflight = preflight_local_model(spec, arguments.model_root)
+        print(json.dumps(preflight.to_dict(), sort_keys=True))
+        return 0
+    if arguments.command == "vlm-cache":
+        spec = VLMBackendSpecV1.from_mapping(_json_mapping(arguments.spec))
+        extractor = TransformersFrozenExtractor(spec, arguments.model_root)
+        output = build_frozen_feature_cache(
+            make_v31_task_dataset(),
+            spec,
+            extractor,
+            Path(arguments.out).resolve(),
+            processor_sha256=arguments.processor_sha256,
+            device_environment_sha256=arguments.device_environment_sha256,
+            overwrite=arguments.overwrite,
+        )
+        index = verify_frozen_feature_cache(output)
+        print(
+            json.dumps(
+                {"output_dir": str(output), "cache_index_sha256": index.sha256()}, sort_keys=True
+            )
+        )
+        return 0
+    if arguments.command == "vlm-cache-verify":
+        index = verify_frozen_feature_cache(arguments.cache_root)
+        print(json.dumps({"valid": True, "cache_index_sha256": index.sha256()}, sort_keys=True))
+        return 0
+    if arguments.command == "qwen-observational-smoke":
+        spec = VLMBackendSpecV1.from_mapping(_json_mapping(arguments.spec))
+        extractor = TransformersFrozenExtractor(spec, arguments.model_root)
+        smoke = run_qwen_observational_smoke(make_v31_task_dataset(), spec, extractor)
+        output = Path(arguments.out)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(
+            json.dumps(smoke.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(json.dumps(smoke.to_dict(), sort_keys=True))
         return 0
     raise AssertionError("unreachable command")
 
