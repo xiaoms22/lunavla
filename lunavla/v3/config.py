@@ -14,15 +14,18 @@ import yaml
 from lunavla.contracts import normalize_device
 
 from .contracts import EmbodimentSpec, FeatureSchema
+from .v31_contracts import TaskSuiteSpecV1, VLMBackendSpecV1
 
 
 CONFIG_SCHEMA_VERSION = 3
 CONFIG_CONTRACT_REVISION = 2
+V31_CONFIG_CONTRACT_REVISION = 4
 _ROOT_V1 = {
     "schema_version", "project_name", "engine", "policy", "task", "dataset", "embodiment",
     "features", "training", "evaluation", "diagnostics", "artifacts",
 }
 _ROOT_V2 = _ROOT_V1 | {"contract_revision", "prompt", "routing"}
+_ROOT_V4 = _ROOT_V2 | {"vlm", "feature_cache", "task_suite", "trace"}
 _SECTION_FIELDS = {
     "policy": {"type", "parameters"},
     "task": {"id", "parameters"},
@@ -186,6 +189,10 @@ class ExperimentConfig:
     diagnostics: Mapping[str, Any]
     prompt: Mapping[str, Any]
     routing: Mapping[str, Any]
+    vlm: Mapping[str, Any]
+    feature_cache: Mapping[str, Any]
+    task_suite: Mapping[str, Any]
+    trace: Mapping[str, Any]
     artifacts: Mapping[str, Any]
 
     def __init__(self, **_: Any) -> None:
@@ -202,11 +209,16 @@ class ExperimentConfig:
         raw_revision = root.get("contract_revision", 1)
         if isinstance(raw_revision, bool) or not isinstance(raw_revision, int):
             raise TypeError("contract_revision must be an integer")
-        if raw_revision not in {1, CONFIG_CONTRACT_REVISION}:
+        if raw_revision not in {1, CONFIG_CONTRACT_REVISION, V31_CONFIG_CONTRACT_REVISION}:
             raise ValueError(
-                f"contract_revision must be 1 or {CONFIG_CONTRACT_REVISION}"
+                "contract_revision must be 1, "
+                f"{CONFIG_CONTRACT_REVISION}, or {V31_CONFIG_CONTRACT_REVISION}"
             )
-        allowed_root = _ROOT_V1 if raw_revision == 1 else _ROOT_V2
+        allowed_root = (
+            _ROOT_V1 if raw_revision == 1
+            else _ROOT_V4 if raw_revision == V31_CONFIG_CONTRACT_REVISION
+            else _ROOT_V2
+        )
         _reject_unknown(root, allowed_root, "config")
         missing = sorted(allowed_root - set(root))
         if missing:
@@ -840,7 +852,7 @@ class ExperimentConfig:
             expected_cameras = tuple(str(item) for item in policy_parameters["camera_features"])
         elif "legacy" in parameters and policy_parameters.get("image_shape") is not None:
             expected_cameras = ("camera.primary",)
-        if raw_revision == CONFIG_CONTRACT_REVISION and tuple(camera_values) != expected_cameras:
+        if raw_revision in {CONFIG_CONTRACT_REVISION, V31_CONFIG_CONTRACT_REVISION} and tuple(camera_values) != expected_cameras:
             raise ValueError("prompt.camera_order must exactly match policy camera order")
         consumes_instruction = False
         if policy["type"] == "lerobot_smolvla":
@@ -854,8 +866,8 @@ class ExperimentConfig:
         if policy["type"] == "diffusion_v3" and (prompt["enabled"] or mode not in {"none", "expert_only"}):
             raise ValueError("diffusion_v3 does not support prompt diagnostics")
         if diagnostics["enabled"]:
-            if raw_revision != CONFIG_CONTRACT_REVISION:
-                raise ValueError("diagnostics require config contract_revision=2")
+            if raw_revision not in {CONFIG_CONTRACT_REVISION, V31_CONFIG_CONTRACT_REVISION}:
+                raise ValueError("diagnostics require config contract_revision=2 or 4")
             if not prompt["enabled"]:
                 raise ValueError("diagnostics require prompt.enabled=true")
             if evaluation["execution_mode"] != "receding_horizon":
@@ -871,6 +883,56 @@ class ExperimentConfig:
             raise ValueError("artifacts.output_dir must be a non-empty string")
         artifacts["output_dir"] = artifacts["output_dir"].strip()
         artifacts["checkpoint_name"] = _checkpoint_name(artifacts["checkpoint_name"])
+
+        if raw_revision == V31_CONFIG_CONTRACT_REVISION:
+            vlm = VLMBackendSpecV1.from_mapping(_mapping(root["vlm"], "vlm")).to_dict()
+            task_suite = TaskSuiteSpecV1.from_mapping(
+                _mapping(root["task_suite"], "task_suite")
+            ).to_dict()
+            feature_cache = _finite_json_mapping(root["feature_cache"], "feature_cache")
+            _reject_unknown(
+                feature_cache,
+                {"enabled", "root", "backend_spec_sha256", "read_only"},
+                "feature_cache",
+            )
+            if set(feature_cache) != {"enabled", "root", "backend_spec_sha256", "read_only"}:
+                raise ValueError("feature_cache requires enabled, root, backend_spec_sha256, read_only")
+            if not isinstance(feature_cache["enabled"], bool) or not isinstance(feature_cache["read_only"], bool):
+                raise TypeError("feature_cache enabled and read_only must be boolean")
+            cache_root = feature_cache["root"]
+            if not isinstance(cache_root, str) or not cache_root.strip():
+                raise ValueError("feature_cache.root must be a non-empty string")
+            cache_path = Path(cache_root)
+            if cache_path.is_absolute() or cache_root in {".", ".."} or ".." in cache_path.parts:
+                raise ValueError("feature_cache.root must be a contained relative path")
+            feature_cache["root"] = cache_root.strip()
+            backend_hash = feature_cache["backend_spec_sha256"]
+            if backend_hash != VLMBackendSpecV1.from_mapping(vlm).sha256():
+                raise ValueError("feature_cache.backend_spec_sha256 does not match vlm")
+            trace = _finite_json_mapping(root["trace"], "trace")
+            _reject_unknown(trace, {"enabled", "output_dir", "languages", "offline"}, "trace")
+            if set(trace) != {"enabled", "output_dir", "languages", "offline"}:
+                raise ValueError("trace requires enabled, output_dir, languages, and offline")
+            if not isinstance(trace["enabled"], bool) or trace["offline"] is not True:
+                raise ValueError("trace.enabled must be boolean and trace.offline must be true")
+            trace_path = trace["output_dir"]
+            if not isinstance(trace_path, str) or not trace_path.strip():
+                raise ValueError("trace.output_dir must be a non-empty string")
+            parsed_trace_path = Path(trace_path)
+            if parsed_trace_path.is_absolute() or trace_path in {".", ".."} or ".." in parsed_trace_path.parts:
+                raise ValueError("trace.output_dir must be a contained relative path")
+            trace["output_dir"] = trace_path.strip()
+            if trace["languages"] != ["en", "zh-CN"]:
+                raise ValueError("trace.languages must be ordered as [en, zh-CN]")
+            if feature_cache["enabled"] is not True or feature_cache["read_only"] is not True:
+                raise ValueError("v3.1 training requires an enabled read-only frozen feature cache")
+            if policy["type"] != "act_v3":
+                raise ValueError("contract_revision=4 requires policy.type=act_v3")
+        else:
+            vlm = {}
+            feature_cache = {}
+            task_suite = {}
+            trace = {}
 
         instance = object.__new__(cls)
         values = {
@@ -888,6 +950,10 @@ class ExperimentConfig:
             "diagnostics": diagnostics,
             "prompt": prompt,
             "routing": routing,
+            "vlm": vlm,
+            "feature_cache": feature_cache,
+            "task_suite": task_suite,
+            "trace": trace,
             "artifacts": artifacts,
         }
         for name, value in values.items():
@@ -909,10 +975,15 @@ class ExperimentConfig:
             "schema_version", "project_name", "engine", "policy", "task", "dataset", "embodiment",
             "features", "training", "evaluation", "diagnostics", "artifacts",
         )}
-        if self.contract_revision == CONFIG_CONTRACT_REVISION:
+        if self.contract_revision in {CONFIG_CONTRACT_REVISION, V31_CONFIG_CONTRACT_REVISION}:
             result["contract_revision"] = self.contract_revision
             result["prompt"] = _thaw(self.prompt)
             result["routing"] = _thaw(self.routing)
+        if self.contract_revision == V31_CONFIG_CONTRACT_REVISION:
+            result["vlm"] = _thaw(self.vlm)
+            result["feature_cache"] = _thaw(self.feature_cache)
+            result["task_suite"] = _thaw(self.task_suite)
+            result["trace"] = _thaw(self.trace)
         return result
 
     def sha256(self) -> str:

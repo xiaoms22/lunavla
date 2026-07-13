@@ -3,7 +3,19 @@
 The v3 namespace is deliberately separate from the frozen top-level v2 API.
 """
 
-from .config import CONFIG_CONTRACT_REVISION, CONFIG_SCHEMA_VERSION, ExperimentConfig
+from .config import (
+    CONFIG_CONTRACT_REVISION,
+    CONFIG_SCHEMA_VERSION,
+    V31_CONFIG_CONTRACT_REVISION,
+    ExperimentConfig,
+)
+from .v31_contracts import (
+    FeatureCacheIndexV1,
+    FrozenFeatureManifestV1,
+    TaskSuiteSpecV1,
+    TraceBundleManifestV1,
+    VLMBackendSpecV1,
+)
 from .diagnostics import (
     DiagnosticDesignV1,
     DiagnosticTraceRowV1,
@@ -137,6 +149,7 @@ from .stable_workflow import (
 __all__ = [
     "CONFIG_SCHEMA_VERSION",
     "CONFIG_CONTRACT_REVISION",
+    "V31_CONFIG_CONTRACT_REVISION",
     "ALPHA3_PACKAGE_VERSION",
     "ALPHA3_TAG",
     "SMOLVLA_VALIDATION_PACKAGE_VERSION",
@@ -161,6 +174,8 @@ __all__ = [
     "EpisodeHashRecord",
     "ExperimentConfig",
     "FeatureSchema",
+    "FeatureCacheIndexV1",
+    "FrozenFeatureManifestV1",
     "FailureRecordV1",
     "FeatureSpec",
     "FeatureNormalizationV1",
@@ -192,9 +207,12 @@ __all__ = [
     "RoutedObservationV1",
     "StateRouteSpecV1",
     "TaskEnvV3",
+    "TaskSuiteSpecV1",
+    "TraceBundleManifestV1",
     "TransitionV3",
     "TrainStepResultV3",
     "VLAPolicyV3",
+    "VLMBackendSpecV1",
     "WeightLicenseStatusV1",
     "StableEvidenceDesignV1",
     "StableEvidenceRowV1",
