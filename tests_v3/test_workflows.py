@@ -59,9 +59,9 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert "validate-stable-designs" in workflow
     assert "stable_pusht_policy_design.yaml" in workflow
     assert "tests_v3/test_stable_contracts.py" in workflow
-    assert "run_v3_stable_release.py verify-version rc" in workflow
+    assert "run_v3_stable_release.py verify-version stable" in workflow
     assert "python -m build --no-isolation" in workflow
-    assert "lunavla-3.0.0rc1-py3-none-any.whl" in workflow
+    assert "lunavla-3.0.0-py3-none-any.whl" in workflow
 
 
 def test_v31_smolvla_dispatcher_is_manual_self_hosted_and_fail_closed() -> None:

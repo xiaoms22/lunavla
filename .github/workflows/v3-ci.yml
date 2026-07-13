@@ -55,7 +55,7 @@ jobs:
       - run: uv sync --frozen --extra dev --extra release
       - name: Verify predeclared matrices and fail-closed release contracts
         run: |
-          uv run --no-sync python scripts/run_v3_stable_release.py verify-version rc
+          uv run --no-sync python scripts/run_v3_stable_release.py verify-version stable
           uv run --no-sync pytest \
             tests_v3/test_stable_contracts.py \
             tests_v3/test_stable_workflow.py \
@@ -68,8 +68,8 @@ jobs:
         run: |
           uv run --no-sync python -m build --no-isolation
           uv run --no-sync twine check dist/*
-          test -f dist/lunavla-3.0.0rc1-py3-none-any.whl
-          test -f dist/lunavla-3.0.0rc1.tar.gz
+          test -f dist/lunavla-3.0.0-py3-none-any.whl
+          test -f dist/lunavla-3.0.0.tar.gz
 
   data:
     name: v3-data
