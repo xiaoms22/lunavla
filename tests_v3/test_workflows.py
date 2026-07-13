@@ -11,8 +11,8 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         Loader=yaml.BaseLoader,
     )
     triggers = payload["on"]
-    assert set(triggers["pull_request"]["branches"]) == {"main", "v3", "v3-next"}
-    assert triggers["push"]["branches"] == ["v3", "v3-next"]
+    assert set(triggers["pull_request"]["branches"]) == {"main", "v3", "v3-next", "v3.1"}
+    assert triggers["push"]["branches"] == ["v3", "v3-next", "v3.1"]
     names = {job["name"] for job in payload["jobs"].values()}
     assert names == {
         "v3-contracts",
