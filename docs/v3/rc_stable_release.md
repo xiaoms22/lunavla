@@ -3,6 +3,12 @@
 This is a release contract, not a release announcement. Alpha 3 is the current code-only
 prerelease; no RC or stable tag exists.
 
+The RC branch uses Python package version `3.0.0rc1`. `RcReleaseCandidateV1` binds the actual RC
+merge SHA, all three evidence manifests, the verified Portfolio, public API and migration
+descriptors, required checks, wheel/sdist, SBOM, provenance, privacy scan and exact checksums. The
+asset verifier rejects missing, extra, symlinked or byte-modified files and independently parses
+`SHA256SUMS` rather than trusting a precomputed success flag.
+
 ## Frozen candidate sequence
 
 1. Preserve the signed `v3.0.0-alpha.3` code-only release and merged Beta 1 diagnostics.
