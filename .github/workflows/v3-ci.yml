@@ -2,9 +2,9 @@ name: V3 Alpha CPU
 
 on:
   push:
-    branches: [v3, v3-next]
+    branches: [v3, v3-next, v3.1]
   pull_request:
-    branches: [v3, v3-next, main]
+    branches: [v3, v3-next, v3.1, main]
   workflow_dispatch:
 
 permissions:
@@ -40,7 +40,8 @@ jobs:
             scripts/generate_v3_diagnostic_image_fixtures.py scripts/run_v3_stable_release.py
           uv run --no-sync python scripts/check_v3_alpha.py
           uv run --no-sync python scripts/generate_v3_diagnostic_image_fixtures.py --check
-          uv run --no-sync pytest tests_v3/test_contracts.py tests_v3/test_config_migration.py
+          uv run --no-sync pytest tests_v3/test_contracts.py tests_v3/test_config_migration.py \
+            tests_v3/test_v31_contracts.py
 
   rc-contracts:
     name: v3-rc-contracts
