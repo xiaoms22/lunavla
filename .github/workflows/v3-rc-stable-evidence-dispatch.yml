@@ -220,7 +220,11 @@ jobs:
           (payload / "privacy-scan.json").write_bytes((portfolio / "privacy-scan.json").read_bytes())
           checks = json.loads(
               subprocess.check_output(
-                  ["gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/commits/{sha}/check-runs"],
+                  [
+                      "gh",
+                      "api",
+                      f"repos/{os.environ['GITHUB_REPOSITORY']}/commits/{sha}/check-runs?per_page=100",
+                  ],
                   text=True,
               )
           )["check_runs"]
