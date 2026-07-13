@@ -15,7 +15,8 @@ All notable user-visible changes are recorded here. This project follows semanti
 
 - Stable scope is limited to reproducible synthetic teaching fixtures; no real-robot, PushT or
   LIBERO benchmark, pretrained SmolVLA, or modality-contribution claim is introduced.
-- No model weights, checkpoints, caches, raw datasets, or PyPI publication are included.
+- No model weights, checkpoints, caches, or raw datasets are included. Stable publication uses
+  PyPI Trusted Publishing with a signed-tag, exact-digest, provenance, and Environment gate.
 
 ## v3.0.0-beta.1 — diagnostic integration candidate
 

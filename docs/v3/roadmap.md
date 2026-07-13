@@ -34,6 +34,8 @@
     `3.0.0rc1` passed the exact 1,550-row hosted evidence, Portfolio, package, SBOM, provenance,
     privacy, and checksum gates. Package `3.0.0` must still be merged through protected `main` and
     rebuilt on that actual merge SHA before the stable tag is created.
+    Stable additionally requires an Environment-approved PyPI Trusted Publisher receipt whose
+    wheel/sdist digests and Integrity provenance match the signed GitHub evidence payload.
 11. **v3.1 frozen VLM features — planned:** fixed public VLM revisions feed offline frozen
     features to the ACT action expert on deterministic synthetic tasks. No VLM contribution is
     implemented or claimed in v3.0.

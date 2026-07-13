@@ -290,7 +290,7 @@ jobs:
           from lunavla.v3 import (
               ArtifactHashRecordV1,
               RcReleaseCandidateV1,
-              StableReleaseCandidateV1,
+              StablePrePublishCandidateV1,
           )
 
           payload = Path(os.environ["PAYLOAD"])
@@ -336,7 +336,11 @@ jobs:
               privacy_scan_verified=True,
               pypi_published=False,
           )
-          candidate = RcReleaseCandidateV1(**values) if stage == "rc" else StableReleaseCandidateV1(**values)
+          candidate = (
+              RcReleaseCandidateV1(**values)
+              if stage == "rc"
+              else StablePrePublishCandidateV1(**values)
+          )
           Path(os.environ["CANDIDATE"]).write_text(
               json.dumps(candidate.to_dict(), indent=2, sort_keys=True) + "\n",
               encoding="utf-8",

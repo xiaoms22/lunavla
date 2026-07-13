@@ -20,8 +20,11 @@ asset verifier rejects missing, extra, symlinked or byte-modified files and inde
 5. Merge the protected v3 candidate to `main`, rerun all stable evidence on the actual merge SHA,
    and publish tag `v3.0.0` / package `3.0.0` only after independent verification.
 
-The distribution is not published to PyPI. GitHub Release assets must not contain weights,
-checkpoints, caches, videos, raw datasets, private paths or credentials.
+The stable distribution is published to PyPI only through the dedicated `pypi` Environment and
+OIDC Trusted Publisher bound to `xiaoms22/lunavla` and `v3-pypi-release.yml`. The PyPI wheel and
+sdist hashes must equal the signed evidence payload, and each file's Integrity API provenance
+must identify that exact publisher. RC history remains GitHub-only. GitHub and PyPI assets must
+not contain weights, checkpoints, caches, videos, raw datasets, private paths or credentials.
 
 ## Predeclared stable matrices
 

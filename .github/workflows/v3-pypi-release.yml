@@ -1,0 +1,179 @@
+name: V3 Stable PyPI Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Full immutable main SHA targeted by v3.0.0
+        required: true
+        type: string
+      signed_evidence_run_id:
+        description: Successful signed stable evidence workflow run
+        required: true
+        type: string
+      tag:
+        description: Exact signed stable tag
+        required: true
+        type: string
+
+concurrency:
+  group: v3-stable-pypi-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish-v3-stable-to-pypi
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      EVIDENCE_RUN_ID: ${{ inputs.signed_evidence_run_id }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - name: Verify tag, source run and immutable identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EVIDENCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          test "$RELEASE_TAG" = v3.0.0
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git cat-file -t "$RELEASE_TAG")" = tag
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_SHA"
+          git config gpg.ssh.allowedSignersFile docs/v3/release/allowed_signers
+          git verify-tag "$RELEASE_TAG"
+          tag_object="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq .object.sha)"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object}" --jq .verification.verified)" = true
+          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${EVIDENCE_RUN_ID}")"
+          test "$(jq -r .conclusion <<<"$run")" = success
+          test "$(jq -r .head_sha <<<"$run")" = "$EXPECTED_SHA"
+          workflow_id="$(jq -r .workflow_id <<<"$run")"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow_id}" --jq .path)" = ".github/workflows/v3-rc-stable-evidence-dispatch.yml"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.signed_evidence_run_id }}
+          name: lunavla-v3-stable-${{ inputs.expected_sha }}-signed
+          path: ${{ runner.temp }}/signed
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Verify signed payload and absent PyPI version
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12 .publish-venv
+          uv pip sync requirements-v3-release-cpu.lock --python .publish-venv/bin/python --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --python .publish-venv/bin/python --no-deps --no-build-isolation --editable .
+          .publish-venv/bin/python scripts/run_v3_pypi_release.py preflight \
+            "$RUNNER_TEMP/signed/release-candidate.json" \
+            --asset-root "$RUNNER_TEMP/signed/payload" \
+            --expected-sha "$EXPECTED_SHA"
+      - name: Publish exact signed distributions with Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b
+        with:
+          packages-dir: ${{ runner.temp }}/signed/payload/dist
+          attestations: true
+          skip-existing: false
+          verbose: true
+      - name: Verify PyPI digests and Integrity provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          for delay in 2 4 8 16 30; do
+            if .publish-venv/bin/python scripts/run_v3_pypi_release.py verify-publication \
+              "$RUNNER_TEMP/signed/release-candidate.json" \
+              --asset-root "$RUNNER_TEMP/signed/payload" \
+              --out "$RUNNER_TEMP/publication"; then
+              exit 0
+            fi
+            rm -rf "$RUNNER_TEMP/publication"
+            sleep "$delay"
+          done
+          exit 1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lunavla-v3.0.0-pypi-publication
+          path: ${{ runner.temp }}/publication
+          if-no-files-found: error
+          retention-days: 90
+
+  finalize:
+    name: finalize-v3-stable-release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      EVIDENCE_RUN_ID: ${{ inputs.signed_evidence_run_id }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.signed_evidence_run_id }}
+          name: lunavla-v3-stable-${{ inputs.expected_sha }}-signed
+          path: ${{ runner.temp }}/signed
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lunavla-v3.0.0-pypi-publication
+          path: ${{ runner.temp }}/publication
+      - name: Verify final candidate and inventories
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12 .finalize-venv
+          uv pip sync requirements-v3-release-cpu.lock --python .finalize-venv/bin/python --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --python .finalize-venv/bin/python --no-deps --no-build-isolation --editable .
+          .finalize-venv/bin/python scripts/run_v3_stable_release.py verify-candidate \
+            "$RUNNER_TEMP/publication/stable-release-candidate.json" \
+            --asset-root "$RUNNER_TEMP/signed/payload"
+          (cd "$RUNNER_TEMP/signed/payload" && shasum -a 256 -c SHA256SUMS)
+          root="$RUNNER_TEMP/final"
+          mkdir -p "$root"
+          cp -R "$RUNNER_TEMP/signed/payload/." "$root/"
+          cp "$RUNNER_TEMP/publication/"*.json "$root/"
+          (cd "$root" && find . -type f ! -name FINAL_SHA256SUMS -print0 | sort -z | xargs -0 shasum -a 256 | sed 's#  \./#  #' > FINAL_SHA256SUMS)
+      - uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45
+        with:
+          subject-path: |
+            ${{ runner.temp }}/publication/pypi-publication.json
+            ${{ runner.temp }}/publication/pypi-provenance.json
+            ${{ runner.temp }}/publication/stable-release-candidate.json
+      - name: Publish GitHub stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(gh release list --repo "$GITHUB_REPOSITORY" --json tagName --jq '.[] | select(.tagName == "v3.0.0")')"
+          assets=(
+            "$RUNNER_TEMP/final/dist/"*
+            "$RUNNER_TEMP/final/"*.json
+            "$RUNNER_TEMP/final/"*.jsonl
+            "$RUNNER_TEMP/final/"*.tar.gz
+            "$RUNNER_TEMP/final/SHA256SUMS"
+            "$RUNNER_TEMP/final/FINAL_SHA256SUMS"
+          )
+          gh release create "$RELEASE_TAG" --verify-tag --latest \
+            --title "LunaVLA v3.0.0 — reproducible CPU teaching core" \
+            --notes "Stable synthetic teaching release with 1,550-row evidence, signed assets, SBOM, provenance, Portfolio, and PyPI Trusted Publishing. No real-robot, PushT/LIBERO benchmark, pretrained-weight, or production-deployment claim." \
+            "${assets[@]}"
