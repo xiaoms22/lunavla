@@ -26,11 +26,16 @@
 8. **Beta 2 — optional v3.1 connectivity Draft:** pinned public PushT plus LIBERO-Spatial task IDs
    0–3, explicitly reported as a diagnostic subset rather than a full benchmark. It does not block
    the fixture-only v3.0 stable release.
-9. **CPU core hardening — in progress:** versioned environment-specific policy profiles and the
-   fixed 1,550-row deterministic teaching evidence matrix, without GPU or pretrained weights.
-10. **RC/stable — preparation in a stacked Draft:** fail-closed evidence summaries,
-   same-main-merge-SHA release binding, migration/model/data/safety documents, and
-   asset/SBOM/provenance/checksum requirements. No five-seed run or stable tag exists yet.
+9. **CPU core hardening — verified on the integration baseline:** versioned environment-specific
+   policy profiles and all 1,550 rows of the deterministic teaching evidence matrix, without GPU
+   or pretrained weights. The release run must still be repeated on the RC and default-branch
+   merge SHAs.
+10. **RC/stable — active release candidate:** package `3.0.0rc1`, a strict RC candidate contract,
+    exact release-asset inventory, independent `SHA256SUMS` verification, migration/model/data/
+    safety documents, and asset/SBOM/provenance requirements. No RC or stable tag exists yet.
+11. **v3.1 frozen VLM features — planned:** fixed public VLM revisions feed offline frozen
+    features to the ACT action expert on deterministic synthetic tasks. No VLM contribution is
+    implemented or claimed in v3.0.
 
 No release requires a target success rate. Negative or neutral evidence remains publishable; an
 incomplete or mixed-provenance matrix cannot open a claim.
