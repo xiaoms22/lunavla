@@ -73,7 +73,7 @@ jobs:
             > "$RUNNER_TEMP/main-v3-code-release-dispatch.yml"
           cmp --silent .github/workflows/v3-code-release-dispatch.yml \
             "$RUNNER_TEMP/main-v3-code-release-dispatch.yml"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install hash-locked release CPU profile
@@ -246,7 +246,7 @@ jobs:
           path: ${{ runner.temp }}/release-assets
           github-token: ${{ github.token }}
           run-id: ${{ inputs.candidate_run_id }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Reproduce and finalize

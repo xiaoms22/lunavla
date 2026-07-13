@@ -58,7 +58,7 @@ jobs:
             > "$RUNNER_TEMP/main-v3-beta2-integration-dispatch.yml"
           cmp --silent .github/workflows/v3-beta2-integration-dispatch.yml \
             "$RUNNER_TEMP/main-v3-beta2-integration-dispatch.yml"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install hash-locked Linux CPU integration profile

@@ -111,7 +111,7 @@ jobs:
           assert status['release_eligible'] is False
           PY
           echo "HF_HOME=$RUNNER_TEMP/lunavla-empty-hf-cache" >> "$GITHUB_ENV"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install the hash-locked CUDA 12.8 profile
@@ -194,7 +194,7 @@ jobs:
           test "$(shasum -a 256 docs/v3/release/smolvla-license-review.json | cut -d' ' -f1)" \
             = "$EXPECTED_LICENSE_SHA256"
           echo "HF_HOME=$RUNNER_TEMP/lunavla-hf-cache" >> "$GITHUB_ENV"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install the hash-locked CUDA 12.8 profile
@@ -320,7 +320,7 @@ jobs:
         with:
           name: v3-alpha2-gpu-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/gpu-inputs
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install the hash-locked release CPU profile
@@ -468,7 +468,7 @@ jobs:
           path: ${{ runner.temp }}/release-assets
           github-token: ${{ github.token }}
           run-id: ${{ inputs.gpu_run_id }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install release verifier and reproduce distributions
