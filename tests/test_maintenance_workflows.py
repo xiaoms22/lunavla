@@ -98,6 +98,6 @@ def test_gpu_training_stays_manual_and_does_not_block_pull_requests() -> None:
 def test_codeql_covers_maintained_and_v2_integration_branches() -> None:
     payload = _workflow("codeql.yml")
     triggers = payload["on"]
-    expected = {"main", "v1.x", "v2", "v3", "v3-next"}
+    expected = {"main", "v1.x", "v2", "v3", "v3-next", "v3.1"}
     assert set(triggers["push"]["branches"]) == expected
     assert set(triggers["pull_request"]["branches"]) == expected
