@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -7,6 +8,9 @@ import pytest
 
 from lunavla.v3 import (
     ArtifactHashRecordV1,
+    RC_PACKAGE_VERSION,
+    RC_TAG,
+    RcReleaseCandidateV1,
     STABLE_PACKAGE_VERSION,
     STABLE_TAG,
     StableEvidenceDesignV1,
@@ -19,6 +23,7 @@ from lunavla.v3 import (
     expected_stable_matrix_keys,
     stable_row_inventory_sha256,
     validate_stable_design_set,
+    verify_release_candidate_assets,
     verify_stable_evidence_bundle,
     wilson_interval,
 )
@@ -122,11 +127,17 @@ def _candidate() -> StableReleaseCandidateV1:
         checksums_sha256=SHA,
         assets=_records(
             {
+                "contract-descriptor.json",
                 "dist/lunavla-3.0.0-py3-none-any.whl",
                 "dist/lunavla-3.0.0.tar.gz",
-                "sbom.json",
-                "provenance.jsonl",
                 "evidence.tar.gz",
+                "migration-report.json",
+                "portfolio.tar.gz",
+                "privacy-scan.json",
+                "provenance.jsonl",
+                "public-api.json",
+                "required-checks.json",
+                "sbom.json",
             }
         ),
         signed_tag_verified=True,
@@ -252,6 +263,62 @@ def test_stable_candidate_binds_release_sha_assets_and_cpu_evidence_gates() -> N
     payload["pypi_published"] = True
     with pytest.raises(ValueError, match="PyPI"):
         StableReleaseCandidateV1.from_mapping(payload)
+
+
+def test_rc_candidate_verifies_exact_asset_directory_and_checksums(tmp_path: Path) -> None:
+    paths = {
+        "contract-descriptor.json",
+        "dist/lunavla-3.0.0rc1-py3-none-any.whl",
+        "dist/lunavla-3.0.0rc1.tar.gz",
+        "evidence.tar.gz",
+        "migration-report.json",
+        "portfolio.tar.gz",
+        "privacy-scan.json",
+        "provenance.jsonl",
+        "public-api.json",
+        "required-checks.json",
+        "sbom.json",
+    }
+    records: list[ArtifactHashRecordV1] = []
+    for relative in sorted(paths):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(relative.encode("utf-8"))
+        records.append(ArtifactHashRecordV1(relative, hashlib.sha256(path.read_bytes()).hexdigest()))
+    checksums = "".join(f"{record.sha256}  {record.path}\n" for record in records)
+    (tmp_path / "SHA256SUMS").write_text(checksums, encoding="utf-8")
+    hashes = {record.path: record.sha256 for record in records}
+    candidate = RcReleaseCandidateV1(
+        expected_tag=RC_TAG,
+        package_version=RC_PACKAGE_VERSION,
+        git_sha=GIT_SHA,
+        merge_sha=GIT_SHA,
+        public_api_sha256=hashes["public-api.json"],
+        migration_report_sha256=hashes["migration-report.json"],
+        contract_descriptor_sha256=hashes["contract-descriptor.json"],
+        portfolio_bundle_sha256=hashes["portfolio.tar.gz"],
+        evidence_manifests=_records(
+            {
+                "evidence/fixture-policy-ladder.json",
+                "evidence/fixture-state-routes.json",
+                "evidence/fixture-prompt-interventions.json",
+            }
+        ),
+        required_checks_sha256=hashes["required-checks.json"],
+        sbom_sha256=hashes["sbom.json"],
+        provenance_sha256=hashes["provenance.jsonl"],
+        checksums_sha256=hashlib.sha256(checksums.encode("utf-8")).hexdigest(),
+        assets=tuple(records),
+        signed_tag_verified=True,
+        post_merge_evidence=True,
+        privacy_scan_verified=True,
+        pypi_published=False,
+    )
+    assert RcReleaseCandidateV1.from_mapping(candidate.to_dict()) == candidate
+    verify_release_candidate_assets(candidate, tmp_path)
+    (tmp_path / "sbom.json").write_text("tampered", encoding="utf-8")
+    with pytest.raises(ValueError, match="hash mismatch"):
+        verify_release_candidate_assets(candidate, tmp_path)
 
 
 @pytest.mark.parametrize(

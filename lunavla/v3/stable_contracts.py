@@ -6,11 +6,12 @@ import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, Union, cast
 
 import numpy as np
 
 from .artifacts import ArtifactHashRecordV1
+from .artifacts import sha256_file
 
 
 RC_TAG = "v3.0.0-rc.1"
@@ -32,6 +33,30 @@ _STUDIES = {
     "fixture_policy_ladder",
     "fixture_state_routes",
     "fixture_prompt_interventions",
+}
+_EVIDENCE_PATHS = {
+    "evidence/fixture-policy-ladder.json",
+    "evidence/fixture-state-routes.json",
+    "evidence/fixture-prompt-interventions.json",
+}
+_COMMON_RELEASE_ASSETS = {
+    "contract-descriptor.json",
+    "evidence.tar.gz",
+    "migration-report.json",
+    "portfolio.tar.gz",
+    "privacy-scan.json",
+    "provenance.jsonl",
+    "public-api.json",
+    "required-checks.json",
+    "sbom.json",
+}
+_RC_RELEASE_ASSETS = _COMMON_RELEASE_ASSETS | {
+    "dist/lunavla-3.0.0rc1-py3-none-any.whl",
+    "dist/lunavla-3.0.0rc1.tar.gz",
+}
+_STABLE_RELEASE_ASSETS = _COMMON_RELEASE_ASSETS | {
+    "dist/lunavla-3.0.0-py3-none-any.whl",
+    "dist/lunavla-3.0.0.tar.gz",
 }
 
 
@@ -498,7 +523,7 @@ class StableRepeatSentinelV1:
 
 
 @dataclass(frozen=True)
-class StableReleaseCandidateV1:
+class _ReleaseCandidateV1:
     expected_tag: str
     package_version: str
     git_sha: str
@@ -519,15 +544,15 @@ class StableReleaseCandidateV1:
     pypi_published: bool
     schema_version: int = 1
 
-    def __post_init__(self) -> None:
-        if _integer(self.schema_version, "stable release candidate schema_version", positive=True) != 1:
-            raise ValueError("StableReleaseCandidateV1 schema_version must be integer 1")
-        if self.expected_tag != STABLE_TAG or self.package_version != STABLE_PACKAGE_VERSION:
-            raise ValueError("stable release candidate tag/package mapping is invalid")
-        git_sha = _git_sha(self.git_sha, "stable release git_sha")
-        merge_sha = _git_sha(self.merge_sha, "stable release merge_sha")
+    def _validate(self, *, tag: str, version: str, assets: set[str], stage: str) -> None:
+        if _integer(self.schema_version, f"{stage} release candidate schema_version", positive=True) != 1:
+            raise ValueError(f"{stage} release candidate schema_version must be integer 1")
+        if self.expected_tag != tag or self.package_version != version:
+            raise ValueError(f"{stage} release candidate tag/package mapping is invalid")
+        git_sha = _git_sha(self.git_sha, f"{stage} release git_sha")
+        merge_sha = _git_sha(self.merge_sha, f"{stage} release merge_sha")
         if git_sha != merge_sha:
-            raise ValueError("stable release evidence must be rerun on the actual merge SHA")
+            raise ValueError(f"{stage} release evidence must be rerun on the actual merge SHA")
         object.__setattr__(self, "git_sha", git_sha)
         object.__setattr__(self, "merge_sha", merge_sha)
         for name in (
@@ -542,22 +567,24 @@ class StableReleaseCandidateV1:
         ):
             object.__setattr__(self, name, _sha256(getattr(self, name), name))
         evidence = _records(self.evidence_manifests, "evidence_manifests")
-        assets = _records(self.assets, "stable release assets")
-        if {item.path for item in evidence} != {
-            "evidence/fixture-policy-ladder.json",
-            "evidence/fixture-state-routes.json",
-            "evidence/fixture-prompt-interventions.json",
-        }:
-            raise ValueError("stable release requires all three frozen evidence manifests")
-        required_assets = {
-            "dist/lunavla-3.0.0-py3-none-any.whl",
-            "dist/lunavla-3.0.0.tar.gz",
-            "sbom.json",
-            "provenance.jsonl",
-            "evidence.tar.gz",
+        asset_records = _records(self.assets, f"{stage} release assets")
+        if {item.path for item in evidence} != _EVIDENCE_PATHS:
+            raise ValueError(f"{stage} release requires all three frozen evidence manifests")
+        if {item.path for item in asset_records} != assets:
+            raise ValueError(f"{stage} release candidate asset inventory must be exact")
+        by_path = {item.path: item.sha256 for item in asset_records}
+        bindings = {
+            "public_api_sha256": "public-api.json",
+            "migration_report_sha256": "migration-report.json",
+            "contract_descriptor_sha256": "contract-descriptor.json",
+            "portfolio_bundle_sha256": "portfolio.tar.gz",
+            "required_checks_sha256": "required-checks.json",
+            "sbom_sha256": "sbom.json",
+            "provenance_sha256": "provenance.jsonl",
         }
-        if not required_assets.issubset(item.path for item in assets):
-            raise ValueError("stable release candidate is missing required assets")
+        for field, path in bindings.items():
+            if getattr(self, field) != by_path[path]:
+                raise ValueError(f"{stage} release candidate {field} does not bind {path}")
         for name in (
             "signed_tag_verified",
             "post_merge_evidence",
@@ -566,11 +593,11 @@ class StableReleaseCandidateV1:
         ):
             _boolean(getattr(self, name), name)
         if not self.signed_tag_verified or not self.post_merge_evidence or not self.privacy_scan_verified:
-            raise ValueError("stable release requires signed tag, post-merge evidence and privacy scan")
+            raise ValueError(f"{stage} release requires signed tag, post-merge evidence and privacy scan")
         if self.pypi_published:
-            raise ValueError("LunaVLA v3 stable does not publish to PyPI")
+            raise ValueError("LunaVLA v3 does not publish to PyPI")
         object.__setattr__(self, "evidence_manifests", evidence)
-        object.__setattr__(self, "assets", assets)
+        object.__setattr__(self, "assets", asset_records)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -596,14 +623,83 @@ class StableReleaseCandidateV1:
         }
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "StableReleaseCandidateV1":
-        payload = _exact(value, set(cls.__dataclass_fields__), "stable release candidate")
+    def from_mapping(cls, value: Mapping[str, Any]) -> "_ReleaseCandidateV1":
+        payload = _exact(value, set(cls.__dataclass_fields__), "release candidate")
         for field in ("evidence_manifests", "assets"):
             payload[field] = _records(payload[field], field)
         return cls(**payload)
 
     def sha256(self) -> str:
         return _stable_hash(self.to_dict())
+
+
+@dataclass(frozen=True)
+class RcReleaseCandidateV1(_ReleaseCandidateV1):
+    def __post_init__(self) -> None:
+        self._validate(
+            tag=RC_TAG,
+            version=RC_PACKAGE_VERSION,
+            assets=_RC_RELEASE_ASSETS,
+            stage="RC",
+        )
+
+
+@dataclass(frozen=True)
+class StableReleaseCandidateV1(_ReleaseCandidateV1):
+    def __post_init__(self) -> None:
+        self._validate(
+            tag=STABLE_TAG,
+            version=STABLE_PACKAGE_VERSION,
+            assets=_STABLE_RELEASE_ASSETS,
+            stage="stable",
+        )
+
+
+ReleaseCandidateV1 = Union[RcReleaseCandidateV1, StableReleaseCandidateV1]
+
+
+def release_candidate_from_mapping(value: Mapping[str, Any]) -> ReleaseCandidateV1:
+    tag = value.get("expected_tag") if isinstance(value, Mapping) else None
+    if tag == RC_TAG:
+        return cast(RcReleaseCandidateV1, RcReleaseCandidateV1.from_mapping(value))
+    if tag == STABLE_TAG:
+        return cast(StableReleaseCandidateV1, StableReleaseCandidateV1.from_mapping(value))
+    raise ValueError("release candidate expected_tag is unknown")
+
+
+def verify_release_candidate_assets(candidate: ReleaseCandidateV1, root: str | Path) -> None:
+    resolved_root = Path(root).resolve()
+    if not resolved_root.is_dir():
+        raise FileNotFoundError(f"release asset root does not exist: {resolved_root}")
+    if any(path.is_symlink() for path in resolved_root.rglob("*")):
+        raise ValueError("release asset root must not contain symbolic links")
+    actual = {
+        path.relative_to(resolved_root).as_posix()
+        for path in resolved_root.rglob("*")
+        if path.is_file()
+    }
+    expected_records = {record.path: record.sha256 for record in candidate.assets}
+    expected = set(expected_records) | {"SHA256SUMS"}
+    if actual != expected:
+        raise ValueError("release asset directory inventory does not match the candidate")
+    for relative, expected_sha256 in expected_records.items():
+        path = (resolved_root / relative).resolve()
+        if not path.is_relative_to(resolved_root) or sha256_file(path) != expected_sha256:
+            raise ValueError(f"release asset hash mismatch: {relative}")
+    checksums_path = resolved_root / "SHA256SUMS"
+    if sha256_file(checksums_path) != candidate.checksums_sha256:
+        raise ValueError("SHA256SUMS hash does not match the release candidate")
+    parsed: dict[str, str] = {}
+    for line in checksums_path.read_text(encoding="utf-8").splitlines():
+        match = re.fullmatch(r"([0-9a-f]{64})  ([^\\]+)", line)
+        if match is None:
+            raise ValueError("SHA256SUMS contains a malformed line")
+        digest, relative = match.groups()
+        if relative in parsed:
+            raise ValueError("SHA256SUMS contains a duplicate path")
+        parsed[relative] = digest
+    if parsed != expected_records:
+        raise ValueError("SHA256SUMS must cover the exact candidate asset inventory")
 
 
 def validate_stable_design_set(designs: Sequence[StableEvidenceDesignV1]) -> Mapping[str, int]:

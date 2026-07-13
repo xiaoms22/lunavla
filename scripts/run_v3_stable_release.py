@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
+import tomllib
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -10,8 +12,11 @@ from lunavla.v3.stable_contracts import (
     StableEvidenceRowV1,
     StableEvidenceSummaryV1,
     StableRepeatSentinelV1,
-    StableReleaseCandidateV1,
+    RC_PACKAGE_VERSION,
+    STABLE_PACKAGE_VERSION,
+    release_candidate_from_mapping,
     validate_stable_design_set,
+    verify_release_candidate_assets,
     verify_stable_evidence_bundle,
 )
 from lunavla.v3.stable_executor import TeachingFixtureStableExecutor
@@ -43,6 +48,9 @@ def _parser() -> argparse.ArgumentParser:
     verify_study.add_argument("output_dir")
     candidate = commands.add_parser("verify-candidate")
     candidate.add_argument("candidate")
+    candidate.add_argument("--asset-root")
+    version = commands.add_parser("verify-version")
+    version.add_argument("stage", choices=("rc", "stable"))
     return parser
 
 
@@ -109,7 +117,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 0
     if arguments.command == "verify-candidate":
-        candidate = StableReleaseCandidateV1.from_mapping(_mapping(arguments.candidate))
+        candidate = release_candidate_from_mapping(_mapping(arguments.candidate))
+        if arguments.asset_root is not None:
+            verify_release_candidate_assets(candidate, arguments.asset_root)
         print(
             json.dumps(
                 {
@@ -121,6 +131,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 sort_keys=True,
             )
         )
+        return 0
+    if arguments.command == "verify-version":
+        expected = RC_PACKAGE_VERSION if arguments.stage == "rc" else STABLE_PACKAGE_VERSION
+        project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+        public = getattr(importlib.import_module("lunavla"), "__version__", None)
+        if project != expected or public != expected:
+            raise RuntimeError(
+                f"{arguments.stage} package version sources must both equal {expected}"
+            )
+        print(json.dumps({"valid": True, "stage": arguments.stage, "version": expected}, sort_keys=True))
         return 0
     raise AssertionError("unreachable command")
 

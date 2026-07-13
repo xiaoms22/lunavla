@@ -24,7 +24,9 @@ from .stable_contracts import (
     StableEvidenceSummaryV1,
     StableRepeatSentinelV1,
     StableReleaseCandidateV1,
+    release_candidate_from_mapping,
     validate_stable_design_set,
+    verify_release_candidate_assets,
     verify_stable_evidence_bundle,
 )
 from .stable_executor import TeachingFixtureStableExecutor
@@ -99,6 +101,9 @@ def _parser() -> argparse.ArgumentParser:
     stable_verify.add_argument("output_dir")
     stable_candidate = subparsers.add_parser("verify-stable-candidate")
     stable_candidate.add_argument("candidate")
+    release_candidate = subparsers.add_parser("verify-release-candidate")
+    release_candidate.add_argument("candidate")
+    release_candidate.add_argument("--asset-root")
     return parser
 
 
@@ -262,6 +267,23 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "valid": True,
                     "tag": candidate.expected_tag,
                     "git_sha": candidate.git_sha,
+                    "pypi_published": candidate.pypi_published,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "verify-release-candidate":
+        candidate = release_candidate_from_mapping(_json_mapping(arguments.candidate))
+        if arguments.asset_root is not None:
+            verify_release_candidate_assets(candidate, arguments.asset_root)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "tag": candidate.expected_tag,
+                    "git_sha": candidate.git_sha,
+                    "assets_verified": arguments.asset_root is not None,
                     "pypi_published": candidate.pypi_published,
                 },
                 sort_keys=True,

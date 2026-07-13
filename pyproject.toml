@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lunavla"
-version = "3.0.0a3"
+version = "3.0.0rc1"
 description = "Experimental unified engine bridging LunaVLA's NumPy teaching core to VLA research"
 readme = "README.md"
 requires-python = "==3.12.*"
@@ -61,6 +61,7 @@ dev = [
 release = [
   "build>=1.2,<2",
   "cyclonedx-bom>=7,<8",
+  "setuptools==80.10.2",
   "twine>=6,<7",
 ]
 

@@ -1013,7 +1013,7 @@ wheels = [
 
 [[package]]
 name = "lunavla"
-version = "3.0.0a3"
+version = "3.0.0rc1"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
@@ -1033,6 +1033,7 @@ dev = [
 release = [
     { name = "build" },
     { name = "cyclonedx-bom" },
+    { name = "setuptools" },
     { name = "twine" },
 ]
 v2 = [
@@ -1090,6 +1091,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5,<7" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9,<1" },
+    { name = "setuptools", marker = "extra == 'release'", specifier = "==80.10.2" },
     { name = "torch", marker = "extra == 'v2'", specifier = "==2.11.*" },
     { name = "torch", marker = "extra == 'v2-core'", specifier = "==2.11.*" },
     { name = "torch", marker = "extra == 'v2-integration'", specifier = "==2.11.*" },
