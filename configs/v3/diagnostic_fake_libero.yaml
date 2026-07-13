@@ -1,0 +1,96 @@
+schema_version: 3
+contract_revision: 2
+project_name: lunavla-v3-diagnostic-fake-libero
+engine: lunavla_v3
+policy:
+  type: numpy_linear_chunk
+  parameters:
+    state_dim: 4
+    instruction_dim: 8
+    action_dim: 2
+    chunk_size: 1
+    state_feature: state.proprioception
+    unused_modalities: [image]
+task:
+  id: fake_libero
+  parameters: {}
+dataset:
+  type: fake_libero
+  split: train
+  seed: 42
+  parameters:
+    episode_count: 6
+    steps_per_episode: 4
+    instruction_variant: region_instruction_v1
+embodiment:
+  id: lunavla_fake_libero
+  task_id: fake_libero
+  control_rate_hz: 10.0
+  camera_mapping:
+    image: camera.primary
+  state_mapping:
+    state: state.proprioception
+  action_mapping:
+    action: action.primary
+features:
+  schema_version: 1
+  items:
+    - name: camera.primary
+      role: image
+      dtype: uint8
+      shape: [16, 16, 3]
+      unit: pixel
+      frame: sim_camera
+      rate_hz: 10.0
+      normalization: none
+      source_key: image
+      required_by: []
+    - name: state.proprioception
+      role: state
+      dtype: float32
+      shape: [4]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: none
+      source_key: state
+      required_by: [numpy_linear_chunk]
+    - name: action.primary
+      role: action
+      dtype: float32
+      shape: [2]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: none
+      source_key: action
+      required_by: [numpy_linear_chunk]
+training:
+  device: cpu
+  seed: 11
+  batch_size: 4
+  steps: 5
+  learning_rate: 0.04
+evaluation:
+  execution_mode: receding_horizon
+  episodes: 2
+  seed: 1000
+  seeds: [1000, 1001]
+  max_steps: 6
+diagnostics:
+  enabled: true
+prompt:
+  enabled: true
+  renderer_id: lunavla.canonical_json
+  renderer_version: 1
+  assistant_target: action_chunk
+  neutral_token: "[MASKED]"
+  camera_order: []
+  public_slots:
+    task_family: fake_libero
+routing:
+  mode: expert_only
+  state_features: [state.proprioception]
+artifacts:
+  output_dir: outputs/v3/diagnostic-fake-libero
+  checkpoint_name: policy.json

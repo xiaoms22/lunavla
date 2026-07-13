@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools==80.10.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "lunavla"
-version = "2.0.0"
+version = "3.0.0"
 description = "Experimental unified engine bridging LunaVLA's NumPy teaching core to VLA research"
 readme = "README.md"
 requires-python = "==3.12.*"
@@ -19,6 +19,25 @@ dependencies = [
 v2-core = [
   "torch==2.11.*",
   "torchvision==0.26.*",
+]
+v3-act = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+]
+v3-diffusion = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+  "lerobot[diffusion]==0.6.0",
+  "diffusers==0.35.2",
+  "transformers==5.5.4",
+  "accelerate==1.14.0",
+]
+v3-smolvla = [
+  "torch==2.11.*",
+  "torchvision==0.26.*",
+  "lerobot==0.6.0",
+  "transformers==5.5.4",
+  "accelerate==1.14.0",
 ]
 v2 = [
   "torch==2.11.*",
@@ -42,11 +61,13 @@ dev = [
 release = [
   "build>=1.2,<2",
   "cyclonedx-bom>=7,<8",
+  "setuptools==80.10.2",
   "twine>=6,<7",
 ]
 
 [project.scripts]
 lunavla-v2 = "lunavla.cli:main"
+lunavla-v3 = "lunavla.v3.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["dataset*", "lunavla*", "model*", "trainer*"]
@@ -54,7 +75,7 @@ exclude = ["tests*", "tests_v2*"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
-testpaths = ["tests", "tests_v2"]
+testpaths = ["tests", "tests_v2", "tests_v3"]
 pythonpath = ["."]
 markers = [
   "integration: end-to-end tests that invoke a CLI or train a policy",

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "snapshot_kind": "normalized_observation",
+  "source_id": "smolvla_file_inventory",
+  "source_url": "https://huggingface.co/lerobot/smolvla_base/tree/d06fce6e38c25c04ac5a6319eefb9fae0e257cb2",
+  "repo_id": "lerobot/smolvla_base",
+  "revision": "d06fce6e38c25c04ac5a6319eefb9fae0e257cb2",
+  "finding": "reviewed_weight_hash_pinned_without_license_inference",
+  "files": [
+    {
+      "path": "model.safetensors",
+      "sha256": "7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb"
+    }
+  ],
+  "checked_at": "2026-07-12"
+}

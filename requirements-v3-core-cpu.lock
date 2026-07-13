@@ -1,0 +1,3 @@
+# LunaVLA v3 Alpha uses the already reviewed, hash-locked v2 CPU toolchain.
+# The alias is intentional: Alpha 1 adds no runtime dependency.
+-r requirements-v2-core-cpu.lock

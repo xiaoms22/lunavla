@@ -1,0 +1,55 @@
+{
+  "config_sha256": "6ce97ebe084c02c15f8faeeb4b9db8afdc39268a49a678c3bfffa52c83c14984",
+  "records": [
+    {
+      "dtype": "uint8",
+      "metadata_allowed": false,
+      "path": "seed-1000-control.png",
+      "sha256": "847214427f40076534acf089caafbe59db4f9f2da5a5bc703366b5bcbd4ad3bb",
+      "shape": [
+        16,
+        16,
+        3
+      ],
+      "size_bytes": 77
+    },
+    {
+      "dtype": "uint8",
+      "metadata_allowed": false,
+      "path": "seed-1000-image_shuffle.png",
+      "sha256": "93d5d0fac83bd8720f387dfb44e4a7fafa6a4d4a5a4d5390b5505cea97e0e21a",
+      "shape": [
+        16,
+        16,
+        3
+      ],
+      "size_bytes": 77
+    },
+    {
+      "dtype": "uint8",
+      "metadata_allowed": false,
+      "path": "seed-1001-control.png",
+      "sha256": "93d5d0fac83bd8720f387dfb44e4a7fafa6a4d4a5a4d5390b5505cea97e0e21a",
+      "shape": [
+        16,
+        16,
+        3
+      ],
+      "size_bytes": 77
+    },
+    {
+      "dtype": "uint8",
+      "metadata_allowed": false,
+      "path": "seed-1001-image_shuffle.png",
+      "sha256": "847214427f40076534acf089caafbe59db4f9f2da5a5bc703366b5bcbd4ad3bb",
+      "shape": [
+        16,
+        16,
+        3
+      ],
+      "size_bytes": 77
+    }
+  ],
+  "schema_version": 1,
+  "synthetic_only": true
+}

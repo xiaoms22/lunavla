@@ -1,0 +1,55 @@
+schema_version: 1
+design_id: fake-libero-diagnostic-ci
+base_config: configs/v3/diagnostic_fake_libero.yaml
+output_dir: outputs/v3/diagnostic-ci
+train_seeds: [11]
+evaluation_seeds: [1000, 1001]
+routes:
+  - schema_version: 1
+    mode: none
+    state_features: [state.proprioception]
+  - schema_version: 1
+    mode: expert_only
+    state_features: [state.proprioception]
+  - schema_version: 1
+    mode: prompt_only
+    state_features: [state.proprioception]
+  - schema_version: 1
+    mode: dual
+    state_features: [state.proprioception]
+interventions:
+  - schema_version: 1
+    arm_id: control
+    kind: prompt
+    operator: control
+    phase: rollout
+    parameters: {}
+  - schema_version: 1
+    arm_id: mask
+    kind: prompt
+    operator: mask
+    phase: rollout
+    parameters: {}
+  - schema_version: 1
+    arm_id: shuffle
+    kind: prompt
+    operator: shuffle
+    phase: rollout
+    parameters: {}
+  - schema_version: 1
+    arm_id: counterfactual
+    kind: prompt
+    operator: counterfactual
+    phase: rollout
+    parameters: {}
+  - schema_version: 1
+    arm_id: layout_drift
+    kind: prompt
+    operator: layout_drift
+    phase: rollout
+    parameters: {}
+donor_seed: 42
+analysis_seed: 202701
+bootstrap_samples: 100
+counterfactual_transform_id: fake_target_swap_v1
+reduced_design: true
