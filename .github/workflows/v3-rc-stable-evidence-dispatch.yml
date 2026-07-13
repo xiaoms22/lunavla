@@ -1,0 +1,361 @@
+name: V3 RC Stable Evidence Dispatcher
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: Release stage to validate
+        required: true
+        type: choice
+        options: [rc, stable]
+      source_ref:
+        description: Immutable source ref to check out
+        required: true
+        type: string
+      expected_sha:
+        description: Full source commit SHA
+        required: true
+        type: string
+      require_signed_tag:
+        description: Require and verify an annotated signed tag
+        required: true
+        default: false
+        type: boolean
+      tag:
+        description: v3.0.0-rc.1 or v3.0.0 when signed-tag verification is enabled
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  attestations: write
+  contents: read
+  id-token: write
+
+concurrency:
+  group: v3-release-evidence-${{ inputs.stage }}-${{ inputs.expected_sha }}
+  cancel-in-progress: false
+
+jobs:
+  evidence:
+    name: v3-${{ inputs.stage }}-hosted-evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      RELEASE_STAGE: ${{ inputs.stage }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      REQUIRE_SIGNED_TAG: ${{ inputs.require_signed_tag }}
+      GH_TOKEN: ${{ github.token }}
+      PYTHONHASHSEED: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+
+      - name: Verify immutable source and optional signed tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          expected_tag="v3.0.0-rc.1"
+          if [ "$RELEASE_STAGE" = stable ]; then expected_tag="v3.0.0"; fi
+          if [ "$REQUIRE_SIGNED_TAG" = true ]; then
+            test "$RELEASE_TAG" = "$expected_tag"
+            git fetch --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            test "$(git cat-file -t "refs/tags/$RELEASE_TAG")" = tag
+            test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$EXPECTED_SHA"
+            git config gpg.ssh.allowedSignersFile docs/v3/release/allowed_signers
+            git verify-tag "$RELEASE_TAG"
+            tag_object="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq .object.sha)"
+            test "$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object}" --jq .verification.verified)" = true
+          else
+            test -z "$RELEASE_TAG"
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install hash-locked hosted CPU release environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip "uv==0.11.26"
+          uv venv --python 3.12 .release-venv
+          uv pip sync requirements-v3-release-cpu.lock \
+            --python .release-venv/bin/python \
+            --require-hashes --strict --only-binary :all: --torch-backend cpu
+          uv pip install --python .release-venv/bin/python \
+            --no-deps --no-build-isolation --editable .
+          uv pip check --python .release-venv/bin/python
+          .release-venv/bin/python - <<'PY'
+          import importlib.metadata as metadata
+          import torch
+          import torchvision
+
+          assert torch.__version__ == "2.11.0+cpu"
+          assert torchvision.__version__ == "0.26.0+cpu"
+          assert torch.version.cuda is None
+          assert not torch.cuda.is_available()
+          installed = {
+              dist.metadata["Name"].lower().replace("_", "-")
+              for dist in metadata.distributions()
+              if dist.metadata["Name"]
+          }
+          from scripts.lock_v2_cpu import forbidden_cpu_packages
+          assert not forbidden_cpu_packages(installed)
+          PY
+
+      - name: Run compatibility and release-contract gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          py=.release-venv/bin/python
+          "$py" scripts/run_v3_stable_release.py verify-version "$RELEASE_STAGE"
+          "$py" scripts/check_v3_alpha.py
+          "$py" -m pytest -q tests tests_v2 -m "not torch and not lerobot"
+          "$py" -m pytest -q \
+            tests_v3/test_stable_contracts.py \
+            tests_v3/test_stable_workflow.py \
+            tests_v3/test_portfolio.py
+          "$py" scripts/run_v3_stable_release.py validate-designs \
+            configs/v3/stable_pusht_policy_design.yaml \
+            configs/v3/stable_libero_route_design.yaml \
+            configs/v3/stable_libero_prompt_design.yaml
+
+      - name: Run exact 1550-row evidence and Portfolio
+        shell: bash
+        run: |
+          set -euo pipefail
+          py=.release-venv/bin/python
+          root="$RUNNER_TEMP/stable-evidence"
+          for design in \
+            configs/v3/stable_pusht_policy_design.yaml \
+            configs/v3/stable_libero_route_design.yaml \
+            configs/v3/stable_libero_prompt_design.yaml; do
+            "$py" scripts/run_v3_stable_release.py run-study "$design" --out "$root" --overwrite
+          done
+          for study in fixture_policy_ladder fixture_state_routes fixture_prompt_interventions; do
+            "$py" scripts/run_v3_stable_release.py verify-study "$root/$study"
+          done
+          .release-venv/bin/lunavla-v3 portfolio-build "$root" \
+            --out "$RUNNER_TEMP/portfolio" --overwrite
+          .release-venv/bin/lunavla-v3 portfolio-verify "$RUNNER_TEMP/portfolio"
+
+      - name: Build deterministic release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          py=.release-venv/bin/python
+          payload="$RUNNER_TEMP/release/payload"
+          mkdir -p "$payload/dist"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          "$py" -m build --no-isolation --outdir "$payload/dist"
+          "$py" scripts/run_v3_code_release.py normalize-sdist \
+            "$payload/dist"/*.tar.gz --source-date-epoch "$SOURCE_DATE_EPOCH"
+          .release-venv/bin/twine check "$payload/dist"/*
+          .release-venv/bin/cyclonedx-py requirements requirements-v3-release-cpu.lock \
+            --output-reproducible --output-file "$payload/sbom.json"
+          PAYLOAD="$payload" SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" "$py" - <<'PY'
+          import gzip
+          import hashlib
+          import json
+          import os
+          import platform
+          import subprocess
+          import tarfile
+          from pathlib import Path
+
+          from scripts.check_v3_alpha import descriptor
+
+          payload = Path(os.environ["PAYLOAD"])
+          epoch = int(os.environ["SOURCE_DATE_EPOCH"])
+          evidence = Path(os.environ["RUNNER_TEMP"]) / "stable-evidence"
+          portfolio = Path(os.environ["RUNNER_TEMP"]) / "portfolio"
+          sha = os.environ["EXPECTED_SHA"]
+          stage = os.environ["RELEASE_STAGE"]
+
+          def canonical(path: Path, value: object) -> None:
+              path.write_text(
+                  json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n",
+                  encoding="utf-8",
+              )
+
+          def archive(source: Path, destination: Path, prefix: str) -> None:
+              forbidden = {".pt", ".pth", ".ckpt", ".safetensors", ".bin"}
+              files = sorted(path for path in source.rglob("*") if path.is_file())
+              if any(path.suffix.lower() in forbidden or "checkpoint" in path.name.lower() for path in files):
+                  raise RuntimeError("release evidence contains a forbidden model artifact")
+              with destination.open("wb") as raw:
+                  with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as compressed:
+                      with tarfile.open(fileobj=compressed, mode="w", format=tarfile.PAX_FORMAT) as tar:
+                          for path in files:
+                              relative = path.relative_to(source).as_posix()
+                              info = tar.gettarinfo(str(path), arcname=f"{prefix}/{relative}")
+                              info.mtime = epoch
+                              info.uid = info.gid = 0
+                              info.uname = info.gname = ""
+                              info.mode = 0o644
+                              with path.open("rb") as stream:
+                                  tar.addfile(info, stream)
+
+          archive(evidence, payload / "evidence.tar.gz", "evidence")
+          archive(portfolio, payload / "portfolio.tar.gz", "portfolio")
+          (payload / "public-api.json").write_bytes(Path("docs/v3/public_api_contract.json").read_bytes())
+          canonical(payload / "contract-descriptor.json", descriptor())
+          canonical(
+              payload / "migration-report.json",
+              {
+                  "schema_version": 1,
+                  "git_sha": sha,
+                  "v1_v2_compatibility_tests": "passed",
+                  "v3_migration_tests": "passed",
+                  "package_version": "3.0.0rc1" if stage == "rc" else "3.0.0",
+              },
+          )
+          (payload / "privacy-scan.json").write_bytes((portfolio / "privacy-scan.json").read_bytes())
+          checks = json.loads(
+              subprocess.check_output(
+                  ["gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/commits/{sha}/check-runs"],
+                  text=True,
+              )
+          )["check_runs"]
+          required_names = {
+              "CodeQL Python", "v3-contracts", "v3-data", "v3-diagnostics-cpu",
+              "v3-diffusion-cpu", "v3-engine-cpu", "v3-profile-cpu", "v3-rc-contracts",
+              "v3-secret-scan", "v3-smolvla-adapter", "v3-v2-compat",
+          }
+          by_name = {item["name"]: item for item in checks if item["name"] in required_names}
+          if set(by_name) != required_names or any(item["conclusion"] != "success" for item in by_name.values()):
+              raise RuntimeError("required merge-SHA checks are incomplete or unsuccessful")
+          canonical(
+              payload / "required-checks.json",
+              {
+                  "schema_version": 1,
+                  "git_sha": sha,
+                  "checks": {
+                      name: {"conclusion": by_name[name]["conclusion"], "url": by_name[name]["details_url"]}
+                      for name in sorted(by_name)
+                  },
+              },
+          )
+          canonical(
+              payload / "provenance.jsonl",
+              {
+                  "schema_version": 1,
+                  "git_sha": sha,
+                  "package_version": "3.0.0rc1" if stage == "rc" else "3.0.0",
+                  "stage": stage,
+                  "workflow": "v3-rc-stable-evidence-dispatch",
+                  "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+                  "runner_os": platform.system(),
+                  "runner_arch": platform.machine(),
+                  "python": platform.python_version(),
+                  "rows": 1550,
+                  "weights_included": False,
+                  "checkpoints_included": False,
+                  "feature_caches_included": False,
+                  "raw_data_included": False,
+                  "pypi_published": False,
+              },
+          )
+          PY
+          (
+            cd "$payload"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z \
+              | xargs -0 shasum -a 256 | sed 's#  \./#  #' > SHA256SUMS
+          )
+
+      - name: Verify final signed candidate contract
+        if: inputs.require_signed_tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          py=.release-venv/bin/python
+          root="$RUNNER_TEMP/release"
+          PAYLOAD="$root/payload" CANDIDATE="$root/release-candidate.json" "$py" - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          from lunavla.v3 import (
+              ArtifactHashRecordV1,
+              RcReleaseCandidateV1,
+              StableReleaseCandidateV1,
+          )
+
+          payload = Path(os.environ["PAYLOAD"])
+          sha = os.environ["EXPECTED_SHA"]
+          stage = os.environ["RELEASE_STAGE"]
+
+          def digest(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          assets = tuple(
+              ArtifactHashRecordV1(path.relative_to(payload).as_posix(), digest(path))
+              for path in sorted(payload.rglob("*"))
+              if path.is_file() and path.name != "SHA256SUMS"
+          )
+          evidence = tuple(
+              ArtifactHashRecordV1(
+                  f"evidence/{study.replace('_', '-')}.json",
+                  digest(Path(os.environ["RUNNER_TEMP"]) / "stable-evidence" / study / "summary.json"),
+              )
+              for study in (
+                  "fixture_policy_ladder",
+                  "fixture_state_routes",
+                  "fixture_prompt_interventions",
+              )
+          )
+          values = dict(
+              expected_tag="v3.0.0-rc.1" if stage == "rc" else "v3.0.0",
+              package_version="3.0.0rc1" if stage == "rc" else "3.0.0",
+              git_sha=sha,
+              merge_sha=sha,
+              public_api_sha256=digest(payload / "public-api.json"),
+              migration_report_sha256=digest(payload / "migration-report.json"),
+              contract_descriptor_sha256=digest(payload / "contract-descriptor.json"),
+              portfolio_bundle_sha256=digest(payload / "portfolio.tar.gz"),
+              evidence_manifests=evidence,
+              required_checks_sha256=digest(payload / "required-checks.json"),
+              sbom_sha256=digest(payload / "sbom.json"),
+              provenance_sha256=digest(payload / "provenance.jsonl"),
+              checksums_sha256=digest(payload / "SHA256SUMS"),
+              assets=assets,
+              signed_tag_verified=True,
+              post_merge_evidence=True,
+              privacy_scan_verified=True,
+              pypi_published=False,
+          )
+          candidate = RcReleaseCandidateV1(**values) if stage == "rc" else StableReleaseCandidateV1(**values)
+          Path(os.environ["CANDIDATE"]).write_text(
+              json.dumps(candidate.to_dict(), indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          "$py" scripts/run_v3_stable_release.py verify-candidate \
+            "$root/release-candidate.json" --asset-root "$root/payload"
+
+      - name: Attest signed release payload
+        if: inputs.require_signed_tag
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            ${{ runner.temp }}/release/payload/dist/*
+            ${{ runner.temp }}/release/payload/evidence.tar.gz
+            ${{ runner.temp }}/release/payload/portfolio.tar.gz
+            ${{ runner.temp }}/release/payload/sbom.json
+            ${{ runner.temp }}/release/payload/provenance.jsonl
+            ${{ runner.temp }}/release/payload/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lunavla-v3-${{ inputs.stage }}-${{ inputs.expected_sha }}-${{ inputs.require_signed_tag && 'signed' || 'pretag' }}
+          path: ${{ runner.temp }}/release/
+          if-no-files-found: error
+          retention-days: 30
