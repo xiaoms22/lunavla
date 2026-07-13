@@ -47,7 +47,11 @@ from lunavla.v3 import (
     StableExecutionBatchV1,
     StableRepeatSentinelV1,
     RcReleaseCandidateV1,
+    PyPIFileRecordV1,
+    PyPIPublishRecordV1,
     StableReleaseCandidateV1,
+    StablePrePublishCandidateV1,
+    TrustedPublisherIdentityV1,
 )
 
 
@@ -102,6 +106,10 @@ PUBLIC_TYPES = {
     "StableExecutionBatchV1": StableExecutionBatchV1,
     "StableRepeatSentinelV1": StableRepeatSentinelV1,
     "RcReleaseCandidateV1": RcReleaseCandidateV1,
+    "TrustedPublisherIdentityV1": TrustedPublisherIdentityV1,
+    "PyPIFileRecordV1": PyPIFileRecordV1,
+    "PyPIPublishRecordV1": PyPIPublishRecordV1,
+    "StablePrePublishCandidateV1": StablePrePublishCandidateV1,
     "StableReleaseCandidateV1": StableReleaseCandidateV1,
 }
 

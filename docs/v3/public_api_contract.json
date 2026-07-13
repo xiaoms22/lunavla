@@ -1,54 +1,61 @@
 {
-  "schema_version": 1,
-  "release_stage": "v3.0.0-rc-cpu-core-preparation",
   "contracts": {
-    "FeatureSpec": {
-      "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
+    "Alpha3ReleaseCandidateV1": {
+      "signature": "(expected_tag: 'str', git_sha: 'str', package_version: 'str', public_api_sha256: 'str', core_lock_sha256: 'str', diffusion_lock_sha256: 'str', smolvla_lock_sha256: 'str', weight_license_status_sha256: 'str', required_checks_sha256: 'str', dispatcher_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', pretrained_enabled: 'bool' = False, conformance_only: 'bool' = True, claim_allowed: 'bool' = False, pypi_published: 'bool' = False, schema_version: 'int' = 1) -> None"
     },
-    "FeatureSchema": {
-      "signature": "(features: 'tuple[FeatureSpec, ...]', schema_version: 'int' = 1) -> None"
+    "DiagnosticDesignV1": {
+      "signature": "(design_id: 'str', base_config: 'str', output_dir: 'str', train_seeds: 'tuple[int, ...]', evaluation_seeds: 'tuple[int, ...]', routes: 'tuple[StateRouteSpecV1, ...]', interventions: 'tuple[InterventionSpecV1, ...]', donor_seed: 'int', analysis_seed: 'int', bootstrap_samples: 'int', counterfactual_transform_id: 'str | None', reduced_design: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "DiagnosticTraceRowV1": {
+      "signature": "(pair_id: 'str', train_seed: 'int', evaluation_seed: 'int', episode_id: 'str', route: 'str', arm: 'str', intervention_kind: 'str', step_id: 'int', canonical_prompt_sha256: 'str', effective_prompt_sha256: 'str', expert_state_keys: 'tuple[str, ...]', prompt_state_keys: 'tuple[str, ...]', camera_order: 'tuple[str, ...]', donor_id: 'str | None', donor_content_sha256: 'str | None', transform_id: 'str | None', action_chunk_sha256: 'str', reward: 'float', terminated: 'bool', truncated: 'bool', success: 'bool', failures: 'tuple[FailureRecordV1, ...]', error_stage: 'str | None', error_origin: 'str | None', schema_version: 'int' = 1) -> None"
+    },
+    "DonorBankV1": {
+      "signature": "(modality: 'str', split: 'str', donor_seed: 'int', records: 'tuple[DonorRecordV1, ...]', schema_version: 'int' = 1) -> None"
+    },
+    "DonorRecordV1": {
+      "signature": "(recipient_id: 'str', donor_id: 'str', split: 'str', step_index: 'int | None', recipient_content_sha256: 'str', donor_content_sha256: 'str', schema_version: 'int' = 1) -> None"
     },
     "EmbodimentSpec": {
       "signature": "(embodiment_id: 'str', task_id: 'str', control_rate_hz: 'float | None', camera_mapping: 'Mapping[str, str]', state_mapping: 'Mapping[str, str]', action_mapping: 'Mapping[str, str]') -> None"
     },
-    "ObservationV3": {
-      "signature": "(images: 'Mapping[str, Array]', state: 'Mapping[str, Array]', instruction: 'str | None', timestamp_s: 'float', episode_id: 'str | int', step_index: 'int', metadata: 'Mapping[str, Any]' = <factory>) -> None"
-    },
-    "TransitionV3": {
-      "signature": "(observation: 'ObservationV3', action: 'Array', reward: 'float', next_observation: 'ObservationV3', terminated: 'bool', truncated: 'bool', info: 'Mapping[str, Any]' = <factory>) -> None"
-    },
     "EpisodeRecordV3": {
       "signature": "(episode_id: 'str | int', transitions: 'tuple[TransitionV3, ...]', metadata: 'Mapping[str, Any]' = <factory>) -> None"
+    },
+    "EvidenceManifestV2": {
+      "signature": "(design_sha256: 'str', base_config_sha256: 'str', base_config_file_sha256: 'str', cell_contract_sha256: 'str', source_manifests: 'tuple[ArtifactHashRecordV1, ...]', matrix_sha256: 'str', aggregate_sha256: 'str', per_pair_sha256: 'str', thumbnail_manifest_sha256: 'str | None', expected_pairs: 'int', observed_pairs: 'int', homogeneous: 'bool', matrix_complete: 'bool', reduced_design: 'bool', claim_allowed: 'bool', framework_statement_allowed: 'bool', release_eligible: 'bool', gate_reasons: 'tuple[str, ...]', allowed_wording: 'str | None') -> None"
     },
     "ExperimentConfig": {
       "signature": "(**_: 'Any') -> 'None'"
     },
-    "ModelSourceContractV1": {
-      "signature": "(repo_id: 'str', revision: 'str', file_hashes: 'Mapping[str, str]', license_status: 'str', pretrained_enabled: 'bool', schema_version: 'int' = 1) -> None"
+    "FailureRecordV1": {
+      "signature": "(layer: 'str', label: 'str', rule_id: 'str', provenance: 'str', primary_cause: 'bool | None' = None, schema_version: 'int' = 1) -> None"
     },
-    "LicenseReviewV1": {
-      "signature": "(repo_id: 'str', revision: 'str', spdx_license: 'str', evidence_url: 'str', evidence_sha256: 'str', scope: 'str', reviewer: 'str', reviewed_at: 'str', schema_version: 'int' = 1) -> None"
+    "FeatureNormalizationV1": {
+      "signature": "(feature_name: 'str', mode: 'str', sample_count: 'int', offset: 'Float32Array', scale: 'Float32Array') -> None"
     },
-    "WeightLicenseStatusV1": {
-      "signature": "(repo_id: 'str', revision: 'str', weight_sha256: 'str', license_status: 'str', spdx_license: 'str', pretrained_enabled: 'bool', conformance_only: 'bool', owner_authorization_scope: 'str', owner_authorization_is_license_evidence: 'bool', release_eligible: 'bool', source_snapshots: 'tuple[ArtifactHashRecordV1, ...]', reviewer: 'str', checked_at: 'str', schema_version: 'int' = 1) -> None"
+    "FeatureSchema": {
+      "signature": "(features: 'tuple[FeatureSpec, ...]', schema_version: 'int' = 1) -> None"
     },
-    "RunnerQualificationManifestV1": {
-      "signature": "(role: 'str', git_sha: 'str', dependency_lock_sha256: 'str', container_image_sha256: 'str', runner_name_sha256: 'str', runner_labels: 'tuple[str, ...]', runner_os: 'str', runner_os_version: 'str', runner_arch: 'str', python_version: 'str', cpu_count: 'int', memory_bytes: 'int', disk_free_bytes: 'int', gpu_count: 'int', cuda_visible_device_count: 'int', gpu_name: 'str', gpu_uuid_sha256: 'str', driver_version: 'str', cuda_runtime: 'str', torch_version: 'str', torchvision_version: 'str', network_hosts: 'tuple[str, ...]', workspace_clean: 'bool', container_isolated: 'bool', private_mounts_detected: 'bool', ephemeral_declared: 'bool', weight_accessed: 'bool', release_eligible: 'bool', claim_allowed: 'bool', checked_at: 'str', schema_version: 'int' = 1) -> None"
+    "FeatureSpec": {
+      "signature": "(name: 'str', role: 'str', dtype: 'str', shape: 'tuple[int, ...]', unit: 'str', frame: 'str', rate_hz: 'float | None', normalization: 'str', source_key: 'str', required_by: 'tuple[str, ...]' = ()) -> None"
     },
     "GpuValidationManifestV1": {
       "signature": "(git_sha: 'str', package_version: 'str', license_review_sha256: 'str', model_source_sha256: 'str', dependency_lock_sha256: 'str', dispatcher_sha256: 'str', runner_labels: 'tuple[str, ...]', runner_os: 'str', runner_arch: 'str', gpu_count: 'int', gpu_name: 'str', gpu_uuid_sha256: 'str', driver_version: 'str', cuda_runtime: 'str', torch_version: 'str', torchvision_version: 'str', downloaded_files: 'tuple[ArtifactHashRecordV1, ...]', model_bytes: 'int', train_seed: 'int', loss_before: 'float', loss_after: 'float', gradient_norm: 'float', checkpoint_sha256: 'str', restored_action_sha256: 'str', resume_rtol: 'float', resume_atol: 'float', optimizer_step_verified: 'bool', resume_verified: 'bool', inference_verified: 'bool', claim_allowed: 'bool' = False, schema_version: 'int' = 1) -> None"
     },
-    "Alpha3ReleaseCandidateV1": {
-      "signature": "(expected_tag: 'str', git_sha: 'str', package_version: 'str', public_api_sha256: 'str', core_lock_sha256: 'str', diffusion_lock_sha256: 'str', smolvla_lock_sha256: 'str', weight_license_status_sha256: 'str', required_checks_sha256: 'str', dispatcher_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', pretrained_enabled: 'bool' = False, conformance_only: 'bool' = True, claim_allowed: 'bool' = False, pypi_published: 'bool' = False, schema_version: 'int' = 1) -> None"
+    "InterventionSpecV1": {
+      "signature": "(arm_id: 'str', kind: 'str', operator: 'str', phase: 'str', parameters: 'Mapping[str, Any]', schema_version: 'int' = 1) -> None"
     },
-    "SmolVLAValidationCandidateV1": {
-      "signature": "(expected_tag: 'str', git_sha: 'str', package_version: 'str', gpu_manifest_sha256: 'str', gpu_attestation_sha256: 'str', required_checks_sha256: 'str', dispatcher_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', claim_allowed: 'bool' = False, pypi_published: 'bool' = False, schema_version: 'int' = 1) -> None"
+    "LicenseReviewV1": {
+      "signature": "(repo_id: 'str', revision: 'str', spdx_license: 'str', evidence_url: 'str', evidence_sha256: 'str', scope: 'str', reviewer: 'str', reviewed_at: 'str', schema_version: 'int' = 1) -> None"
     },
-    "PolicySpecV3": {
-      "signature": "(policy_id: 'str', backend: 'str', model_source: 'ModelSourceContractV1', required_modalities: 'tuple[str, ...]', camera_order: 'tuple[str, ...]', state_order: 'tuple[str, ...]', history: 'int', chunk_size: 'int', horizon: 'int', execution_steps: 'int', normalization: 'Mapping[str, str]', device: 'str', deterministic: 'bool', schema_version: 'int' = 1) -> None"
+    "ModelSourceContractV1": {
+      "signature": "(repo_id: 'str', revision: 'str', file_hashes: 'Mapping[str, str]', license_status: 'str', pretrained_enabled: 'bool', schema_version: 'int' = 1) -> None"
     },
-    "PolicySampleV3": {
-      "signature": "(observation_history: 'tuple[ObservationV3, ...]', history_mask: 'BoolArray', action_chunk: 'Float32Array | None', valid_mask: 'BoolArray | None', episode_id: 'str | int', step_index: 'int') -> None"
+    "NormalizationStatsV1": {
+      "signature": "(feature_schema_sha256: 'str', source_split: 'str', features: 'Mapping[str, FeatureNormalizationV1]', schema_version: 'int' = 1) -> None"
+    },
+    "ObservationV3": {
+      "signature": "(images: 'Mapping[str, Array]', state: 'Mapping[str, Array]', instruction: 'str | None', timestamp_s: 'float', episode_id: 'str | int', step_index: 'int', metadata: 'Mapping[str, Any]' = <factory>) -> None"
     },
     "PolicyBatchV3": {
       "signature": "(samples: 'tuple[PolicySampleV3, ...]', device: 'str' = 'cpu') -> None"
@@ -59,50 +66,38 @@
     "PolicyProfileManifestV1": {
       "signature": "(git_sha: 'str', git_dirty: 'bool', design_sha256: 'str', config_sha256: 'str', dependency_lock_sha256: 'str', environment_sha256: 'str', metrics_sha256: 'str', policy_id: 'str', device: 'str', warmup: 'int', measurements: 'int', batch_size: 'int', threads: 'int', release_eligible: 'bool', comparative_claim_allowed: 'bool', statement: 'str', schema_version: 'int' = 1) -> None"
     },
+    "PolicySampleV3": {
+      "signature": "(observation_history: 'tuple[ObservationV3, ...]', history_mask: 'BoolArray', action_chunk: 'Float32Array | None', valid_mask: 'BoolArray | None', episode_id: 'str | int', step_index: 'int') -> None"
+    },
+    "PolicySpecV3": {
+      "signature": "(policy_id: 'str', backend: 'str', model_source: 'ModelSourceContractV1', required_modalities: 'tuple[str, ...]', camera_order: 'tuple[str, ...]', state_order: 'tuple[str, ...]', history: 'int', chunk_size: 'int', horizon: 'int', execution_steps: 'int', normalization: 'Mapping[str, str]', device: 'str', deterministic: 'bool', schema_version: 'int' = 1) -> None"
+    },
     "PortfolioBundleV1": {
       "signature": "(git_sha: 'str', evidence_summaries: 'tuple[ArtifactHashRecordV1, ...]', total_rows: 'int', capability_statements: 'tuple[str, ...]', limitations: 'tuple[str, ...]', privacy_scan_sha256: 'str', files: 'tuple[ArtifactHashRecordV1, ...]', source_homogeneous: 'bool', release_eligible: 'bool', schema_version: 'int' = 1) -> None"
-    },
-    "TrainStepResultV3": {
-      "signature": "(loss: 'float', loss_components: 'Mapping[str, float]', gradient_norm: 'float | None', learning_rate: 'float', step: 'int', finite: 'bool', timing_ms: 'Mapping[str, float]') -> None"
-    },
-    "FeatureNormalizationV1": {
-      "signature": "(feature_name: 'str', mode: 'str', sample_count: 'int', offset: 'Float32Array', scale: 'Float32Array') -> None"
-    },
-    "NormalizationStatsV1": {
-      "signature": "(feature_schema_sha256: 'str', source_split: 'str', features: 'Mapping[str, FeatureNormalizationV1]', schema_version: 'int' = 1) -> None"
-    },
-    "PromptSpecV1": {
-      "signature": "(raw_instruction: 'str', public_slots: 'Mapping[str, Any]', state_values: 'Mapping[str, tuple[float, ...]]', renderer_id: 'str', renderer_version: 'int', camera_order: 'tuple[str, ...]', assistant_target: 'str', layout_variant: 'str' = 'canonical', schema_version: 'int' = 1) -> None"
-    },
-    "StateRouteSpecV1": {
-      "signature": "(mode: 'str', state_features: 'tuple[str, ...]', schema_version: 'int' = 1) -> None"
-    },
-    "InterventionSpecV1": {
-      "signature": "(arm_id: 'str', kind: 'str', operator: 'str', phase: 'str', parameters: 'Mapping[str, Any]', schema_version: 'int' = 1) -> None"
-    },
-    "DiagnosticDesignV1": {
-      "signature": "(design_id: 'str', base_config: 'str', output_dir: 'str', train_seeds: 'tuple[int, ...]', evaluation_seeds: 'tuple[int, ...]', routes: 'tuple[StateRouteSpecV1, ...]', interventions: 'tuple[InterventionSpecV1, ...]', donor_seed: 'int', analysis_seed: 'int', bootstrap_samples: 'int', counterfactual_transform_id: 'str | None', reduced_design: 'bool', schema_version: 'int' = 1) -> None"
-    },
-    "DonorRecordV1": {
-      "signature": "(recipient_id: 'str', donor_id: 'str', split: 'str', step_index: 'int | None', recipient_content_sha256: 'str', donor_content_sha256: 'str', schema_version: 'int' = 1) -> None"
-    },
-    "DonorBankV1": {
-      "signature": "(modality: 'str', split: 'str', donor_seed: 'int', records: 'tuple[DonorRecordV1, ...]', schema_version: 'int' = 1) -> None"
-    },
-    "PromptParityRecordV1": {
-      "signature": "(sample_id: 'str', phase: 'str', prompt_sha256: 'str', camera_order: 'tuple[str, ...]', assistant_target: 'str', expert_state_keys: 'tuple[str, ...]', prompt_state_keys: 'tuple[str, ...]', feature_schema_sha256: 'str', schema_version: 'int' = 1) -> None"
     },
     "PromptParityManifestV1": {
       "signature": "(records: 'tuple[PromptParityRecordV1, ...]', schema_version: 'int' = 1) -> None"
     },
-    "DiagnosticTraceRowV1": {
-      "signature": "(pair_id: 'str', train_seed: 'int', evaluation_seed: 'int', episode_id: 'str', route: 'str', arm: 'str', intervention_kind: 'str', step_id: 'int', canonical_prompt_sha256: 'str', effective_prompt_sha256: 'str', expert_state_keys: 'tuple[str, ...]', prompt_state_keys: 'tuple[str, ...]', camera_order: 'tuple[str, ...]', donor_id: 'str | None', donor_content_sha256: 'str | None', transform_id: 'str | None', action_chunk_sha256: 'str', reward: 'float', terminated: 'bool', truncated: 'bool', success: 'bool', failures: 'tuple[FailureRecordV1, ...]', error_stage: 'str | None', error_origin: 'str | None', schema_version: 'int' = 1) -> None"
+    "PromptParityRecordV1": {
+      "signature": "(sample_id: 'str', phase: 'str', prompt_sha256: 'str', camera_order: 'tuple[str, ...]', assistant_target: 'str', expert_state_keys: 'tuple[str, ...]', prompt_state_keys: 'tuple[str, ...]', feature_schema_sha256: 'str', schema_version: 'int' = 1) -> None"
     },
-    "FailureRecordV1": {
-      "signature": "(layer: 'str', label: 'str', rule_id: 'str', provenance: 'str', primary_cause: 'bool | None' = None, schema_version: 'int' = 1) -> None"
+    "PromptSpecV1": {
+      "signature": "(raw_instruction: 'str', public_slots: 'Mapping[str, Any]', state_values: 'Mapping[str, tuple[float, ...]]', renderer_id: 'str', renderer_version: 'int', camera_order: 'tuple[str, ...]', assistant_target: 'str', layout_variant: 'str' = 'canonical', schema_version: 'int' = 1) -> None"
     },
-    "EvidenceManifestV2": {
-      "signature": "(design_sha256: 'str', base_config_sha256: 'str', base_config_file_sha256: 'str', cell_contract_sha256: 'str', source_manifests: 'tuple[ArtifactHashRecordV1, ...]', matrix_sha256: 'str', aggregate_sha256: 'str', per_pair_sha256: 'str', thumbnail_manifest_sha256: 'str | None', expected_pairs: 'int', observed_pairs: 'int', homogeneous: 'bool', matrix_complete: 'bool', reduced_design: 'bool', claim_allowed: 'bool', framework_statement_allowed: 'bool', release_eligible: 'bool', gate_reasons: 'tuple[str, ...]', allowed_wording: 'str | None') -> None"
+    "PyPIFileRecordV1": {
+      "signature": "(filename: 'str', sha256: 'str', size_bytes: 'int', file_url: 'str', provenance_sha256: 'str', schema_version: 'int' = 1) -> None"
+    },
+    "PyPIPublishRecordV1": {
+      "signature": "(project: 'str', version: 'str', files: 'tuple[PyPIFileRecordV1, ...]', publisher: 'TrustedPublisherIdentityV1', publish_receipt_sha256: 'str', attestation_sha256: 'str | None', project_url: 'str', published: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "RcReleaseCandidateV1": {
+      "signature": "(expected_tag: 'str', package_version: 'str', git_sha: 'str', merge_sha: 'str', public_api_sha256: 'str', migration_report_sha256: 'str', contract_descriptor_sha256: 'str', portfolio_bundle_sha256: 'str', evidence_manifests: 'tuple[ArtifactHashRecordV1, ...]', required_checks_sha256: 'str', sbom_sha256: 'str', provenance_sha256: 'str', checksums_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', signed_tag_verified: 'bool', post_merge_evidence: 'bool', privacy_scan_verified: 'bool', pypi_published: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "RunnerQualificationManifestV1": {
+      "signature": "(role: 'str', git_sha: 'str', dependency_lock_sha256: 'str', container_image_sha256: 'str', runner_name_sha256: 'str', runner_labels: 'tuple[str, ...]', runner_os: 'str', runner_os_version: 'str', runner_arch: 'str', python_version: 'str', cpu_count: 'int', memory_bytes: 'int', disk_free_bytes: 'int', gpu_count: 'int', cuda_visible_device_count: 'int', gpu_name: 'str', gpu_uuid_sha256: 'str', driver_version: 'str', cuda_runtime: 'str', torch_version: 'str', torchvision_version: 'str', network_hosts: 'tuple[str, ...]', workspace_clean: 'bool', container_isolated: 'bool', private_mounts_detected: 'bool', ephemeral_declared: 'bool', weight_accessed: 'bool', release_eligible: 'bool', claim_allowed: 'bool', checked_at: 'str', schema_version: 'int' = 1) -> None"
+    },
+    "SmolVLAValidationCandidateV1": {
+      "signature": "(expected_tag: 'str', git_sha: 'str', package_version: 'str', gpu_manifest_sha256: 'str', gpu_attestation_sha256: 'str', required_checks_sha256: 'str', dispatcher_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', claim_allowed: 'bool' = False, pypi_published: 'bool' = False, schema_version: 'int' = 1) -> None"
     },
     "StableEvidenceDesignV1": {
       "signature": "(study_id: 'str', train_seeds: 'tuple[int, ...]', data_seed: 'int', analysis_seed: 'int', bootstrap_samples: 'int', policies: 'tuple[str, ...]', task_ids: 'tuple[int, ...]', evaluation_ids: 'tuple[int, ...]', routes: 'tuple[str, ...]', interventions: 'tuple[str, ...]', repeat_train_seed: 'int', reduced_design: 'bool', schema_version: 'int' = 1) -> None"
@@ -116,14 +111,31 @@
     "StableExecutionBatchV1": {
       "signature": "(rows: 'tuple[StableEvidenceRowV1, ...]', checkpoint_inventory_sha256: 'str', metrics_inventory_sha256: 'str') -> None"
     },
-    "StableRepeatSentinelV1": {
-      "signature": "(study_id: 'str', train_seed: 'int', source_row_inventory_sha256: 'str', repeat_row_inventory_sha256: 'str', source_checkpoint_sha256: 'str', repeat_checkpoint_sha256: 'str', source_metrics_sha256: 'str', repeat_metrics_sha256: 'str', verified: 'bool', schema_version: 'int' = 1) -> None"
-    },
-    "RcReleaseCandidateV1": {
+    "StablePrePublishCandidateV1": {
       "signature": "(expected_tag: 'str', package_version: 'str', git_sha: 'str', merge_sha: 'str', public_api_sha256: 'str', migration_report_sha256: 'str', contract_descriptor_sha256: 'str', portfolio_bundle_sha256: 'str', evidence_manifests: 'tuple[ArtifactHashRecordV1, ...]', required_checks_sha256: 'str', sbom_sha256: 'str', provenance_sha256: 'str', checksums_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', signed_tag_verified: 'bool', post_merge_evidence: 'bool', privacy_scan_verified: 'bool', pypi_published: 'bool', schema_version: 'int' = 1) -> None"
     },
     "StableReleaseCandidateV1": {
-      "signature": "(expected_tag: 'str', package_version: 'str', git_sha: 'str', merge_sha: 'str', public_api_sha256: 'str', migration_report_sha256: 'str', contract_descriptor_sha256: 'str', portfolio_bundle_sha256: 'str', evidence_manifests: 'tuple[ArtifactHashRecordV1, ...]', required_checks_sha256: 'str', sbom_sha256: 'str', provenance_sha256: 'str', checksums_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', signed_tag_verified: 'bool', post_merge_evidence: 'bool', privacy_scan_verified: 'bool', pypi_published: 'bool', schema_version: 'int' = 1) -> None"
+      "signature": "(expected_tag: 'str', package_version: 'str', git_sha: 'str', merge_sha: 'str', public_api_sha256: 'str', migration_report_sha256: 'str', contract_descriptor_sha256: 'str', portfolio_bundle_sha256: 'str', evidence_manifests: 'tuple[ArtifactHashRecordV1, ...]', required_checks_sha256: 'str', sbom_sha256: 'str', provenance_sha256: 'str', checksums_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', signed_tag_verified: 'bool', post_merge_evidence: 'bool', privacy_scan_verified: 'bool', pypi_published: 'bool', schema_version: 'int' = 1, pypi_publish_record: 'PyPIPublishRecordV1 | None' = None) -> None"
+    },
+    "StableRepeatSentinelV1": {
+      "signature": "(study_id: 'str', train_seed: 'int', source_row_inventory_sha256: 'str', repeat_row_inventory_sha256: 'str', source_checkpoint_sha256: 'str', repeat_checkpoint_sha256: 'str', source_metrics_sha256: 'str', repeat_metrics_sha256: 'str', verified: 'bool', schema_version: 'int' = 1) -> None"
+    },
+    "StateRouteSpecV1": {
+      "signature": "(mode: 'str', state_features: 'tuple[str, ...]', schema_version: 'int' = 1) -> None"
+    },
+    "TrainStepResultV3": {
+      "signature": "(loss: 'float', loss_components: 'Mapping[str, float]', gradient_norm: 'float | None', learning_rate: 'float', step: 'int', finite: 'bool', timing_ms: 'Mapping[str, float]') -> None"
+    },
+    "TransitionV3": {
+      "signature": "(observation: 'ObservationV3', action: 'Array', reward: 'float', next_observation: 'ObservationV3', terminated: 'bool', truncated: 'bool', info: 'Mapping[str, Any]' = <factory>) -> None"
+    },
+    "TrustedPublisherIdentityV1": {
+      "signature": "(owner: 'str', repository: 'str', workflow: 'str', environment: 'str', schema_version: 'int' = 1) -> None"
+    },
+    "WeightLicenseStatusV1": {
+      "signature": "(repo_id: 'str', revision: 'str', weight_sha256: 'str', license_status: 'str', spdx_license: 'str', pretrained_enabled: 'bool', conformance_only: 'bool', owner_authorization_scope: 'str', owner_authorization_is_license_evidence: 'bool', release_eligible: 'bool', source_snapshots: 'tuple[ArtifactHashRecordV1, ...]', reviewer: 'str', checked_at: 'str', schema_version: 'int' = 1) -> None"
     }
-  }
+  },
+  "release_stage": "v3.0.0-rc-cpu-core-preparation",
+  "schema_version": 1
 }

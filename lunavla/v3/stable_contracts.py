@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence, Union, cast
+from urllib.parse import unquote, urlparse
 
 import numpy as np
 
@@ -57,6 +58,10 @@ _RC_RELEASE_ASSETS = _COMMON_RELEASE_ASSETS | {
 _STABLE_RELEASE_ASSETS = _COMMON_RELEASE_ASSETS | {
     "dist/lunavla-3.0.0-py3-none-any.whl",
     "dist/lunavla-3.0.0.tar.gz",
+}
+_STABLE_DIST_FILENAMES = {
+    "lunavla-3.0.0-py3-none-any.whl": "dist/lunavla-3.0.0-py3-none-any.whl",
+    "lunavla-3.0.0.tar.gz": "dist/lunavla-3.0.0.tar.gz",
 }
 
 
@@ -137,6 +142,171 @@ def _finite(value: Any, name: str) -> float:
 def _stable_hash(value: Mapping[str, Any]) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _nonempty(value: Any, name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be a non-empty string")
+    return value.strip()
+
+
+@dataclass(frozen=True)
+class TrustedPublisherIdentityV1:
+    owner: str
+    repository: str
+    workflow: str
+    environment: str
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if _integer(self.schema_version, "trusted publisher schema_version", positive=True) != 1:
+            raise ValueError("TrustedPublisherIdentityV1 schema_version must be integer 1")
+        for field in ("owner", "repository", "workflow", "environment"):
+            value = _nonempty(getattr(self, field), f"trusted publisher {field}")
+            if "/" in value or "\\" in value or value in {".", ".."}:
+                raise ValueError(f"trusted publisher {field} must be a basename")
+            object.__setattr__(self, field, value)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "owner": self.owner,
+            "repository": self.repository,
+            "workflow": self.workflow,
+            "environment": self.environment,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "TrustedPublisherIdentityV1":
+        return cls(**_exact(value, set(cls.__dataclass_fields__), "trusted publisher identity"))
+
+    def sha256(self) -> str:
+        return _stable_hash(self.to_dict())
+
+
+@dataclass(frozen=True)
+class PyPIFileRecordV1:
+    filename: str
+    sha256: str
+    size_bytes: int
+    file_url: str
+    provenance_sha256: str
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if _integer(self.schema_version, "PyPI file schema_version", positive=True) != 1:
+            raise ValueError("PyPIFileRecordV1 schema_version must be integer 1")
+        filename = _nonempty(self.filename, "PyPI filename")
+        if Path(filename).name != filename or filename in {".", ".."}:
+            raise ValueError("PyPI filename must be a basename")
+        object.__setattr__(self, "filename", filename)
+        object.__setattr__(self, "sha256", _sha256(self.sha256, "PyPI file sha256"))
+        object.__setattr__(self, "size_bytes", _integer(self.size_bytes, "PyPI file size_bytes", positive=True))
+        file_url = _nonempty(self.file_url, "PyPI file_url")
+        parsed = urlparse(file_url)
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "files.pythonhosted.org"
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.port is not None
+            or parsed.query
+            or parsed.fragment
+            or Path(unquote(parsed.path)).name != filename
+        ):
+            raise ValueError(
+                "PyPI file_url must be an HTTPS files.pythonhosted.org URL whose basename matches filename"
+            )
+        object.__setattr__(self, "file_url", file_url)
+        object.__setattr__(
+            self,
+            "provenance_sha256",
+            _sha256(self.provenance_sha256, "PyPI file provenance_sha256"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "filename": self.filename,
+            "sha256": self.sha256,
+            "size_bytes": self.size_bytes,
+            "file_url": self.file_url,
+            "provenance_sha256": self.provenance_sha256,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "PyPIFileRecordV1":
+        return cls(**_exact(value, set(cls.__dataclass_fields__), "PyPI file record"))
+
+
+@dataclass(frozen=True)
+class PyPIPublishRecordV1:
+    project: str
+    version: str
+    files: tuple[PyPIFileRecordV1, ...]
+    publisher: TrustedPublisherIdentityV1
+    publish_receipt_sha256: str
+    attestation_sha256: str | None
+    project_url: str
+    published: bool
+    schema_version: int = 1
+
+    def __post_init__(self) -> None:
+        if _integer(self.schema_version, "PyPI publish record schema_version", positive=True) != 1:
+            raise ValueError("PyPIPublishRecordV1 schema_version must be integer 1")
+        object.__setattr__(self, "project", _nonempty(self.project, "PyPI project"))
+        object.__setattr__(self, "version", _nonempty(self.version, "PyPI version"))
+        files = tuple(
+            item if isinstance(item, PyPIFileRecordV1) else PyPIFileRecordV1.from_mapping(item)
+            for item in self.files
+        )
+        if len(files) != 2 or len({item.filename for item in files}) != 2:
+            raise ValueError("PyPI publish record must contain exactly two unique distribution files")
+        object.__setattr__(self, "files", tuple(sorted(files, key=lambda item: item.filename)))
+        if not isinstance(self.publisher, TrustedPublisherIdentityV1):
+            object.__setattr__(self, "publisher", TrustedPublisherIdentityV1.from_mapping(self.publisher))
+        if self.publisher != TrustedPublisherIdentityV1(
+            owner="xiaoms22",
+            repository="lunavla",
+            workflow="v3-pypi-release.yml",
+            environment="pypi",
+        ):
+            raise ValueError("PyPI publisher identity must match the frozen LunaVLA Trusted Publisher")
+        object.__setattr__(self, "publish_receipt_sha256", _sha256(self.publish_receipt_sha256, "PyPI receipt sha256"))
+        if self.attestation_sha256 is not None:
+            object.__setattr__(
+                self,
+                "attestation_sha256",
+                _sha256(self.attestation_sha256, "PyPI attestation sha256"),
+            )
+        url = _nonempty(self.project_url, "PyPI project_url")
+        if url != "https://pypi.org/project/lunavla/3.0.0/":
+            raise ValueError("PyPI project_url must identify the immutable lunavla 3.0.0 page")
+        object.__setattr__(self, "project_url", url)
+        _boolean(self.published, "PyPI published")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "project": self.project,
+            "version": self.version,
+            "files": [item.to_dict() for item in self.files],
+            "publisher": self.publisher.to_dict(),
+            "publish_receipt_sha256": self.publish_receipt_sha256,
+            "attestation_sha256": self.attestation_sha256,
+            "project_url": self.project_url,
+            "published": self.published,
+        }
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "PyPIPublishRecordV1":
+        payload = _exact(value, set(cls.__dataclass_fields__), "PyPI publish record")
+        payload["files"] = tuple(PyPIFileRecordV1.from_mapping(item) for item in payload["files"])
+        payload["publisher"] = TrustedPublisherIdentityV1.from_mapping(payload["publisher"])
+        return cls(**payload)
+
+    def sha256(self) -> str:
+        return _stable_hash(self.to_dict())
 
 
 def _records(value: Any, name: str) -> tuple[ArtifactHashRecordV1, ...]:
@@ -544,7 +714,9 @@ class _ReleaseCandidateV1:
     pypi_published: bool
     schema_version: int = 1
 
-    def _validate(self, *, tag: str, version: str, assets: set[str], stage: str) -> None:
+    def _validate(
+        self, *, tag: str, version: str, assets: set[str], stage: str, require_pypi: bool
+    ) -> None:
         if _integer(self.schema_version, f"{stage} release candidate schema_version", positive=True) != 1:
             raise ValueError(f"{stage} release candidate schema_version must be integer 1")
         if self.expected_tag != tag or self.package_version != version:
@@ -594,8 +766,9 @@ class _ReleaseCandidateV1:
             _boolean(getattr(self, name), name)
         if not self.signed_tag_verified or not self.post_merge_evidence or not self.privacy_scan_verified:
             raise ValueError(f"{stage} release requires signed tag, post-merge evidence and privacy scan")
-        if self.pypi_published:
-            raise ValueError("LunaVLA v3 does not publish to PyPI")
+        if self.pypi_published != require_pypi:
+            state = "published" if require_pypi else "unpublished"
+            raise ValueError(f"{stage} release candidate must be {state} on PyPI")
         object.__setattr__(self, "evidence_manifests", evidence)
         object.__setattr__(self, "assets", asset_records)
 
@@ -641,21 +814,69 @@ class RcReleaseCandidateV1(_ReleaseCandidateV1):
             version=RC_PACKAGE_VERSION,
             assets=_RC_RELEASE_ASSETS,
             stage="RC",
+            require_pypi=False,
+        )
+
+
+@dataclass(frozen=True)
+class StablePrePublishCandidateV1(_ReleaseCandidateV1):
+    def __post_init__(self) -> None:
+        self._validate(
+            tag=STABLE_TAG,
+            version=STABLE_PACKAGE_VERSION,
+            assets=_STABLE_RELEASE_ASSETS,
+            stage="stable pre-publish",
+            require_pypi=False,
         )
 
 
 @dataclass(frozen=True)
 class StableReleaseCandidateV1(_ReleaseCandidateV1):
+    pypi_publish_record: PyPIPublishRecordV1 | None = None
+
     def __post_init__(self) -> None:
         self._validate(
             tag=STABLE_TAG,
             version=STABLE_PACKAGE_VERSION,
             assets=_STABLE_RELEASE_ASSETS,
             stage="stable",
+            require_pypi=True,
         )
+        record = self.pypi_publish_record
+        if not isinstance(record, PyPIPublishRecordV1):
+            raise ValueError("stable release candidate requires a PyPI publish receipt")
+        if record.project != "lunavla" or record.version != STABLE_PACKAGE_VERSION or not record.published:
+            raise ValueError("stable release candidate requires the published lunavla 3.0.0 PyPI record")
+        expected = {
+            filename: next(item.sha256 for item in self.assets if item.path == path)
+            for filename, path in _STABLE_DIST_FILENAMES.items()
+        }
+        actual = {item.filename: item.sha256 for item in record.files}
+        if actual != expected:
+            raise ValueError("PyPI wheel/sdist hashes must match the stable release assets")
+
+    def to_dict(self) -> dict[str, Any]:
+        result = super().to_dict()
+        result["pypi_publish_record"] = (
+            self.pypi_publish_record.to_dict() if self.pypi_publish_record is not None else None
+        )
+        return result
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "StableReleaseCandidateV1":
+        payload = _exact(value, set(cls.__dataclass_fields__), "stable release candidate")
+        for field in ("evidence_manifests", "assets"):
+            payload[field] = _records(payload[field], field)
+        record = payload["pypi_publish_record"]
+        payload["pypi_publish_record"] = (
+            PyPIPublishRecordV1.from_mapping(record) if isinstance(record, Mapping) else record
+        )
+        return cls(**payload)
 
 
-ReleaseCandidateV1 = Union[RcReleaseCandidateV1, StableReleaseCandidateV1]
+ReleaseCandidateV1 = Union[
+    RcReleaseCandidateV1, StablePrePublishCandidateV1, StableReleaseCandidateV1
+]
 
 
 def release_candidate_from_mapping(value: Mapping[str, Any]) -> ReleaseCandidateV1:
@@ -663,7 +884,9 @@ def release_candidate_from_mapping(value: Mapping[str, Any]) -> ReleaseCandidate
     if tag == RC_TAG:
         return cast(RcReleaseCandidateV1, RcReleaseCandidateV1.from_mapping(value))
     if tag == STABLE_TAG:
-        return cast(StableReleaseCandidateV1, StableReleaseCandidateV1.from_mapping(value))
+        if "pypi_publish_record" in value:
+            return StableReleaseCandidateV1.from_mapping(value)
+        return cast(StablePrePublishCandidateV1, StablePrePublishCandidateV1.from_mapping(value))
     raise ValueError("release candidate expected_tag is unknown")
 
 

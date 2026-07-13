@@ -8,6 +8,8 @@ import pytest
 
 from lunavla.v3 import (
     ArtifactHashRecordV1,
+    PyPIFileRecordV1,
+    PyPIPublishRecordV1,
     RC_PACKAGE_VERSION,
     RC_TAG,
     RcReleaseCandidateV1,
@@ -17,7 +19,9 @@ from lunavla.v3 import (
     StableEvidenceRowV1,
     StableEvidenceSummaryV1,
     StableRepeatSentinelV1,
+    StablePrePublishCandidateV1,
     StableReleaseCandidateV1,
+    TrustedPublisherIdentityV1,
     build_stable_evidence_summary,
     clustered_paired_bootstrap,
     expected_stable_matrix_keys,
@@ -143,7 +147,37 @@ def _candidate() -> StableReleaseCandidateV1:
         signed_tag_verified=True,
         post_merge_evidence=True,
         privacy_scan_verified=True,
-        pypi_published=False,
+        pypi_published=True,
+        pypi_publish_record=PyPIPublishRecordV1(
+            project="lunavla",
+            version=STABLE_PACKAGE_VERSION,
+            files=(
+                PyPIFileRecordV1(
+                    "lunavla-3.0.0-py3-none-any.whl",
+                    SHA,
+                    123,
+                    "https://files.pythonhosted.org/packages/lunavla-3.0.0-py3-none-any.whl",
+                    SHA,
+                ),
+                PyPIFileRecordV1(
+                    "lunavla-3.0.0.tar.gz",
+                    SHA,
+                    456,
+                    "https://files.pythonhosted.org/packages/lunavla-3.0.0.tar.gz",
+                    SHA,
+                ),
+            ),
+            publisher=TrustedPublisherIdentityV1(
+                owner="xiaoms22",
+                repository="lunavla",
+                workflow="v3-pypi-release.yml",
+                environment="pypi",
+            ),
+            publish_receipt_sha256=SHA,
+            attestation_sha256=SHA,
+            project_url="https://pypi.org/project/lunavla/3.0.0/",
+            published=True,
+        ),
     )
 
 
@@ -260,9 +294,86 @@ def test_stable_candidate_binds_release_sha_assets_and_cpu_evidence_gates() -> N
     with pytest.raises(ValueError, match="signed tag"):
         StableReleaseCandidateV1.from_mapping(payload)
     payload = candidate.to_dict()
-    payload["pypi_published"] = True
-    with pytest.raises(ValueError, match="PyPI"):
+    payload["pypi_published"] = False
+    with pytest.raises(ValueError, match="published on PyPI"):
         StableReleaseCandidateV1.from_mapping(payload)
+
+
+def test_pypi_contracts_are_strict_and_bind_both_release_distributions() -> None:
+    candidate = _candidate()
+    record = candidate.pypi_publish_record
+    assert record is not None
+    assert PyPIPublishRecordV1.from_mapping(record.to_dict()) == record
+    assert TrustedPublisherIdentityV1.from_mapping(record.publisher.to_dict()) == record.publisher
+    payload = candidate.to_dict()
+    payload["pypi_publish_record"]["files"][0]["sha256"] = "c" * 64
+    with pytest.raises(ValueError, match="wheel/sdist hashes"):
+        StableReleaseCandidateV1.from_mapping(payload)
+    payload = candidate.to_dict()
+    payload["pypi_publish_record"]["publish_receipt_sha256"] = True
+    with pytest.raises(ValueError, match="receipt"):
+        StableReleaseCandidateV1.from_mapping(payload)
+    payload = record.to_dict()
+    payload["unknown"] = "forbidden"
+    with pytest.raises(ValueError, match="unknown"):
+        PyPIPublishRecordV1.from_mapping(payload)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    (
+        (
+            "file_url",
+            "https://example.com/lunavla-3.0.0-py3-none-any.whl",
+            "files.pythonhosted.org",
+        ),
+        (
+            "file_url",
+            "https://files.pythonhosted.org/packages/wrong.whl",
+            "basename",
+        ),
+        ("provenance_sha256", True, "provenance"),
+    ),
+)
+def test_pypi_file_rejects_wrong_url_or_provenance(
+    field: str, value: object, match: str
+) -> None:
+    record = _candidate().pypi_publish_record
+    assert record is not None
+    payload = record.files[0].to_dict()
+    payload[field] = value
+    with pytest.raises(ValueError, match=match):
+        PyPIFileRecordV1.from_mapping(payload)
+
+
+def test_pypi_publish_record_locks_trusted_publisher_and_allows_no_aggregate_attestation() -> None:
+    record = _candidate().pypi_publish_record
+    assert record is not None
+    payload = record.to_dict()
+    payload["publisher"]["environment"] = "unprotected"
+    with pytest.raises(ValueError, match="frozen LunaVLA Trusted Publisher"):
+        PyPIPublishRecordV1.from_mapping(payload)
+    payload = record.to_dict()
+    payload["attestation_sha256"] = None
+    assert PyPIPublishRecordV1.from_mapping(payload).attestation_sha256 is None
+    payload["published"] = False
+    with pytest.raises(ValueError, match="published lunavla"):
+        candidate_payload = _candidate().to_dict()
+        candidate_payload["pypi_publish_record"] = payload
+        StableReleaseCandidateV1.from_mapping(candidate_payload)
+
+
+def test_stable_pre_publish_candidate_is_explicit_and_rc_remains_compatible() -> None:
+    payload = _candidate().to_dict()
+    payload.pop("pypi_publish_record")
+    payload["pypi_published"] = False
+    candidate = StablePrePublishCandidateV1.from_mapping(payload)
+    assert candidate.expected_tag == STABLE_TAG
+    assert candidate.pypi_published is False
+    final_payload = candidate.to_dict()
+    final_payload["pypi_published"] = True
+    with pytest.raises(ValueError, match="missing|receipt"):
+        StableReleaseCandidateV1.from_mapping(final_payload)
 
 
 def test_rc_candidate_verifies_exact_asset_directory_and_checksums(tmp_path: Path) -> None:

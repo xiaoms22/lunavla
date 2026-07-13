@@ -274,17 +274,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 0
     if arguments.command == "verify-release-candidate":
-        candidate = release_candidate_from_mapping(_json_mapping(arguments.candidate))
+        release_candidate = release_candidate_from_mapping(_json_mapping(arguments.candidate))
         if arguments.asset_root is not None:
-            verify_release_candidate_assets(candidate, arguments.asset_root)
+            verify_release_candidate_assets(release_candidate, arguments.asset_root)
         print(
             json.dumps(
                 {
                     "valid": True,
-                    "tag": candidate.expected_tag,
-                    "git_sha": candidate.git_sha,
+                    "tag": release_candidate.expected_tag,
+                    "git_sha": release_candidate.git_sha,
                     "assets_verified": arguments.asset_root is not None,
-                    "pypi_published": candidate.pypi_published,
+                    "pypi_published": release_candidate.pypi_published,
                 },
                 sort_keys=True,
             )
