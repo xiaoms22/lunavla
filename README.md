@@ -2,13 +2,13 @@
 
 ![Python](https://img.shields.io/badge/v1.1-3.10--3.12-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache--2.0-blue)
-![Status](https://img.shields.io/badge/v2.0-stable%20candidate-blue)
+![Status](https://img.shields.io/badge/v2.0-stable%20%7C%20v3%20alpha%20development-blue)
 
 LunaVLA is a small, CPU-runnable imitation-learning/visuomotor-agent teaching core for people preparing to study Vision-Language-Action systems. It provides a complete state-to-action exercise: generate demonstrations, train a NumPy policy, evaluate rollouts, and inspect reproducibility evidence.
 
 The stable v1.1 task is `pusht_style_point_reach`: a synthetic 2D point-reach exercise inspired by the shape of a PushT learning loop. v1.1 has no images, no T-block physics, no Transformer, and no real-robot interface. The v2 branch adds experimental modality fixtures and a teaching-scale Transformer, but LunaVLA is still not a PushT benchmark or a production VLA model.
 
-The signed [`v1.1.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v1.1.0) remains the evidence-backed NumPy teaching core. The source version is now `2.0.0`, preserving the public boundary frozen at `v2.0.0-rc.1` while adding a post-merge stable release gate. A `v2.0.0` release is valid only after the complete language/visual studies and real LeRobot smoke rerun on the actual protected `main` merge SHA. Both previously published modality-effect gates remain closed.
+The signed [`v1.1.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v1.1.0) remains the evidence-backed NumPy teaching core, and the signed [`v2.0.0` release](https://github.com/xiaoms22/lunavla/releases/tag/v2.0.0) freezes the unified experimental engine. The protected `v3-next` integration branch develops stricter multimodal data contracts and diagnostics while `v3` preserves the earlier Alpha baseline. Its Alpha fixtures do not establish language, visual, state-routing, PushT, or LIBERO performance.
 
 ## Quick start
 
@@ -195,6 +195,7 @@ The full evidence bundle, SBOM, and `SHA256SUMS` are release assets rather than 
 - [`MODEL_CARD.md`](MODEL_CARD.md): policy intent, interfaces, and limitations.
 - [`DATA_CARD.md`](DATA_CARD.md): generated-data schema, splits, and limitations.
 - [`docs/v2/MODEL_CARD.md`](docs/v2/MODEL_CARD.md): experimental Transformer and modality boundary.
+- [`docs/v3/`](docs/v3/README.md): v3 Alpha contracts, compatibility, capability boundary, and staged roadmap.
 - [`docs/v2/DATA_CARD.md`](docs/v2/DATA_CARD.md): language, rendered-image, and LeRobot adapter data boundary.
 - [`docs/v2/evidence_contract.md`](docs/v2/evidence_contract.md): multi-seed design, verification, and claim gates.
 - [`ROADMAP.md`](ROADMAP.md): v1.x maintenance and the gated v2 bridge.

@@ -1,0 +1,104 @@
+schema_version: 3
+project_name: lunavla-v3-smolvla-conformance-cpu
+engine: lunavla_v3
+policy:
+  type: lerobot_smolvla
+  parameters:
+    state_feature: state.proprioception
+    camera_features: [camera.primary]
+    history: 1
+    chunk_size: 4
+    horizon: 4
+    execution_steps: 4
+    n_action_steps: 4
+    max_state_dim: 32
+    max_action_dim: 32
+    repo_id: lerobot/smolvla_base
+    revision: d06fce6e38c25c04ac5a6319eefb9fae0e257cb2
+    file_hashes:
+      model.safetensors: 7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb
+    license_status: unverified
+    pretrained_enabled: false
+    conformance_only: true
+task:
+  id: fake_libero
+  parameters: {}
+dataset:
+  type: fake_libero
+  split: train
+  seed: 42
+  parameters:
+    episode_count: 6
+    steps_per_episode: 5
+embodiment:
+  id: lunavla_fake_libero
+  task_id: fake_libero
+  control_rate_hz: 10.0
+  camera_mapping:
+    image: camera.primary
+  state_mapping:
+    state: state.proprioception
+  action_mapping:
+    action: action.primary
+features:
+  schema_version: 1
+  items:
+    - name: camera.primary
+      role: image
+      dtype: uint8
+      shape: [16, 16, 3]
+      unit: pixel
+      frame: sim_camera
+      rate_hz: 10.0
+      normalization: none
+      source_key: image
+      required_by: [lerobot_smolvla]
+    - name: state.proprioception
+      role: state
+      dtype: float32
+      shape: [4]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: standard
+      source_key: state
+      required_by: [lerobot_smolvla]
+    - name: action.primary
+      role: action
+      dtype: float32
+      shape: [2]
+      unit: unitless
+      frame: sim_world
+      rate_hz: 10.0
+      normalization: standard
+      source_key: action
+      required_by: [lerobot_smolvla]
+training:
+  device: cpu
+  seed: 11
+  batch_size: 2
+  steps: 1
+  learning_rate: 0.0001
+  optimizer:
+    type: adamw
+    parameters: {}
+  scheduler:
+    type: constant
+    parameters: {}
+  precision: float32
+  gradient_clip_norm: 10.0
+  resume:
+    enabled: false
+    checkpoint: null
+    strict: true
+evaluation:
+  execution_mode: open_loop_chunk
+  episodes: 2
+  seed: 1000
+  seeds: [1000, 1001]
+  max_steps: 8
+diagnostics:
+  enabled: false
+artifacts:
+  output_dir: outputs/v3/smolvla-conformance-cpu
+  checkpoint_name: smolvla_contract

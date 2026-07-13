@@ -1,0 +1,297 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Sequence
+
+import yaml
+
+from .artifacts import verify_run_directory
+from .config import ExperimentConfig
+from .diagnostic_workflow import (
+    run_diagnostic,
+    verify_diagnostic_output,
+    write_diagnostic_report,
+)
+from .engine import dataset_for_config, run_alpha
+from .migration import migrate_v2_mapping
+from .profiling import run_profile, verify_profile
+from .portfolio import build_portfolio, verify_portfolio
+from .stable_contracts import (
+    StableEvidenceDesignV1,
+    StableEvidenceRowV1,
+    StableEvidenceSummaryV1,
+    StableRepeatSentinelV1,
+    StableReleaseCandidateV1,
+    release_candidate_from_mapping,
+    validate_stable_design_set,
+    verify_release_candidate_assets,
+    verify_stable_evidence_bundle,
+)
+from .stable_executor import TeachingFixtureStableExecutor
+from .stable_workflow import run_stable_study, verify_stable_study
+
+
+def _json_mapping(path: str | Path) -> dict[str, object]:
+    value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise TypeError(f"JSON document must contain a mapping: {path}")
+    return value
+
+
+def _json_rows(path: str | Path) -> tuple[StableEvidenceRowV1, ...]:
+    value = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(value, list):
+        raise TypeError(f"JSON document must contain a row list: {path}")
+    return tuple(StableEvidenceRowV1.from_mapping(item) for item in value)
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="lunavla-v3")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    validate = subparsers.add_parser("validate-config")
+    validate.add_argument("config")
+    migrate = subparsers.add_parser("migrate-config")
+    migrate.add_argument("source")
+    migrate.add_argument("--out", required=True)
+    audit = subparsers.add_parser("data-audit")
+    audit.add_argument("config")
+    audit.add_argument("--out", required=True)
+    replay = subparsers.add_parser("replay")
+    replay.add_argument("config")
+    replay.add_argument("--episode", type=int, default=0)
+    replay.add_argument("--out", required=True)
+    run = subparsers.add_parser("run")
+    run.add_argument("config")
+    run.add_argument("--overwrite", action="store_true")
+    verify = subparsers.add_parser("verify-run")
+    verify.add_argument("run_dir")
+    diagnostic_run = subparsers.add_parser("diagnostic-run")
+    diagnostic_run.add_argument("design")
+    diagnostic_run.add_argument("--overwrite", action="store_true")
+    diagnostic_verify = subparsers.add_parser("diagnostic-verify")
+    diagnostic_verify.add_argument("output_root")
+    diagnostic_report = subparsers.add_parser("diagnostic-report")
+    diagnostic_report.add_argument("output_root")
+    diagnostic_report.add_argument("--out", required=True)
+    profile_run = subparsers.add_parser("profile-run")
+    profile_run.add_argument("design")
+    profile_run.add_argument("--overwrite", action="store_true")
+    profile_verify = subparsers.add_parser("profile-verify")
+    profile_verify.add_argument("output_root")
+    portfolio_build = subparsers.add_parser("portfolio-build")
+    portfolio_build.add_argument("evidence_root")
+    portfolio_build.add_argument("--out", required=True)
+    portfolio_build.add_argument("--overwrite", action="store_true")
+    portfolio_verify = subparsers.add_parser("portfolio-verify")
+    portfolio_verify.add_argument("output_root")
+    stable_designs = subparsers.add_parser("validate-stable-designs")
+    stable_designs.add_argument("designs", nargs="+")
+    stable_evidence = subparsers.add_parser("verify-stable-evidence")
+    stable_evidence.add_argument("design")
+    stable_evidence.add_argument("rows")
+    stable_evidence.add_argument("sentinel")
+    stable_evidence.add_argument("summary")
+    stable_run = subparsers.add_parser("stable-run")
+    stable_run.add_argument("design")
+    stable_run.add_argument("--out", required=True)
+    stable_run.add_argument("--overwrite", action="store_true")
+    stable_verify = subparsers.add_parser("stable-verify")
+    stable_verify.add_argument("output_dir")
+    stable_candidate = subparsers.add_parser("verify-stable-candidate")
+    stable_candidate.add_argument("candidate")
+    release_candidate = subparsers.add_parser("verify-release-candidate")
+    release_candidate.add_argument("candidate")
+    release_candidate.add_argument("--asset-root")
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    arguments = _parser().parse_args(argv)
+    if arguments.command == "validate-config":
+        config = ExperimentConfig.load(arguments.config)
+        print(json.dumps({"valid": True, "config_sha256": config.sha256()}))
+        return 0
+    if arguments.command == "migrate-config":
+        source = yaml.safe_load(Path(arguments.source).read_text(encoding="utf-8-sig"))
+        migrated = migrate_v2_mapping(source)
+        ExperimentConfig.from_mapping(migrated)
+        Path(arguments.out).write_text(yaml.safe_dump(migrated, sort_keys=False), encoding="utf-8")
+        return 0
+    if arguments.command == "data-audit":
+        config = ExperimentConfig.load(arguments.config)
+        dataset_for_config(config).audit.save(arguments.out)
+        return 0
+    if arguments.command == "replay":
+        config = ExperimentConfig.load(arguments.config)
+        episodes = dataset_for_config(config).episodes
+        if arguments.episode < 0 or arguments.episode >= len(episodes):
+            raise IndexError("episode index is out of range")
+        target = Path(arguments.out)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(episodes[arguments.episode].to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        return 0
+    if arguments.command == "run":
+        result = run_alpha(ExperimentConfig.load(arguments.config), overwrite=arguments.overwrite)
+        print(json.dumps({"output_dir": str(result.output_dir), "metrics": result.metrics}, sort_keys=True))
+        return 0
+    if arguments.command == "verify-run":
+        manifest = verify_run_directory(arguments.run_dir)
+        print(json.dumps({"valid": True, "git_sha": manifest["git_sha"]}, sort_keys=True))
+        return 0
+    if arguments.command == "diagnostic-run":
+        output = run_diagnostic(arguments.design, overwrite=arguments.overwrite)
+        print(json.dumps({"output_dir": str(output), "claim_allowed": False}, sort_keys=True))
+        return 0
+    if arguments.command == "diagnostic-verify":
+        evidence = verify_diagnostic_output(arguments.output_root)
+        print(json.dumps({"valid": True, "claim_allowed": evidence["claim_allowed"]}, sort_keys=True))
+        return 0
+    if arguments.command == "diagnostic-report":
+        output = write_diagnostic_report(arguments.output_root, arguments.out)
+        print(json.dumps({"report_dir": str(output)}, sort_keys=True))
+        return 0
+    if arguments.command == "profile-run":
+        output = run_profile(arguments.design, overwrite=arguments.overwrite)
+        print(json.dumps({"output_dir": str(output), "comparative_claim_allowed": False}))
+        return 0
+    if arguments.command == "profile-verify":
+        profile_manifest = verify_profile(arguments.output_root)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "policy_id": profile_manifest.policy_id,
+                    "release_eligible": profile_manifest.release_eligible,
+                    "comparative_claim_allowed": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "portfolio-build":
+        output = build_portfolio(
+            arguments.evidence_root,
+            arguments.out,
+            overwrite=arguments.overwrite,
+        )
+        portfolio_manifest = verify_portfolio(output)
+        print(
+            json.dumps(
+                {
+                    "output_dir": str(output),
+                    "release_eligible": portfolio_manifest.release_eligible,
+                    "total_rows": portfolio_manifest.total_rows,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "portfolio-verify":
+        portfolio_manifest = verify_portfolio(arguments.output_root)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "git_sha": portfolio_manifest.git_sha,
+                    "release_eligible": portfolio_manifest.release_eligible,
+                    "total_rows": portfolio_manifest.total_rows,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "validate-stable-designs":
+        designs = tuple(StableEvidenceDesignV1.load(path) for path in arguments.designs)
+        rows = validate_stable_design_set(designs)
+        print(json.dumps({"valid": True, "rows": rows, "total_rows": sum(rows.values())}, sort_keys=True))
+        return 0
+    if arguments.command == "verify-stable-evidence":
+        design = StableEvidenceDesignV1.load(arguments.design)
+        row_records = _json_rows(arguments.rows)
+        sentinel = StableRepeatSentinelV1.from_mapping(_json_mapping(arguments.sentinel))
+        summary = StableEvidenceSummaryV1.from_mapping(_json_mapping(arguments.summary))
+        verify_stable_evidence_bundle(design, row_records, sentinel, summary)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "study_id": summary.study_id,
+                    "release_eligible": summary.release_eligible,
+                    "gate_reasons": list(summary.gate_reasons),
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "stable-run":
+        output = run_stable_study(
+            arguments.design,
+            arguments.out,
+            TeachingFixtureStableExecutor(),
+            overwrite=arguments.overwrite,
+        )
+        summary = verify_stable_study(output)
+        print(
+            json.dumps(
+                {
+                    "output_dir": str(output),
+                    "study_id": summary.study_id,
+                    "rows": summary.observed_rows,
+                    "release_eligible": summary.release_eligible,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "stable-verify":
+        summary = verify_stable_study(arguments.output_dir)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "study_id": summary.study_id,
+                    "rows": summary.observed_rows,
+                    "release_eligible": summary.release_eligible,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "verify-stable-candidate":
+        candidate = StableReleaseCandidateV1.from_mapping(_json_mapping(arguments.candidate))
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "tag": candidate.expected_tag,
+                    "git_sha": candidate.git_sha,
+                    "pypi_published": candidate.pypi_published,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "verify-release-candidate":
+        candidate = release_candidate_from_mapping(_json_mapping(arguments.candidate))
+        if arguments.asset_root is not None:
+            verify_release_candidate_assets(candidate, arguments.asset_root)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "tag": candidate.expected_tag,
+                    "git_sha": candidate.git_sha,
+                    "assets_verified": arguments.asset_root is not None,
+                    "pypi_published": candidate.pypi_published,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    raise AssertionError("unreachable command")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

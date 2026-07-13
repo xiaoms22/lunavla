@@ -1,0 +1,10 @@
+schema_version: 1
+config: configs/v3/fake_pusht_alpha.yaml
+warmup: 5
+measurements: 20
+batch_size: 4
+device: cpu
+threads: 1
+python_version: "3.12"
+platforms: [linux, darwin]
+output_dir: outputs/v3/profiles/numpy-linear-chunk

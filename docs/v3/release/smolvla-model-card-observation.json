@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "snapshot_kind": "normalized_observation",
+  "source_id": "smolvla_model_card",
+  "source_url": "https://huggingface.co/lerobot/smolvla_base/blob/d06fce6e38c25c04ac5a6319eefb9fae0e257cb2/README.md",
+  "repo_id": "lerobot/smolvla_base",
+  "revision": "d06fce6e38c25c04ac5a6319eefb9fae0e257cb2",
+  "finding": "no_explicit_model_weight_license_declared",
+  "weight_license_spdx": null,
+  "checked_at": "2026-07-12"
+}
