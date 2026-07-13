@@ -119,6 +119,9 @@
     "StableRepeatSentinelV1": {
       "signature": "(study_id: 'str', train_seed: 'int', source_row_inventory_sha256: 'str', repeat_row_inventory_sha256: 'str', source_checkpoint_sha256: 'str', repeat_checkpoint_sha256: 'str', source_metrics_sha256: 'str', repeat_metrics_sha256: 'str', verified: 'bool', schema_version: 'int' = 1) -> None"
     },
+    "RcReleaseCandidateV1": {
+      "signature": "(expected_tag: 'str', package_version: 'str', git_sha: 'str', merge_sha: 'str', public_api_sha256: 'str', migration_report_sha256: 'str', contract_descriptor_sha256: 'str', portfolio_bundle_sha256: 'str', evidence_manifests: 'tuple[ArtifactHashRecordV1, ...]', required_checks_sha256: 'str', sbom_sha256: 'str', provenance_sha256: 'str', checksums_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', signed_tag_verified: 'bool', post_merge_evidence: 'bool', privacy_scan_verified: 'bool', pypi_published: 'bool', schema_version: 'int' = 1) -> None"
+    },
     "StableReleaseCandidateV1": {
       "signature": "(expected_tag: 'str', package_version: 'str', git_sha: 'str', merge_sha: 'str', public_api_sha256: 'str', migration_report_sha256: 'str', contract_descriptor_sha256: 'str', portfolio_bundle_sha256: 'str', evidence_manifests: 'tuple[ArtifactHashRecordV1, ...]', required_checks_sha256: 'str', sbom_sha256: 'str', provenance_sha256: 'str', checksums_sha256: 'str', assets: 'tuple[ArtifactHashRecordV1, ...]', signed_tag_verified: 'bool', post_merge_evidence: 'bool', privacy_scan_verified: 'bool', pypi_published: 'bool', schema_version: 'int' = 1) -> None"
     }
