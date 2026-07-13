@@ -130,6 +130,13 @@ def test_alpha3_code_release_dispatcher_is_hosted_and_weight_free() -> None:
     assert signer.rstrip().endswith("/7U2ePLaQn")
 
 
+def test_stable_dispatcher_reads_all_merge_sha_checks() -> None:
+    workflow = Path(
+        ".github/workflows/v3-rc-stable-evidence-dispatch.yml"
+    ).read_text(encoding="utf-8")
+    assert "check-runs?per_page=100" in workflow
+
+
 def test_gpu_and_release_locks_pin_authoritative_platforms() -> None:
     gpu = Path("requirements-v3-smolvla-gpu-cu128.lock").read_text(encoding="utf-8")
     assert "torch==2.11.0+cu128" in gpu
