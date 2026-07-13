@@ -24,6 +24,7 @@ def test_v3_workflow_targets_integration_and_main() -> None:
         "v3-v2-compat",
         "v3-secret-scan",
         "v3-smolvla-adapter",
+        "v3-vlm-cache-cpu",
         "v3-rc-contracts",
     }
 
@@ -46,6 +47,9 @@ def test_v3_cpu_job_enforces_hashes_and_rejects_accelerator_packages() -> None:
     assert 'metadata.version("lerobot") == "0.6.0"' in workflow
     assert "validate-config configs/v3/diffusion_fake_libero_cpu.yaml" in workflow
     assert "uv pip sync requirements-v3-smolvla-cpu.lock" in workflow
+    assert "uv pip sync requirements-v3-vlm-cpu.lock" in workflow
+    assert "tests_v3/test_v31_vlm.py" in workflow
+    assert "qwen-observational-smoke --help" in workflow
     assert "validate-config configs/v3/smolvla_conformance_cpu.yaml" in workflow
     assert "uv pip sync requirements-v3-core-cpu.lock" in workflow
     assert "diagnostic-run" in workflow

@@ -5,6 +5,8 @@ of the merged Alpha 1 foundation. It preserves the frozen v2 public API and ligh
 
 Implemented in the current candidate:
 
+- [v3.1 frozen VLM preflight, cache, and observational smoke](v31_frozen_vlm_features.md);
+
 - named multimodal feature and embodiment contracts;
 - immutable `ObservationV3`, `TransitionV3`, and ordered episode records;
 - strict ExperimentConfig schema 3 and explicit v2→v3 migration;
