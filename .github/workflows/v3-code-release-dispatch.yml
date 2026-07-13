@@ -189,7 +189,7 @@ jobs:
             ${{ runner.temp }}/release-assets/release-candidate.json
             ${{ runner.temp }}/release-assets/sbom.json
             ${{ runner.temp }}/release-assets/SHA256SUMS
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: lunavla-v3-alpha3-code-candidate-${{ inputs.expected_sha }}
           path: ${{ runner.temp }}/release-assets/

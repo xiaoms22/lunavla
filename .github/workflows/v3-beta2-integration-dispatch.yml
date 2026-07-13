@@ -126,7 +126,7 @@ jobs:
             ${{ runner.temp }}/lunavla-beta2-evidence/pusht/integration_manifest.json
             ${{ runner.temp }}/lunavla-beta2-evidence/libero/integration_manifest.json
       - name: Upload small evidence only
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: v3-beta2-hosted-cpu-${{ inputs.expected_sha }}
           path: |
