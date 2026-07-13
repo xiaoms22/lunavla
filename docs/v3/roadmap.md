@@ -30,9 +30,10 @@
    policy profiles and all 1,550 rows of the deterministic teaching evidence matrix, without GPU
    or pretrained weights. The release run must still be repeated on the RC and default-branch
    merge SHAs.
-10. **RC/stable — active release candidate:** package `3.0.0rc1`, a strict RC candidate contract,
-    exact release-asset inventory, independent `SHA256SUMS` verification, migration/model/data/
-    safety documents, and asset/SBOM/provenance requirements. No RC or stable tag exists yet.
+10. **RC/stable — RC published; stable promotion active:** signed tag `v3.0.0-rc.1` and package
+    `3.0.0rc1` passed the exact 1,550-row hosted evidence, Portfolio, package, SBOM, provenance,
+    privacy, and checksum gates. Package `3.0.0` must still be merged through protected `main` and
+    rebuilt on that actual merge SHA before the stable tag is created.
 11. **v3.1 frozen VLM features — planned:** fixed public VLM revisions feed offline frozen
     features to the ACT action expert on deterministic synthetic tasks. No VLM contribution is
     implemented or claimed in v3.0.
