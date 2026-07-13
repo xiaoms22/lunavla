@@ -18,7 +18,7 @@
 | Image diagnostic smoke | ACT control/image-shuffle, step-wise image donors, four synthetic thumbnails | Four reduced pairs; no visual-contribution claim |
 | Diagnostic evidence | EvidenceManifest v2, normalized cell contracts, gate reasons, per-pair CSV, verified HTML | `claim_allowed=false`; dirty/mixed inputs are inspectable but not release-eligible |
 | Stable CPU evidence | 1,550/1,550 teaching-fixture rows verified on the integration baseline | Must be rerun on the RC and final default-branch merge SHAs |
-| RC release contract | `3.0.0rc1`, exact asset inventory, three evidence manifests, Portfolio, SBOM, provenance and `SHA256SUMS` verification | Candidate only; no RC tag or release exists yet |
+| RC release contract | Signed `v3.0.0-rc.1` prerelease, exact asset inventory, three evidence manifests, Portfolio, SBOM, provenance and `SHA256SUMS` verification | Verified on RC SHA; stable still requires a fresh protected-main run |
 | Frozen VLM feature conditioning | Planned for v3.1 | No implementation or contribution claim in v3.0 |
 
 An input field or working adapter does not establish that the corresponding modality improves

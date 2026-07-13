@@ -2,6 +2,21 @@
 
 All notable user-visible changes are recorded here. This project follows semantic versioning after v1.1.
 
+## v3.0.0 — stable promotion candidate
+
+### Added
+
+- Promotes the deterministic CPU teaching core after the signed `v3.0.0-rc.1` release and its
+  independently verified 1,550-row evidence matrix.
+- Freezes the v3 public API, migration boundary, Portfolio, SBOM, provenance, and exact release
+  asset contract for a final rebuild on the protected `main` merge SHA.
+
+### Boundaries
+
+- Stable scope is limited to reproducible synthetic teaching fixtures; no real-robot, PushT or
+  LIBERO benchmark, pretrained SmolVLA, or modality-contribution claim is introduced.
+- No model weights, checkpoints, caches, raw datasets, or PyPI publication are included.
+
 ## v3.0.0-beta.1 — diagnostic integration candidate
 
 ### Added

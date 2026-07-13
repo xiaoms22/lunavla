@@ -1,7 +1,7 @@
 # v3 RC and stable release boundary
 
-This is a release contract, not a release announcement. Alpha 3 is the current code-only
-prerelease; no RC or stable tag exists.
+This document defines the release boundary. The signed `v3.0.0-rc.1` prerelease has passed its
+hosted evidence and asset gates; the stable tag does not yet exist.
 
 The RC branch uses Python package version `3.0.0rc1`. `RcReleaseCandidateV1` binds the actual RC
 merge SHA, all three evidence manifests, the verified Portfolio, public API and migration
