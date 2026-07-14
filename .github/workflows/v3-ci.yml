@@ -245,11 +245,18 @@ jobs:
           PY
           uv run --no-sync pytest \
             tests_v3/test_v31_vlm.py \
-            tests_v3/test_v31_conditioned_act.py
+            tests_v3/test_v31_conditioned_act.py \
+            tests_v3/test_v31_evidence_vertical.py
           uv run --no-sync lunavla-v3 vlm-preflight --help
           uv run --no-sync lunavla-v3 vlm-cache --help
           uv run --no-sync lunavla-v3 vlm-cache-verify --help
           uv run --no-sync lunavla-v3 qwen-observational-smoke --help
+          uv run --no-sync lunavla-v3 validate-v31-evidence-design \
+            configs/v3/v31_frozen_vlm_evidence.yaml
+          uv run --no-sync lunavla-v3 v31-fixture-run \
+            configs/v3/v31_fixture_frozen_cpu.yaml --overwrite
+          uv run --no-sync lunavla-v3 verify-run \
+            outputs/v3/v31-fixture-frozen-cpu
 
   diffusion-cpu:
     name: v3-diffusion-cpu

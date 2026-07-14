@@ -181,6 +181,47 @@ class FrozenFeatureCacheReaderV1:
         except KeyError as exc:
             raise KeyError(f"frozen feature cache has no sample {identity}") from exc
 
+    def intervened(
+        self,
+        *,
+        split: str,
+        task_id: str,
+        episode_id: str | int,
+        step_index: int,
+        intervention: str,
+        donor_seed: int,
+    ) -> tuple[Float32Array, str | None]:
+        identity = self.sample_identity(
+            split=split,
+            task_id=task_id,
+            episode_id=episode_id,
+            step_index=step_index,
+        )
+        if intervention == "control":
+            return self._features[identity], None
+        if intervention == "feature_mask":
+            masked = np.zeros(self.output_dim, dtype=np.float32)
+            masked.setflags(write=False)
+            return masked, None
+        if intervention != "feature_shuffle":
+            raise ValueError(f"unsupported feature intervention {intervention!r}")
+        if isinstance(donor_seed, bool) or not isinstance(donor_seed, int) or donor_seed < 0:
+            raise ValueError("feature donor_seed must be a non-negative integer")
+        recipient = self._features[identity]
+        candidates = [
+            candidate
+            for candidate, value in self._features.items()
+            if candidate != identity
+            and json.loads(candidate)[0] == split
+            and not np.array_equal(value, recipient)
+        ]
+        if not candidates:
+            raise ValueError("feature shuffle has no non-self same-split donor")
+        candidates.sort()
+        digest = hashlib.sha256(f"{donor_seed}|{identity}".encode()).digest()
+        donor = candidates[int.from_bytes(digest[:8], "big") % len(candidates)]
+        return self._features[donor], donor
+
 
 @dataclass(frozen=True)
 class DeterministicFixtureExtractor:

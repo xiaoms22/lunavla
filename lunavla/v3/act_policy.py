@@ -112,6 +112,8 @@ class ActPolicyV3:
         temporal_ensemble_decay: float | None,
         condition_mode: str = "none",
         feature_cache: FrozenFeatureCacheReaderV1 | None = None,
+        feature_intervention: str = "control",
+        feature_shuffle_seed: int = 202701,
     ) -> None:
         if condition_mode not in _CONDITION_MODES:
             raise ValueError(f"unsupported ACT condition_mode {condition_mode!r}")
@@ -121,6 +123,16 @@ class ActPolicyV3:
             raise ValueError("only frozen_feature ACT may receive a feature cache")
         if condition_mode != "none" and policy.config.d_model != 64:
             raise ValueError("v3.1 conditioned ACT requires a 64-dimensional token")
+        if feature_intervention not in {"control", "feature_mask", "feature_shuffle"}:
+            raise ValueError("unsupported ACT feature intervention")
+        if condition_mode != "frozen_feature" and feature_intervention != "control":
+            raise ValueError("feature intervention requires frozen_feature mode")
+        if (
+            isinstance(feature_shuffle_seed, bool)
+            or not isinstance(feature_shuffle_seed, int)
+            or feature_shuffle_seed < 0
+        ):
+            raise ValueError("feature_shuffle_seed must be a non-negative integer")
         self.policy = policy
         self.spec = spec
         self.normalization = normalization
@@ -128,6 +140,9 @@ class ActPolicyV3:
         self.camera_feature = camera_feature
         self.condition_mode = condition_mode
         self.feature_cache = feature_cache
+        self.feature_intervention = feature_intervention
+        self.feature_shuffle_seed = feature_shuffle_seed
+        self.last_feature_donors: dict[str, str | None] = {}
         self._ensembler = (
             None
             if temporal_ensemble_decay is None
@@ -235,6 +250,8 @@ class ActPolicyV3:
             "feature_cache_index_sha256": (
                 None if self.feature_cache is None else self.feature_cache.index.sha256()
             ),
+            "feature_intervention": self.feature_intervention,
+            "feature_shuffle_seed": self.feature_shuffle_seed,
         }
         return self.policy.save_checkpoint(path, metadata=merged)
 
@@ -251,14 +268,24 @@ class ActPolicyV3:
         rows: list[npt.NDArray[np.float32]] = []
         for sample in samples:
             metadata = sample.observation.metadata
-            rows.append(
-                self.feature_cache.get(
-                    split=str(metadata["split"]),
-                    task_id=str(metadata["task_id"]),
-                    episode_id=sample.episode_id,
-                    step_index=sample.step_index,
-                )
+            split = str(metadata["split"])
+            task_id = str(metadata["task_id"])
+            feature, donor = self.feature_cache.intervened(
+                split=split,
+                task_id=task_id,
+                episode_id=sample.episode_id,
+                step_index=sample.step_index,
+                intervention=self.feature_intervention,
+                donor_seed=self.feature_shuffle_seed,
             )
+            identity = self.feature_cache.sample_identity(
+                split=split,
+                task_id=task_id,
+                episode_id=sample.episode_id,
+                step_index=sample.step_index,
+            )
+            self.last_feature_donors[identity] = donor
+            rows.append(feature)
         result = np.stack(rows).astype(np.float32, copy=False)
         expected = (len(samples), self.policy.config.instruction_dim)
         if result.shape != expected:
@@ -293,6 +320,8 @@ def _create(
         temporal_ensemble_decay=parameters["temporal_ensemble_decay"],
         condition_mode=condition_mode,
         feature_cache=feature_cache,
+        feature_intervention=str(parameters.get("feature_intervention", "control")),
+        feature_shuffle_seed=int(parameters.get("feature_shuffle_seed", 202701)),
     )
 
 
@@ -315,6 +344,12 @@ def _restore(
     condition_mode = str(parameters.get("condition_mode", "none"))
     if metadata.get("condition_mode", "none") != condition_mode:
         raise ValueError("ACT checkpoint condition mode does not match")
+    intervention = str(parameters.get("feature_intervention", "control"))
+    if metadata.get("feature_intervention", "control") != intervention:
+        raise ValueError("ACT checkpoint feature intervention does not match")
+    shuffle_seed = int(parameters.get("feature_shuffle_seed", 202701))
+    if metadata.get("feature_shuffle_seed", 202701) != shuffle_seed:
+        raise ValueError("ACT checkpoint feature shuffle seed does not match")
     if metadata.get("policy_spec_sha256") != spec.sha256():
         raise ValueError("ACT checkpoint PolicySpecV3 hash does not match")
     if metadata.get("normalization_sha256") != normalization.sha256():
@@ -332,6 +367,8 @@ def _restore(
         temporal_ensemble_decay=parameters["temporal_ensemble_decay"],
         condition_mode=condition_mode,
         feature_cache=feature_cache,
+        feature_intervention=intervention,
+        feature_shuffle_seed=shuffle_seed,
     )
 
 

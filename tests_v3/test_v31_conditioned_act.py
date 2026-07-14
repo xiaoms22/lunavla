@@ -196,6 +196,27 @@ def test_frozen_feature_arm_trains_and_cache_tamper_fails(tmp_path: Path) -> Non
         FrozenFeatureCacheReaderV1(tmp_path / "cache")
 
 
+def test_conditioned_act_applies_mask_and_shuffle_to_every_sample(
+    tmp_path: Path,
+) -> None:
+    _, _, frozen, _, samples, _ = _policies(tmp_path)
+    selected = tuple(samples[:6])
+    control = frozen._condition_features(selected)
+    assert control is not None
+    frozen.feature_intervention = "feature_mask"
+    masked = frozen._condition_features(selected)
+    assert masked is not None and np.count_nonzero(masked) == 0
+    frozen.feature_intervention = "feature_shuffle"
+    first = frozen._condition_features(selected)
+    first_donors = dict(frozen.last_feature_donors)
+    second = frozen._condition_features(selected)
+    assert first is not None and second is not None
+    assert np.array_equal(first, second)
+    assert not np.array_equal(first, control)
+    assert len(first_donors) == len(selected)
+    assert all(donor is not None for donor in first_donors.values())
+
+
 def test_conditioned_checkpoint_binds_mode_and_cache(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

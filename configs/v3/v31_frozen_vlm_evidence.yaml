@@ -1,0 +1,12 @@
+schema_version: 1
+design_id: v31_frozen_vlm_feature_contribution_v1
+train_seeds: [11, 22, 33, 44, 55]
+data_seed: 42
+analysis_seed: 202701
+bootstrap_samples: 10000
+arms: [baseline, smol_control, feature_mask, feature_shuffle]
+task_ids: [direct_pick_place, waypoint_sequence, failure_recovery]
+held_out_strata: [composition, paraphrase]
+episodes_per_cell: 20
+expected_rows: 2400
+claim_allowed: false

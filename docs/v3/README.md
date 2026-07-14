@@ -7,6 +7,7 @@ Implemented in the current candidate:
 
 - [v3.1 frozen VLM preflight, cache, and observational smoke](v31_frozen_vlm_features.md);
 - [v3.1 conditioned ACT and learned null-token baseline](v31_conditioned_act.md);
+- [v3.1 three-task evidence foundation and feature interventions](v31_evidence_foundation.md);
 
 - named multimodal feature and embodiment contracts;
 - immutable `ObservationV3`, `TransitionV3`, and ordered episode records;

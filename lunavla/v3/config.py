@@ -81,8 +81,9 @@ _TASKS = {
     "language_conditioned_point_reach",
     "rendered_visual_point_reach",
     "lerobot_pusht",
+    "synthetic_vlm_suite",
 }
-_DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat"}
+_DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat", "v31_synthetic"}
 _EXECUTION = {"open_loop_chunk", "receding_horizon"}
 _NUMPY_PARAMETER_FIELDS = {
     "state_dim",
@@ -116,6 +117,8 @@ _ACT_PARAMETER_FIELDS = {
     "temporal_ensemble_decay",
     "condition_mode",
     "condition_input_dim",
+    "feature_intervention",
+    "feature_shuffle_seed",
 }
 _DIFFUSION_PARAMETER_FIELDS = {
     "state_feature",
@@ -529,6 +532,23 @@ class ExperimentConfig:
                         )
                     policy["parameters"]["condition_mode"] = condition_mode
                     policy["parameters"]["condition_input_dim"] = condition_input_dim
+                    intervention = policy["parameters"].get("feature_intervention", "control")
+                    if intervention not in {
+                        "control",
+                        "feature_mask",
+                        "feature_shuffle",
+                    }:
+                        raise ValueError("unsupported conditioned ACT feature_intervention")
+                    shuffle_seed = _integer(
+                        policy["parameters"].get("feature_shuffle_seed", 202701),
+                        "policy.parameters.feature_shuffle_seed",
+                    )
+                    if condition_mode != "frozen_feature" and intervention != "control":
+                        raise ValueError(
+                            "feature interventions require condition_mode=frozen_feature"
+                        )
+                    policy["parameters"]["feature_intervention"] = intervention
+                    policy["parameters"]["feature_shuffle_seed"] = shuffle_seed
             if policy["type"] == "diffusion_v3":
                 parameters = policy["parameters"]
                 cameras = parameters["camera_features"]
@@ -692,6 +712,20 @@ class ExperimentConfig:
             _reject_unknown(dataset["parameters"], {"legacy"}, "dataset.parameters")
             if "legacy" not in dataset["parameters"]:
                 raise ValueError("v2_compat dataset requires dataset.parameters.legacy")
+        elif dataset["type"] == "v31_synthetic":
+            _reject_unknown(
+                dataset["parameters"],
+                {"train_per_task", "held_out_per_cell"},
+                "dataset.parameters",
+            )
+            if set(dataset["parameters"]) != {"train_per_task", "held_out_per_cell"}:
+                raise ValueError("v31_synthetic requires train_per_task and held_out_per_cell")
+            for name in ("train_per_task", "held_out_per_cell"):
+                dataset["parameters"][name] = _integer(
+                    dataset["parameters"][name],
+                    f"dataset.parameters.{name}",
+                    positive=True,
+                )
         else:
             _reject_unknown(
                 dataset["parameters"],
@@ -720,6 +754,10 @@ class ExperimentConfig:
             raise ValueError("fake dataset.type and task.id must match")
         if dataset_type == "v2_compat" and "legacy" not in policy["parameters"]:
             raise ValueError("v2_compat datasets require a migrated compat_read_only policy")
+        if (task_id == "synthetic_vlm_suite") != (dataset_type == "v31_synthetic"):
+            raise ValueError(
+                "synthetic_vlm_suite task and v31_synthetic dataset must be used together"
+            )
         if task_id in {"fake_pusht", "fake_libero"} and dataset["split"] != "train":
             raise ValueError("runnable fake datasets require dataset.split=train")
 

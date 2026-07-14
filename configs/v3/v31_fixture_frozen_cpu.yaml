@@ -1,0 +1,136 @@
+schema_version: 3
+contract_revision: 4
+project_name: lunavla-v31-fixture-frozen-cpu
+engine: lunavla_v3
+policy:
+  type: act_v3
+  parameters:
+    state_feature: state.proprioception
+    camera_feature: camera.primary
+    instruction_dim: 16
+    history: 1
+    chunk_size: 4
+    horizon: 4
+    execution_steps: 1
+    d_model: 64
+    nhead: 4
+    num_encoder_layers: 2
+    num_decoder_layers: 2
+    dim_feedforward: 128
+    latent_dim: 16
+    dropout: 0.0
+    kl_weight: 0.01
+    sample_latent_during_training: false
+    temporal_ensemble_decay: null
+    condition_mode: frozen_feature
+    condition_input_dim: 16
+    feature_intervention: control
+    feature_shuffle_seed: 202701
+task:
+  id: synthetic_vlm_suite
+  parameters: {}
+dataset:
+  type: v31_synthetic
+  split: train
+  seed: 42
+  parameters:
+    train_per_task: 1
+    held_out_per_cell: 1
+embodiment:
+  id: lunavla_v31_synthetic
+  task_id: synthetic_vlm_suite
+  control_rate_hz: 10.0
+  camera_mapping: {image: camera.primary}
+  state_mapping: {state: state.proprioception}
+  action_mapping: {action: action.primary}
+features:
+  schema_version: 1
+  items:
+    - {name: camera.primary, role: image, dtype: uint8, shape: [96, 96, 3], unit: pixel, frame: synthetic_camera, rate_hz: 10.0, normalization: none, source_key: image, required_by: [act_v3]}
+    - {name: state.proprioception, role: state, dtype: float32, shape: [4], unit: unitless, frame: synthetic_world, rate_hz: 10.0, normalization: standard, source_key: state, required_by: [act_v3]}
+    - {name: action.primary, role: action, dtype: float32, shape: [3], unit: unitless, frame: synthetic_world, rate_hz: 10.0, normalization: standard, source_key: action, required_by: [act_v3]}
+training:
+  device: cpu
+  seed: 11
+  batch_size: 2
+  steps: 1
+  learning_rate: 0.0003
+  optimizer: {type: adam, parameters: {}}
+  scheduler: {type: constant, parameters: {}}
+  precision: float32
+  gradient_clip_norm: 10.0
+  resume: {enabled: false, checkpoint: null, strict: true}
+evaluation:
+  execution_mode: receding_horizon
+  episodes: 6
+  seed: 1000
+  seeds: [1000, 1001, 1002, 1003, 1004, 1005]
+  max_steps: 64
+diagnostics: {enabled: false}
+prompt:
+  enabled: false
+  renderer_id: lunavla.canonical_json
+  renderer_version: 1
+  assistant_target: action_chunk
+  neutral_token: "[MASKED]"
+  camera_order: [camera.primary]
+  public_slots: {}
+routing: {mode: expert_only, state_features: [state.proprioception]}
+vlm:
+  schema_version: 1
+  backend_id: smolvlm2_500m
+  repo_id: HuggingFaceTB/SmolVLM2-500M-Video-Instruct
+  revision: 7b375e1b73b11138ff12fe22c8f2822d8fe03467
+  spdx_license: Apache-2.0
+  license_scope: model_weights
+  license_evidence_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  processor_class: AutoProcessor
+  processor_config_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+  model_config_sha256: "1111111111111111111111111111111111111111111111111111111111111111"
+  hidden_layer: -1
+  pooling: attention_mask_mean
+  image_token_layout: processor_native
+  camera_order: [camera.primary]
+  model_dtype: float32
+  device: cpu
+  offload_plan: none
+  deterministic: true
+  evidence_role: claim_bearing
+  weight_files: {model.safetensors: f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d}
+  total_weight_bytes: 7
+  frozen: true
+  quantized: false
+  finetuned: false
+feature_cache:
+  enabled: true
+  root: outputs/v3/v31-fixture-cache
+  backend_spec_sha256: 5d56aadf191e87bef6b6a03dbf957369de99f330d4d0a7474a9cfb0343bde8f0
+  read_only: true
+task_suite:
+  schema_version: 1
+  suite_id: synthetic_vlm_v1
+  task_ids: [direct_pick_place, waypoint_sequence, failure_recovery]
+  geometry_generator: lunavla.seeded_geometry/v1
+  visible_modalities: [camera.primary, instruction, state.proprioception]
+  instruction_generator: lunavla.compositional_instruction/v1
+  held_out_strata: [composition, paraphrase]
+  success_conditions:
+    direct_pick_place: target_distance<=0.045 and gripper_closed
+    waypoint_sequence: ordered_waypoints_complete and target_distance<=0.045
+    failure_recovery: recovery_phase_complete and target_distance<=0.045
+  image_shape: [96, 96, 3]
+  state_fields: [x, y, gripper, phase]
+  action_fields: [dx, dy, gripper]
+  action_min: -1.0
+  action_max: 1.0
+  control_rate_hz: 10.0
+  max_steps: 64
+  oracle_excluded_fields: [answer_key, goal, goal_coordinates, oracle_action, target_xy, waypoints]
+trace:
+  enabled: false
+  output_dir: outputs/v3/v31-trace
+  languages: [en, zh-CN]
+  offline: true
+artifacts:
+  output_dir: outputs/v3/v31-fixture-frozen-cpu
+  checkpoint_name: act_v3.pt
