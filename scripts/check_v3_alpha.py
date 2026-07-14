@@ -41,6 +41,7 @@ from lunavla.v3 import (
     InterventionSpecV1,
     TrainStepResultV3,
     TransitionV3,
+    V31EvidenceDesignV1,
     StableEvidenceDesignV1,
     StableEvidenceRowV1,
     StableEvidenceSummaryV1,
@@ -122,6 +123,9 @@ def main() -> int:
     if descriptor() != expected:
         raise SystemExit("v3 public API descriptor drifted")
     for path in sorted((ROOT / "configs/v3").glob("*.yaml")):
+        if path.name == "v31_frozen_vlm_evidence.yaml":
+            V31EvidenceDesignV1.load(path)
+            continue
         if path.name.startswith("profile_"):
             PolicyProfileDesignV1.from_mapping(
                 __import__("yaml").safe_load(path.read_text(encoding="utf-8"))
