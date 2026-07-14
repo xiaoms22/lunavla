@@ -34,6 +34,11 @@ from .stable_executor import TeachingFixtureStableExecutor
 from .stable_workflow import run_stable_study, verify_stable_study
 from .v31_contracts import VLMBackendSpecV1
 from .v31_evidence import V31EvidenceDesignV1
+from .v31_evidence_workflow import (
+    DeterministicV31FixtureExecutor,
+    run_v31_evidence,
+    verify_v31_evidence,
+)
 from .v31_tasks import make_v31_task_dataset
 from .v31_vlm import (
     DeterministicFixtureExtractor,
@@ -137,6 +142,13 @@ def _parser() -> argparse.ArgumentParser:
     fixture_run.add_argument("--overwrite", action="store_true")
     evidence_design = subparsers.add_parser("validate-v31-evidence-design")
     evidence_design.add_argument("design")
+    evidence_run = subparsers.add_parser("v31-evidence-run")
+    evidence_run.add_argument("design")
+    evidence_run.add_argument("--out", required=True)
+    evidence_run.add_argument("--fixture", action="store_true")
+    evidence_run.add_argument("--overwrite", action="store_true")
+    evidence_verify = subparsers.add_parser("v31-evidence-verify")
+    evidence_verify.add_argument("output_dir")
     return parser
 
 
@@ -421,6 +433,46 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "expected_rows": v31_design.expected_rows,
                     "design_sha256": v31_design.sha256(),
                     "claim_allowed": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "v31-evidence-run":
+        if not arguments.fixture:
+            raise ValueError(
+                "v31-evidence-run currently requires explicit --fixture; "
+                "real frozen-VLM execution is a separate external evidence gate"
+            )
+        output = run_v31_evidence(
+            arguments.design,
+            arguments.out,
+            DeterministicV31FixtureExecutor(),
+            overwrite=arguments.overwrite,
+        )
+        v31_manifest = verify_v31_evidence(output)
+        print(
+            json.dumps(
+                {
+                    "output_dir": str(output),
+                    "observed_rows": v31_manifest.observed_rows,
+                    "sentinel_verified": v31_manifest.sentinel_verified,
+                    "claim_allowed": v31_manifest.claim_allowed,
+                    "gate_reasons": list(v31_manifest.gate_reasons),
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "v31-evidence-verify":
+        v31_manifest = verify_v31_evidence(arguments.output_dir)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "observed_rows": v31_manifest.observed_rows,
+                    "claim_allowed": v31_manifest.claim_allowed,
+                    "release_eligible": v31_manifest.release_eligible,
                 },
                 sort_keys=True,
             )

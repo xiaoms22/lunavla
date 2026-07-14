@@ -246,7 +246,8 @@ jobs:
           uv run --no-sync pytest \
             tests_v3/test_v31_vlm.py \
             tests_v3/test_v31_conditioned_act.py \
-            tests_v3/test_v31_evidence_vertical.py
+            tests_v3/test_v31_evidence_vertical.py \
+            tests_v3/test_v31_evidence_matrix.py
           uv run --no-sync lunavla-v3 vlm-preflight --help
           uv run --no-sync lunavla-v3 vlm-cache --help
           uv run --no-sync lunavla-v3 vlm-cache-verify --help
@@ -257,6 +258,11 @@ jobs:
             configs/v3/v31_fixture_frozen_cpu.yaml --overwrite
           uv run --no-sync lunavla-v3 verify-run \
             outputs/v3/v31-fixture-frozen-cpu
+          uv run --no-sync lunavla-v3 v31-evidence-run \
+            configs/v3/v31_frozen_vlm_evidence.yaml \
+            --out outputs/v3/v31-evidence-fixture --fixture --overwrite
+          uv run --no-sync lunavla-v3 v31-evidence-verify \
+            outputs/v3/v31-evidence-fixture
 
   diffusion-cpu:
     name: v3-diffusion-cpu
