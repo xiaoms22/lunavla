@@ -36,6 +36,40 @@ lunavla-v3 validate-v31-evidence-design \
   configs/v3/v31_frozen_vlm_evidence.yaml
 ```
 
-Real SmolVLM2 cache generation, the full multi-seed executor, clustered
-bootstrap aggregation, seed-11 repeat sentinel, and Trace Lab publishing remain
-separate later gates.
+Real SmolVLM2 cache generation, real ACT multi-seed training, and Trace Lab
+publishing remain separate later gates.
+
+## Full matrix contract workflow
+
+The evidence workflow now executes and independently verifies all 2,400 matrix
+keys, repeats the complete seed-11 slice, calculates Wilson intervals and a
+train-seed-clustered paired bootstrap with 10,000 samples, and emits a hashed
+`V31EvidenceManifestV1`.
+
+```bash
+lunavla-v3 v31-evidence-run \
+  configs/v3/v31_frozen_vlm_evidence.yaml \
+  --out outputs/v3/v31-evidence-fixture --fixture
+lunavla-v3 v31-evidence-verify outputs/v3/v31-evidence-fixture
+```
+
+`--fixture` is mandatory for the built-in CPU executor. It produces the exact
+matrix and reproducibility sentinel but records
+`feature_source=deterministic_fixture`, so `claim_allowed` remains false even
+when descriptive thresholds happen to pass, and the fixture is not release
+eligible. A real evidence executor must bind
+the pinned SmolVLM2 cache, ACT checkpoints, dependency lock, clean Git SHA, and
+paired episode inventory before it may use `real_frozen_vlm`.
+
+The scientific gate requires all of the following:
+
+- control minus baseline success interval has a lower bound above zero;
+- baseline minus control final-distance interval has a lower bound above zero;
+- control minus feature-shuffle success interval has a lower bound above zero;
+- all six task-by-stratum success non-inferiority lower bounds are at least
+  `-0.05`;
+- the matrix is complete and homogeneous, and the seed-11 rows, checkpoint
+  inventory, and metrics inventory reproduce exactly.
+
+Negative results remain release-eligible when their evidence is complete; the
+fixed conclusion is then “冻结 VLM 特征贡献尚未建立”.
