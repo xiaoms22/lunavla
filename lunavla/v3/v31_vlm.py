@@ -678,14 +678,14 @@ class TransformersFrozenExtractor:
         if self._spec.image_token_layout == "single_image_no_split_512":
             processor_options = {
                 "do_image_splitting": False,
-                "size": {"longest_edge": 512},
+                "max_image_size": {"longest_edge": 512},
             }
         inputs = self._processor(
             text=texts,
             images=[[image] for image in images],
             return_tensors="pt",
             padding=True,
-            **processor_options,
+            images_kwargs=processor_options,
         )
         inputs = {name: value.to(self._device) for name, value in inputs.items()}
         with self._torch.inference_mode():

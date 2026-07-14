@@ -58,6 +58,7 @@ class RealFrozenV31EvidenceExecutor:
         processor_sha256: str,
         device_environment_sha256: str,
         max_steps: int = 64,
+        online_batch_size: int = 20,
     ) -> None:
         self.source_training_root = Path(source_training_root).resolve()
         self.repeat_training_root = Path(repeat_training_root).resolve()
@@ -76,6 +77,9 @@ class RealFrozenV31EvidenceExecutor:
         if isinstance(max_steps, bool) or max_steps != 64:
             raise ValueError("scientific v3.1 evidence fixes max_steps=64")
         self.max_steps = max_steps
+        if isinstance(online_batch_size, bool) or online_batch_size != 20:
+            raise ValueError("scientific v3.1 evidence fixes online_batch_size=20")
+        self.online_batch_size = online_batch_size
         self.git_sha, self.git_dirty = _git_identity()
         self.dependency_hash = sha256_file(_ROOT / "requirements-v3-vlm-cpu.lock")
         self.feature_source_hash = _stable_hash(
@@ -179,7 +183,7 @@ class RealFrozenV31EvidenceExecutor:
                 if provider is not None and intervention == "control":
                     provider.ensure_observations(
                         tuple(observations[index] for index in range(episodes) if active[index]),
-                        batch_size=4,
+                        batch_size=self.online_batch_size,
                     )
                 for index in range(episodes):
                     if not active[index]:
@@ -329,6 +333,7 @@ class RealFrozenV31EvidenceExecutor:
                 {
                     "schema_version": 1,
                     "feature_source": "real_frozen_vlm",
+                    "online_batch_size": self.online_batch_size,
                     "checkpoints_sha256": checkpoints_hash,
                     "metrics_sha256": metrics_hash,
                     "seed_checkpoint_sha256": seed_checkpoint_hashes,

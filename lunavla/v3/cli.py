@@ -40,7 +40,6 @@ from .v31_evidence_workflow import (
     run_v31_evidence,
     verify_v31_evidence,
 )
-from .v31_real_evidence import RealFrozenV31EvidenceExecutor
 from .v31_tasks import make_v31_task_dataset
 from .v31_vlm import (
     DeterministicFixtureExtractor,
@@ -462,6 +461,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if arguments.fixture and any(value is not None for value in real_arguments.values()):
             raise ValueError("fixture evidence rejects real frozen-VLM arguments")
         if arguments.real:
+            from .v31_real_evidence import RealFrozenV31EvidenceExecutor
+
             missing = sorted(key for key, value in real_arguments.items() if value is None)
             if missing:
                 raise ValueError(
