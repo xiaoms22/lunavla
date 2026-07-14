@@ -6,6 +6,7 @@ import pytest
 from lunavla.v3 import (
     V31_HELD_OUT_STRATA,
     V31_TASK_IDS,
+    V31RolloutEnvV1,
     make_v31_episode,
     make_v31_task_dataset,
     task_dataset_sha256,
@@ -13,6 +14,49 @@ from lunavla.v3 import (
     v31_feature_schema,
 )
 from lunavla.v3.data import episode_sha256
+
+
+def test_real_rollout_env_is_dynamic_deterministic_and_hides_oracle() -> None:
+    env = V31RolloutEnvV1(
+        task_id="direct_pick_place", stratum="composition", episode_index=3
+    )
+    first = env.reset(seed=1003)
+    assert "target_xy" not in first.metadata
+    transition = env.step(np.asarray([0.14, 0.14, 0.0], dtype=np.float32))
+    assert transition.next_observation.step_index == 1
+    assert not np.array_equal(
+        first.state["state.proprioception"],
+        transition.next_observation.state["state.proprioception"],
+    )
+    assert np.isfinite(transition.info["final_distance"])
+    env.close()
+    assert env.closed
+    with pytest.raises(RuntimeError, match="closed"):
+        env.reset(seed=1003)
+
+
+@pytest.mark.parametrize("task_id", V31_TASK_IDS)
+@pytest.mark.parametrize("stratum", V31_HELD_OUT_STRATA)
+def test_real_rollout_env_replays_registered_expert_to_success(
+    task_id: str, stratum: str
+) -> None:
+    episode = make_v31_episode(
+        task_id=task_id, split="test", stratum=stratum, data_seed=42, index=2
+    )
+    env = V31RolloutEnvV1(task_id=task_id, stratum=stratum, episode_index=2)
+    env.reset(seed=1002)
+    try:
+        result = None
+        for expert in episode.transitions:
+            result = env.step(expert.action)
+            if result.terminated or result.truncated:
+                break
+        assert result is not None
+        assert result.terminated
+        assert result.info["success"] is True
+        assert result.info["final_distance"] <= 0.045
+    finally:
+        env.close()
 
 
 HELD_OUT_COMBINATIONS = {"red:diamond", "blue:square", "green:circle"}

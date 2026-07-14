@@ -171,7 +171,11 @@ class VLMBackendSpecV1:
             raise ValueError("hidden_layer must be -1 (the final hidden layer)")
         if self.pooling != "attention_mask_mean":
             raise ValueError("pooling must be attention_mask_mean")
-        if self.image_token_layout not in {"processor_native", "video_frames_first"}:
+        if self.image_token_layout not in {
+            "processor_native",
+            "single_image_no_split_512",
+            "video_frames_first",
+        }:
             raise ValueError("unsupported image_token_layout")
         object.__setattr__(self, "camera_order", _tuple_strings(self.camera_order, "camera_order", nonempty=True))
         if self.model_dtype not in {"float32", "float16", "bfloat16"}:

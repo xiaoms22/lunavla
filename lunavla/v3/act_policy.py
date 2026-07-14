@@ -24,7 +24,7 @@ from .policy import (
     TrainStepResultV3,
 )
 from .registry import PolicyRegistryV3
-from .v31_vlm import FrozenFeatureCacheReaderV1
+from .v31_vlm import FrozenFeatureCacheReaderV1, FrozenFeatureProviderV1
 
 
 POLICY_ID = "act_v3"
@@ -111,7 +111,7 @@ class ActPolicyV3:
         camera_feature: str | None,
         temporal_ensemble_decay: float | None,
         condition_mode: str = "none",
-        feature_cache: FrozenFeatureCacheReaderV1 | None = None,
+        feature_cache: FrozenFeatureProviderV1 | None = None,
         feature_intervention: str = "control",
         feature_shuffle_seed: int = 202701,
     ) -> None:
@@ -248,7 +248,7 @@ class ActPolicyV3:
                 None if self.condition_mode == "none" else self.policy.config.d_model
             ),
             "feature_cache_index_sha256": (
-                None if self.feature_cache is None else self.feature_cache.index.sha256()
+                None if self.feature_cache is None else self.feature_cache.binding_sha256
             ),
             "feature_intervention": self.feature_intervention,
             "feature_shuffle_seed": self.feature_shuffle_seed,
@@ -267,18 +267,16 @@ class ActPolicyV3:
         assert self.feature_cache is not None
         rows: list[npt.NDArray[np.float32]] = []
         for sample in samples:
-            metadata = sample.observation.metadata
+            observation = sample.observation
+            metadata = observation.metadata
             split = str(metadata["split"])
             task_id = str(metadata["task_id"])
-            feature, donor = self.feature_cache.intervened(
-                split=split,
-                task_id=task_id,
-                episode_id=sample.episode_id,
-                step_index=sample.step_index,
+            feature, donor = self.feature_cache.intervened_observation(
+                observation,
                 intervention=self.feature_intervention,
                 donor_seed=self.feature_shuffle_seed,
             )
-            identity = self.feature_cache.sample_identity(
+            identity = FrozenFeatureCacheReaderV1.sample_identity(
                 split=split,
                 task_id=task_id,
                 episode_id=sample.episode_id,
@@ -302,6 +300,26 @@ class ActPolicyV3:
         if token.shape != (64,):
             raise AssertionError("condition token contract drifted from 64 dimensions")
         return token
+
+    def configure_rollout_feature_provider(
+        self,
+        provider: FrozenFeatureProviderV1,
+        *,
+        intervention: str,
+    ) -> None:
+        """Attach a runtime provider without changing the trained model weights."""
+
+        if self.condition_mode != "frozen_feature" or self.feature_cache is None:
+            raise ValueError("only frozen-feature ACT accepts a rollout feature provider")
+        if intervention not in {"control", "feature_mask", "feature_shuffle"}:
+            raise ValueError("unsupported rollout feature intervention")
+        if provider.output_dim != self.policy.config.instruction_dim:
+            raise ValueError("rollout feature provider dimension does not match ACT")
+        if provider.binding_sha256 != self.feature_cache.binding_sha256:
+            raise ValueError("rollout feature provider does not bind the training cache")
+        self.feature_cache = provider
+        self.feature_intervention = intervention
+        self.last_feature_donors.clear()
 
 
 def _create(
@@ -355,7 +373,7 @@ def _restore(
     if metadata.get("normalization_sha256") != normalization.sha256():
         raise ValueError("ACT checkpoint normalization hash does not match")
     feature_cache = _feature_cache(config, condition_mode)
-    expected_cache_hash = None if feature_cache is None else feature_cache.index.sha256()
+    expected_cache_hash = None if feature_cache is None else feature_cache.binding_sha256
     if metadata.get("feature_cache_index_sha256") != expected_cache_hash:
         raise ValueError("ACT checkpoint feature cache hash does not match")
     return ActPolicyV3(

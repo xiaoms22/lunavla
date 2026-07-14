@@ -1,0 +1,14 @@
+.git
+.venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+**/__pycache__
+outputs
+results
+data/raw
+data/interim
+*.pt
+*.pth
+*.safetensors
+*.onnx
