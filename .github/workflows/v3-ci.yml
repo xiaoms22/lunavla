@@ -221,7 +221,8 @@ jobs:
           python -m pip install --upgrade pip "uv==0.11.26"
           uv venv --python 3.12
           uv pip sync requirements-v3-vlm-cpu.lock \
-            --require-hashes --strict --only-binary :all: --torch-backend cpu
+            --require-hashes --strict --only-binary :all: --no-binary docopt \
+            --torch-backend cpu
           uv pip install --no-deps --no-build-isolation --editable .
           uv pip check
       - name: Verify CPU-only runtime and frozen-feature contracts

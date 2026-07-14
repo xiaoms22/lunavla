@@ -8,11 +8,14 @@ import numpy as np
 import pytest
 
 from lunavla.v3 import (
+    ContentAddressedFrozenFeatureProviderV1,
     QWEN3_VL_REPO_ID,
     QWEN3_VL_REVISION,
     SMOLVLM2_REPO_ID,
     SMOLVLM2_REVISION,
     DeterministicFixtureExtractor,
+    FrozenFeatureCacheReaderV1,
+    ObservationV3,
     VLMBackendSpecV1,
     build_frozen_feature_cache,
     make_v31_task_dataset,
@@ -169,3 +172,104 @@ def test_cache_rejects_manifest_and_inventory_tampering(tmp_path: Path) -> None:
     manifest.unlink()
     with pytest.raises(ValueError, match="incomplete"):
         verify_frozen_feature_cache(output)
+
+
+def test_online_content_addressed_provider_extracts_reuses_shuffles_and_detects_tamper(
+    tmp_path: Path,
+) -> None:
+    dataset = _dataset()
+    cache = tmp_path / "cache"
+    build_frozen_feature_cache(
+        dataset,
+        _backend(),
+        DeterministicFixtureExtractor(),
+        cache,
+        processor_sha256=H0,
+        device_environment_sha256=H1,
+    )
+    reader = FrozenFeatureCacheReaderV1(cache)
+    provider = ContentAddressedFrozenFeatureProviderV1(
+        base_cache=reader,
+        extractor=DeterministicFixtureExtractor(),
+        root=tmp_path / "online",
+        processor_sha256=H0,
+        device_environment_sha256=H1,
+    )
+    original = dataset.bundle.select("test")[0].transitions[0].observation
+    changed_image = np.array(original.images["camera.primary"], copy=True)
+    changed_image[0, 0] = np.asarray([1, 2, 3], dtype=np.uint8)
+    changed = ObservationV3(
+        images={"camera.primary": changed_image},
+        state=original.state,
+        instruction=original.instruction,
+        timestamp_s=original.timestamp_s,
+        episode_id=original.episode_id,
+        step_index=original.step_index,
+        metadata=original.metadata,
+    )
+    first, donor = provider.intervened_observation(
+        changed, intervention="control", donor_seed=202701
+    )
+    repeat, repeat_donor = provider.intervened_observation(
+        changed, intervention="control", donor_seed=202701
+    )
+    assert donor is repeat_donor is None
+    assert np.array_equal(first, repeat)
+    assert len(list((tmp_path / "online/features").glob("*.npy"))) == 1
+    shuffled, donor_id = provider.intervened_observation(
+        changed, intervention="feature_shuffle", donor_seed=202701
+    )
+    assert donor_id is not None and donor_id.startswith("base:")
+    assert not np.array_equal(first, shuffled)
+    feature_path = next((tmp_path / "online/features").glob("*.npy"))
+    feature_path.write_bytes(feature_path.read_bytes() + b"tamper")
+    with pytest.raises(ValueError, match="hash or contract mismatch"):
+        provider.intervened_observation(changed, intervention="control", donor_seed=202701)
+
+
+def test_online_provider_batches_missing_content_once(tmp_path: Path) -> None:
+    class BatchExtractor(DeterministicFixtureExtractor):
+        calls = 0
+
+        def extract_batch(self, values):
+            self.calls += 1
+            return tuple(self.extract(image, instruction) for image, instruction in values)
+
+    dataset = _dataset()
+    cache = tmp_path / "cache"
+    extractor = BatchExtractor()
+    build_frozen_feature_cache(
+        dataset,
+        _backend(),
+        DeterministicFixtureExtractor(),
+        cache,
+        processor_sha256=H0,
+        device_environment_sha256=H1,
+    )
+    provider = ContentAddressedFrozenFeatureProviderV1(
+        base_cache=FrozenFeatureCacheReaderV1(cache),
+        extractor=extractor,
+        root=tmp_path / "online",
+        processor_sha256=H0,
+        device_environment_sha256=H1,
+    )
+    observations = []
+    for index, transition in enumerate(dataset.bundle.select("test")[0].transitions[:2]):
+        original = transition.observation
+        image = np.array(original.images["camera.primary"], copy=True)
+        image[0, 0] = np.asarray([index + 1, 2, 3], dtype=np.uint8)
+        observations.append(
+            ObservationV3(
+                images={"camera.primary": image},
+                state=original.state,
+                instruction=original.instruction,
+                timestamp_s=original.timestamp_s,
+                episode_id=original.episode_id,
+                step_index=original.step_index,
+                metadata=original.metadata,
+            )
+        )
+    first = provider.ensure_observations(tuple(observations), batch_size=4)
+    second = provider.ensure_observations(tuple(observations), batch_size=4)
+    assert first == second
+    assert extractor.calls == 1
