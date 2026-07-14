@@ -71,9 +71,7 @@ def _safe_checkpoint_value(value: Any, *, name: str) -> Any:
     raise TypeError(f"{name} contains unsupported value type {type(value).__name__}")
 
 
-def _require_exact_fields(
-    value: Mapping[str, Any], expected: frozenset[str], *, name: str
-) -> None:
+def _require_exact_fields(value: Mapping[str, Any], expected: frozenset[str], *, name: str) -> None:
     if any(not isinstance(key, str) for key in value):
         raise TypeError(f"{name} keys must be strings")
     unknown = sorted(set(value) - expected)
@@ -129,9 +127,7 @@ def _validated_checkpoint_config(
     recorded = TransformerPolicyConfig.from_mapping(value)
     if schema_version in TRANSFORMER_CHECKPOINT_READ_ONLY_SCHEMAS:
         if recorded.image_shape is not None:
-            raise ValueError(
-                "schema 2 visual checkpoints are incompatible with coordconv_xy_v1"
-            )
+            raise ValueError("schema 2 visual checkpoints are incompatible with coordconv_xy_v1")
     return replace(recorded, device=map_location)
 
 
@@ -215,8 +211,7 @@ class TransformerPolicyConfig:
             ):
                 raise ValueError("image_shape must contain integer dimensions")
             if any(
-                isinstance(size, bool) or not isinstance(size, int)
-                for size in self.image_shape
+                isinstance(size, bool) or not isinstance(size, int) for size in self.image_shape
             ):
                 raise ValueError("image_shape must contain integer dimensions")
             image_shape = tuple(self.image_shape)
@@ -286,9 +281,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
         self.action_dim = self.config.action_dim
         self.chunk_size = self.config.chunk_size
         self._condition_token_count = (
-            1
-            + int(self.config.instruction_dim > 0)
-            + int(self.config.image_shape is not None)
+            1 + int(self.config.instruction_dim > 0) + int(self.config.image_shape is not None)
         )
         requested_device = torch.device(self.config.device)
         self._check_device_available(requested_device)
@@ -343,9 +336,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
                 self.register_buffer("_image_coordinate_grid", None, persistent=False)
                 self.image_encoder = None
             self.posterior_token = nn.Parameter(torch.empty(1, 1, self.config.d_model))
-            self.action_queries = nn.Parameter(
-                torch.empty(1, self.chunk_size, self.config.d_model)
-            )
+            self.action_queries = nn.Parameter(torch.empty(1, self.chunk_size, self.config.d_model))
             self.encoder_positions = nn.Parameter(
                 torch.empty(
                     1,
@@ -444,9 +435,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
         return self.action_queries.dtype
 
     def to(self, *args: Any, **kwargs: Any) -> Self:
-        previous_device = (
-            self.action_queries.device if hasattr(self, "action_queries") else None
-        )
+        previous_device = self.action_queries.device if hasattr(self, "action_queries") else None
         module = super().to(*args, **kwargs)
         current_device = self.action_queries.device
         if previous_device is not None and current_device != previous_device:
@@ -514,9 +503,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
             raise ValueError("image modality is disabled by image_shape=None")
         raw = np.asarray(image)
         if raw.shape != self.config.image_shape:
-            raise ValueError(
-                f"image must have shape {self.config.image_shape}; got {raw.shape}"
-            )
+            raise ValueError(f"image must have shape {self.config.image_shape}; got {raw.shape}")
         if raw.dtype == np.uint8:
             normalized = np.array(raw, dtype=np.float32, copy=True) / 255.0
         elif raw.dtype == np.float32:
@@ -538,7 +525,9 @@ class TransformerChunkCVAEPolicy(nn.Module):
         batch_size = states.shape[0]
         if self.config.instruction_dim > 0:
             if instruction_features is None:
-                raise ValueError("instruction modality is enabled but instruction_features is missing")
+                raise ValueError(
+                    "instruction modality is enabled but instruction_features is missing"
+                )
             expected_instruction = (batch_size, self.config.instruction_dim)
             if instruction_features.shape != expected_instruction:
                 raise ValueError(
@@ -556,9 +545,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
             if images is None:
                 raise ValueError("image modality is enabled but images are missing")
             height, width = self.config.image_shape[:2]
-            channels = (
-                1 if len(self.config.image_shape) == 2 else self.config.image_shape[-1]
-            )
+            channels = 1 if len(self.config.image_shape) == 2 else self.config.image_shape[-1]
             expected_images = (batch_size, channels, height, width)
             if images.shape != expected_images:
                 raise ValueError(f"images must have shape {expected_images}; got {images.shape}")
@@ -588,9 +575,24 @@ class TransformerChunkCVAEPolicy(nn.Module):
     def _observation_tensors(
         self,
         observations: Sequence[Observation],
+        instruction_feature_overrides: npt.NDArray[np.float32] | None = None,
     ) -> tuple[Tensor, Tensor | None, Tensor | None]:
         if not observations:
             raise ValueError("observations must not be empty")
+        overrides: npt.NDArray[np.float32] | None = None
+        if instruction_feature_overrides is not None:
+            overrides = np.asarray(instruction_feature_overrides)
+            expected = (len(observations), self.config.instruction_dim)
+            if self.config.instruction_dim <= 0:
+                raise ValueError("external instruction features require instruction_dim > 0")
+            if overrides.dtype != np.float32:
+                raise TypeError("external instruction features must have dtype float32")
+            if overrides.shape != expected:
+                raise ValueError(
+                    f"external instruction features must have shape {expected}; got {overrides.shape}"
+                )
+            if not np.all(np.isfinite(overrides)):
+                raise ValueError("external instruction features contain NaN or infinite values")
         states_list: list[Float32Array] = []
         instruction_list: list[Float32Array] = []
         image_list: list[Float32Array] = []
@@ -612,31 +614,28 @@ class TransformerChunkCVAEPolicy(nn.Module):
             states_list.append(np.array(state, dtype=np.float32, copy=True))
 
             if self.config.instruction_dim > 0:
-                if observation.instruction is None:
+                if overrides is not None:
+                    instruction_list.append(np.array(overrides[index], dtype=np.float32, copy=True))
+                elif observation.instruction is None:
                     raise ValueError(
                         f"observation {index} is missing the enabled instruction modality"
                     )
-                instruction_list.append(
-                    self.instruction_features(
-                        observation.instruction,
-                        self.config.instruction_dim,
+                else:
+                    instruction_list.append(
+                        self.instruction_features(
+                            observation.instruction,
+                            self.config.instruction_dim,
+                        )
                     )
-                )
             elif observation.instruction is not None:
-                raise ValueError(
-                    f"observation {index} supplies instruction but instruction_dim=0"
-                )
+                raise ValueError(f"observation {index} supplies instruction but instruction_dim=0")
 
             if self.config.image_shape is not None:
                 if observation.image is None:
-                    raise ValueError(
-                        f"observation {index} is missing the enabled image modality"
-                    )
+                    raise ValueError(f"observation {index} is missing the enabled image modality")
                 image_list.append(self._image_to_chw(observation.image))
             elif observation.image is not None:
-                raise ValueError(
-                    f"observation {index} supplies image but image_shape=None"
-                )
+                raise ValueError(f"observation {index} supplies image but image_shape=None")
 
         states = torch.from_numpy(np.stack(states_list)).to(device=self.device)
         instructions = (
@@ -645,9 +644,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
             else None
         )
         images = (
-            torch.from_numpy(np.stack(image_list)).to(device=self.device)
-            if image_list
-            else None
+            torch.from_numpy(np.stack(image_list)).to(device=self.device) if image_list else None
         )
         return states, instructions, images
 
@@ -732,10 +729,14 @@ class TransformerChunkCVAEPolicy(nn.Module):
         if not sample:
             return mu
         standard_deviation = torch.exp(0.5 * logvar)
-        return mu + torch.randn_like(
-            standard_deviation,
-            generator=generator,
-        ) * standard_deviation
+        return (
+            mu
+            + torch.randn_like(
+                standard_deviation,
+                generator=generator,
+            )
+            * standard_deviation
+        )
 
     def decode_actions(
         self,
@@ -859,6 +860,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
     def _batch_tensors(
         self,
         batch: PolicyBatch,
+        instruction_feature_overrides: npt.NDArray[np.float32] | None = None,
     ) -> tuple[Tensor, Tensor, Tensor, Tensor | None, Tensor | None]:
         if not isinstance(batch, PolicyBatch):
             raise TypeError("batch must be a lunavla.contracts.PolicyBatch")
@@ -866,24 +868,56 @@ class TransformerChunkCVAEPolicy(nn.Module):
             raise ValueError(
                 f"batch declares device {batch.device}, but policy parameters are on {self.device}"
             )
-        states, instruction_features, images = self._observation_tensors(batch.observations)
+        states, instruction_features, images = self._observation_tensors(
+            batch.observations, instruction_feature_overrides
+        )
         if batch.targets.shape != (batch.batch_size, self.chunk_size, self.action_dim):
             raise ValueError(
                 "batch targets do not match the policy's chunk_size and action_dim: "
                 f"got {batch.targets.shape}"
             )
-        actions = torch.from_numpy(
-            np.array(batch.targets, dtype=np.float32, copy=True)
-        ).to(device=self.device)
-        valid_mask = torch.from_numpy(
-            np.array(batch.valid_mask, dtype=bool, copy=True)
-        ).to(device=self.device)
+        actions = torch.from_numpy(np.array(batch.targets, dtype=np.float32, copy=True)).to(
+            device=self.device
+        )
+        valid_mask = torch.from_numpy(np.array(batch.valid_mask, dtype=bool, copy=True)).to(
+            device=self.device
+        )
         return states, actions, valid_mask, instruction_features, images
 
     def train_batch(self, batch: PolicyBatch, *, learning_rate: float) -> float:
+        return self._train_batch(
+            batch,
+            learning_rate=learning_rate,
+            instruction_feature_overrides=None,
+        )
+
+    def train_batch_with_instruction_features(
+        self,
+        batch: PolicyBatch,
+        instruction_features: npt.NDArray[np.float32],
+        *,
+        learning_rate: float,
+    ) -> float:
+        """Train with audited external features instead of the text hash encoder."""
+
+        return self._train_batch(
+            batch,
+            learning_rate=learning_rate,
+            instruction_feature_overrides=instruction_features,
+        )
+
+    def _train_batch(
+        self,
+        batch: PolicyBatch,
+        *,
+        learning_rate: float,
+        instruction_feature_overrides: npt.NDArray[np.float32] | None,
+    ) -> float:
         if not math.isfinite(learning_rate) or learning_rate <= 0.0:
             raise ValueError("learning_rate must be a positive finite value")
-        states, actions, valid_mask, instruction_features, images = self._batch_tensors(batch)
+        states, actions, valid_mask, instruction_features, images = self._batch_tensors(
+            batch, instruction_feature_overrides
+        )
         if self._optimizer is None:
             self._optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         else:
@@ -893,9 +927,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
         self.train()
         self._optimizer.zero_grad(set_to_none=True)
         parameter_device = self.action_queries.device
-        fork_devices = (
-            [parameter_device.index or 0] if parameter_device.type == "cuda" else []
-        )
+        fork_devices = [parameter_device.index or 0] if parameter_device.type == "cuda" else []
         with torch.random.fork_rng(devices=fork_devices):
             step_seed = self.config.seed + 10_000 + self._train_step
             if parameter_device.type == "cuda":
@@ -920,9 +952,49 @@ class TransformerChunkCVAEPolicy(nn.Module):
         return float(loss.detach().cpu().item())
 
     def predict_chunk(self, observation: Observation) -> ActionChunk:
+        return self._predict_chunk(observation, instruction_feature_overrides=None)
+
+    def predict_chunk_with_instruction_features(
+        self,
+        observation: Observation,
+        instruction_features: npt.NDArray[np.float32],
+    ) -> ActionChunk:
+        """Predict with one audited frozen feature or null-baseline feature."""
+
+        raw = np.asarray(instruction_features)
+        if raw.ndim != 1:
+            raise ValueError("prediction instruction features must be one-dimensional")
+        return self._predict_chunk(observation, instruction_feature_overrides=raw[None, :])
+
+    def projected_instruction_token(
+        self, instruction_features: npt.NDArray[np.float32]
+    ) -> Float32Array:
+        """Return the exact learned d_model token consumed by ACT."""
+
+        if self.instruction_projection is None:
+            raise ValueError("instruction projection is disabled")
+        raw = np.asarray(instruction_features)
+        expected = (self.config.instruction_dim,)
+        if raw.dtype != np.float32 or raw.shape != expected:
+            raise ValueError(f"instruction feature must be float32 with shape {expected}")
+        if not np.all(np.isfinite(raw)):
+            raise ValueError("instruction feature contains NaN or infinite values")
+        tensor = torch.from_numpy(np.array(raw, copy=True)).to(device=self.device)
+        with torch.no_grad():
+            token = self.instruction_projection(tensor)
+        return token.detach().cpu().numpy().astype(np.float32, copy=True)
+
+    def _predict_chunk(
+        self,
+        observation: Observation,
+        *,
+        instruction_feature_overrides: npt.NDArray[np.float32] | None,
+    ) -> ActionChunk:
         if not isinstance(observation, Observation):
             raise TypeError("observation must be a lunavla.contracts.Observation")
-        states, instruction_features, images = self._observation_tensors((observation,))
+        states, instruction_features, images = self._observation_tensors(
+            (observation,), instruction_feature_overrides
+        )
         was_training = self.training
         self.eval()
         with torch.no_grad():
@@ -950,15 +1022,11 @@ class TransformerChunkCVAEPolicy(nn.Module):
         if not target.suffix:
             target = target / "checkpoint.pt"
         target.parent.mkdir(parents=True, exist_ok=True)
-        state_dict = {
-            name: value.detach().cpu() for name, value in self.state_dict().items()
-        }
+        state_dict = {name: value.detach().cpu() for name, value in self.state_dict().items()}
         for name, value in state_dict.items():
             _validate_checkpoint_tensor(value, name=f"state_dict.{name}")
         optimizer_state = (
-            None
-            if self._optimizer is None
-            else _cpu_checkpoint_tree(self._optimizer.state_dict())
+            None if self._optimizer is None else _cpu_checkpoint_tree(self._optimizer.state_dict())
         )
         if optimizer_state is not None:
             _validate_optimizer_tree(optimizer_state, name="optimizer_state_dict")
@@ -993,16 +1061,12 @@ class TransformerChunkCVAEPolicy(nn.Module):
             raise TypeError("checkpoint payload must be a mapping")
         raw_schema_version = payload.get("schema_version")
         if isinstance(raw_schema_version, bool) or not isinstance(raw_schema_version, int):
-            raise ValueError(
-                f"unsupported checkpoint schema_version: {raw_schema_version!r}"
-            )
+            raise ValueError(f"unsupported checkpoint schema_version: {raw_schema_version!r}")
         if raw_schema_version not in {
             CHECKPOINT_SCHEMA_VERSION,
             *TRANSFORMER_CHECKPOINT_READ_ONLY_SCHEMAS,
         }:
-            raise ValueError(
-                f"unsupported checkpoint schema_version: {raw_schema_version!r}"
-            )
+            raise ValueError(f"unsupported checkpoint schema_version: {raw_schema_version!r}")
         expected_fields = (
             TRANSFORMER_SCHEMA3_FIELDS
             if raw_schema_version == CHECKPOINT_SCHEMA_VERSION
@@ -1037,9 +1101,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
             name="checkpoint state_dict",
         )
         for name, expected_tensor in expected_state.items():
-            tensor = _validate_checkpoint_tensor(
-                raw_state[name], name=f"state_dict.{name}"
-            )
+            tensor = _validate_checkpoint_tensor(raw_state[name], name=f"state_dict.{name}")
             if tensor.shape != expected_tensor.shape:
                 raise ValueError(
                     f"state_dict.{name} has shape {tuple(tensor.shape)}; "
@@ -1047,8 +1109,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
                 )
             if tensor.dtype != expected_tensor.dtype:
                 raise TypeError(
-                    f"state_dict.{name} has dtype {tensor.dtype}; "
-                    f"expected {expected_tensor.dtype}"
+                    f"state_dict.{name} has dtype {tensor.dtype}; expected {expected_tensor.dtype}"
                 )
         policy.load_state_dict(raw_state, strict=True)
         raw_train_step = payload.get("train_step")
@@ -1057,9 +1118,7 @@ class TransformerChunkCVAEPolicy(nn.Module):
         if raw_train_step < 0:
             raise ValueError("checkpoint train_step must be a non-negative integer")
         raw_rng_state = payload.get("latent_rng_state")
-        raw_rng_state = _validate_checkpoint_tensor(
-            raw_rng_state, name="latent_rng_state"
-        )
+        raw_rng_state = _validate_checkpoint_tensor(raw_rng_state, name="latent_rng_state")
         if raw_rng_state.dtype != torch.uint8 or raw_rng_state.ndim != 1:
             raise TypeError("checkpoint latent_rng_state must be a one-dimensional uint8 tensor")
         policy._latent_generator.set_state(raw_rng_state.cpu())

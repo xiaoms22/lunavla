@@ -21,8 +21,18 @@ CONFIG_SCHEMA_VERSION = 3
 CONFIG_CONTRACT_REVISION = 2
 V31_CONFIG_CONTRACT_REVISION = 4
 _ROOT_V1 = {
-    "schema_version", "project_name", "engine", "policy", "task", "dataset", "embodiment",
-    "features", "training", "evaluation", "diagnostics", "artifacts",
+    "schema_version",
+    "project_name",
+    "engine",
+    "policy",
+    "task",
+    "dataset",
+    "embodiment",
+    "features",
+    "training",
+    "evaluation",
+    "diagnostics",
+    "artifacts",
 }
 _ROOT_V2 = _ROOT_V1 | {"contract_revision", "prompt", "routing"}
 _ROOT_V4 = _ROOT_V2 | {"vlm", "feature_cache", "task_suite", "trace"}
@@ -30,45 +40,126 @@ _SECTION_FIELDS = {
     "policy": {"type", "parameters"},
     "task": {"id", "parameters"},
     "dataset": {"type", "split", "seed", "parameters"},
-    "embodiment": {"id", "task_id", "control_rate_hz", "camera_mapping", "state_mapping", "action_mapping"},
+    "embodiment": {
+        "id",
+        "task_id",
+        "control_rate_hz",
+        "camera_mapping",
+        "state_mapping",
+        "action_mapping",
+    },
     "training": {
-        "device", "seed", "batch_size", "steps", "learning_rate", "optimizer",
-        "scheduler", "precision", "gradient_clip_norm", "resume",
+        "device",
+        "seed",
+        "batch_size",
+        "steps",
+        "learning_rate",
+        "optimizer",
+        "scheduler",
+        "precision",
+        "gradient_clip_norm",
+        "resume",
     },
     "evaluation": {"execution_mode", "episodes", "seed", "seeds", "max_steps"},
     "diagnostics": {"enabled"},
     "artifacts": {"output_dir", "checkpoint_name"},
 }
 _POLICIES = {
-    "numpy_linear_chunk", "numpy_bc_mlp", "transformer_chunk", "transformer_chunk_cvae",
-    "act", "act_v3", "diffusion_v3", "lerobot_smolvla",
+    "numpy_linear_chunk",
+    "numpy_bc_mlp",
+    "transformer_chunk",
+    "transformer_chunk_cvae",
+    "act",
+    "act_v3",
+    "diffusion_v3",
+    "lerobot_smolvla",
 }
-_TASKS = {"fake_pusht", "fake_libero", "pusht_style_point_reach", "language_conditioned_point_reach", "rendered_visual_point_reach", "lerobot_pusht"}
+_TASKS = {
+    "fake_pusht",
+    "fake_libero",
+    "pusht_style_point_reach",
+    "language_conditioned_point_reach",
+    "rendered_visual_point_reach",
+    "lerobot_pusht",
+}
 _DATASETS = {"memory", "fake_pusht", "fake_libero", "v2_compat"}
 _EXECUTION = {"open_loop_chunk", "receding_horizon"}
 _NUMPY_PARAMETER_FIELDS = {
-    "state_dim", "instruction_dim", "action_dim", "chunk_size", "hidden_dim",
-    "state_feature", "unused_modalities", "history", "horizon", "execution_steps",
+    "state_dim",
+    "instruction_dim",
+    "action_dim",
+    "chunk_size",
+    "hidden_dim",
+    "state_feature",
+    "unused_modalities",
+    "history",
+    "horizon",
+    "execution_steps",
 }
 _ACT_PARAMETER_FIELDS = {
-    "state_feature", "camera_feature", "instruction_dim", "chunk_size", "history",
-    "horizon", "execution_steps", "d_model", "nhead", "num_encoder_layers",
-    "num_decoder_layers", "dim_feedforward", "latent_dim", "dropout", "kl_weight",
-    "sample_latent_during_training", "temporal_ensemble_decay",
+    "state_feature",
+    "camera_feature",
+    "instruction_dim",
+    "chunk_size",
+    "history",
+    "horizon",
+    "execution_steps",
+    "d_model",
+    "nhead",
+    "num_encoder_layers",
+    "num_decoder_layers",
+    "dim_feedforward",
+    "latent_dim",
+    "dropout",
+    "kl_weight",
+    "sample_latent_during_training",
+    "temporal_ensemble_decay",
+    "condition_mode",
+    "condition_input_dim",
 }
 _DIFFUSION_PARAMETER_FIELDS = {
-    "state_feature", "camera_features", "unused_modalities", "chunk_size", "history",
-    "horizon", "execution_steps", "n_action_steps", "noise_scheduler_type",
-    "num_train_timesteps", "num_inference_steps", "prediction_type",
-    "do_mask_loss_for_padding", "noise_seed", "down_dims", "kernel_size", "n_groups",
-    "diffusion_step_embed_dim", "spatial_softmax_num_keypoints", "vision_backbone",
-    "use_group_norm", "use_separate_rgb_encoder_per_camera", "pretrained_backbone_weights",
-    "beta_schedule", "clip_sample", "clip_sample_range",
+    "state_feature",
+    "camera_features",
+    "unused_modalities",
+    "chunk_size",
+    "history",
+    "horizon",
+    "execution_steps",
+    "n_action_steps",
+    "noise_scheduler_type",
+    "num_train_timesteps",
+    "num_inference_steps",
+    "prediction_type",
+    "do_mask_loss_for_padding",
+    "noise_seed",
+    "down_dims",
+    "kernel_size",
+    "n_groups",
+    "diffusion_step_embed_dim",
+    "spatial_softmax_num_keypoints",
+    "vision_backbone",
+    "use_group_norm",
+    "use_separate_rgb_encoder_per_camera",
+    "pretrained_backbone_weights",
+    "beta_schedule",
+    "clip_sample",
+    "clip_sample_range",
 }
 _SMOLVLA_PARAMETER_FIELDS = {
-    "state_feature", "camera_features", "chunk_size", "history", "horizon",
-    "execution_steps", "n_action_steps", "max_state_dim", "max_action_dim",
-    "repo_id", "revision", "file_hashes", "license_status", "pretrained_enabled",
+    "state_feature",
+    "camera_features",
+    "chunk_size",
+    "history",
+    "horizon",
+    "execution_steps",
+    "n_action_steps",
+    "max_state_dim",
+    "max_action_dim",
+    "repo_id",
+    "revision",
+    "file_hashes",
+    "license_status",
+    "pretrained_enabled",
     "conformance_only",
 }
 _TRAINING_DEFAULTS: Mapping[str, Any] = {
@@ -87,8 +178,13 @@ _RESERVED_ARTIFACT_NAMES = {
     "rollouts",
 }
 _PROMPT_FIELDS = {
-    "enabled", "renderer_id", "renderer_version", "assistant_target", "neutral_token",
-    "camera_order", "public_slots",
+    "enabled",
+    "renderer_id",
+    "renderer_version",
+    "assistant_target",
+    "neutral_token",
+    "camera_order",
+    "public_slots",
 }
 _ROUTING_FIELDS = {"mode", "state_features"}
 _STATE_ROUTES = {"none", "expert_only", "prompt_only", "dual"}
@@ -215,8 +311,10 @@ class ExperimentConfig:
                 f"{CONFIG_CONTRACT_REVISION}, or {V31_CONFIG_CONTRACT_REVISION}"
             )
         allowed_root = (
-            _ROOT_V1 if raw_revision == 1
-            else _ROOT_V4 if raw_revision == V31_CONFIG_CONTRACT_REVISION
+            _ROOT_V1
+            if raw_revision == 1
+            else _ROOT_V4
+            if raw_revision == V31_CONFIG_CONTRACT_REVISION
             else _ROOT_V2
         )
         _reject_unknown(root, allowed_root, "config")
@@ -260,9 +358,7 @@ class ExperimentConfig:
                 policy["type"].startswith("numpy_")
                 or policy["type"] in {"act_v3", "diffusion_v3", "lerobot_smolvla"}
             ):
-                raise ValueError(
-                    f"policy.type {policy['type']!r} is migration-only in v3 Alpha 1"
-                )
+                raise ValueError(f"policy.type {policy['type']!r} is migration-only in v3 Alpha 1")
             allowed_policy = _NUMPY_PARAMETER_FIELDS
             if policy["type"] == "act_v3":
                 allowed_policy = _ACT_PARAMETER_FIELDS
@@ -276,23 +372,52 @@ class ExperimentConfig:
                 required_parameters = ("state_dim", "instruction_dim", "action_dim", "chunk_size")
             elif policy["type"] == "act_v3":
                 required_parameters = (
-                    "state_feature", "instruction_dim", "chunk_size", "d_model", "nhead",
-                    "num_encoder_layers", "num_decoder_layers", "dim_feedforward",
-                    "latent_dim", "dropout", "kl_weight",
+                    "state_feature",
+                    "instruction_dim",
+                    "chunk_size",
+                    "d_model",
+                    "nhead",
+                    "num_encoder_layers",
+                    "num_decoder_layers",
+                    "dim_feedforward",
+                    "latent_dim",
+                    "dropout",
+                    "kl_weight",
                 )
             elif policy["type"] == "diffusion_v3":
                 required_parameters = (
-                    "state_feature", "camera_features", "chunk_size", "history", "horizon",
-                    "execution_steps", "n_action_steps", "noise_scheduler_type",
-                    "num_train_timesteps", "num_inference_steps", "prediction_type",
-                    "do_mask_loss_for_padding", "noise_seed", "down_dims",
+                    "state_feature",
+                    "camera_features",
+                    "chunk_size",
+                    "history",
+                    "horizon",
+                    "execution_steps",
+                    "n_action_steps",
+                    "noise_scheduler_type",
+                    "num_train_timesteps",
+                    "num_inference_steps",
+                    "prediction_type",
+                    "do_mask_loss_for_padding",
+                    "noise_seed",
+                    "down_dims",
                 )
             else:
                 required_parameters = (
-                    "state_feature", "camera_features", "chunk_size", "history", "horizon",
-                    "execution_steps", "n_action_steps", "max_state_dim", "max_action_dim",
-                    "repo_id", "revision", "file_hashes", "license_status",
-                    "pretrained_enabled", "conformance_only",
+                    "state_feature",
+                    "camera_features",
+                    "chunk_size",
+                    "history",
+                    "horizon",
+                    "execution_steps",
+                    "n_action_steps",
+                    "max_state_dim",
+                    "max_action_dim",
+                    "repo_id",
+                    "revision",
+                    "file_hashes",
+                    "license_status",
+                    "pretrained_enabled",
+                    "conformance_only",
                 )
             for name in required_parameters:
                 if name not in policy["parameters"]:
@@ -303,8 +428,12 @@ class ExperimentConfig:
             elif policy["type"] == "act_v3":
                 positive_integer_parameters.extend(
                     [
-                        "d_model", "nhead", "num_encoder_layers", "num_decoder_layers",
-                        "dim_feedforward", "latent_dim",
+                        "d_model",
+                        "nhead",
+                        "num_encoder_layers",
+                        "num_decoder_layers",
+                        "dim_feedforward",
+                        "latent_dim",
                     ]
                 )
             for name in positive_integer_parameters:
@@ -317,7 +446,9 @@ class ExperimentConfig:
                 )
             if policy["type"].startswith("numpy_") and "hidden_dim" in policy["parameters"]:
                 policy["parameters"]["hidden_dim"] = _integer(
-                    policy["parameters"]["hidden_dim"], "policy.parameters.hidden_dim", positive=True
+                    policy["parameters"]["hidden_dim"],
+                    "policy.parameters.hidden_dim",
+                    positive=True,
                 )
             policy["parameters"]["history"] = _integer(
                 policy["parameters"].get("history", 1),
@@ -330,9 +461,7 @@ class ExperimentConfig:
                 positive=True,
             )
             policy["parameters"]["execution_steps"] = _integer(
-                policy["parameters"].get(
-                    "execution_steps", policy["parameters"]["chunk_size"]
-                ),
+                policy["parameters"].get("execution_steps", policy["parameters"]["chunk_size"]),
                 "policy.parameters.execution_steps",
                 positive=True,
             )
@@ -359,13 +488,13 @@ class ExperimentConfig:
                         raise TypeError(f"policy.parameters.{name} must be numeric")
                     value = float(value)
                     if not math.isfinite(value) or value < 0:
-                        raise ValueError(f"policy.parameters.{name} must be finite and non-negative")
+                        raise ValueError(
+                            f"policy.parameters.{name} must be finite and non-negative"
+                        )
                     if name == "dropout" and value >= 1:
                         raise ValueError("policy.parameters.dropout must be below one")
                     policy["parameters"][name] = value
-                sample_latent = policy["parameters"].get(
-                    "sample_latent_during_training", True
-                )
+                sample_latent = policy["parameters"].get("sample_latent_during_training", True)
                 if not isinstance(sample_latent, bool):
                     raise TypeError("sample_latent_during_training must be boolean")
                 policy["parameters"]["sample_latent_during_training"] = sample_latent
@@ -373,6 +502,33 @@ class ExperimentConfig:
                 if decay is not None:
                     decay = _positive_float(decay, "policy.parameters.temporal_ensemble_decay")
                 policy["parameters"]["temporal_ensemble_decay"] = decay
+                if raw_revision == V31_CONFIG_CONTRACT_REVISION or any(
+                    name in policy["parameters"]
+                    for name in ("condition_mode", "condition_input_dim")
+                ):
+                    condition_mode = policy["parameters"].get("condition_mode", "none")
+                    if condition_mode not in {"none", "frozen_feature", "learned_null"}:
+                        raise ValueError(
+                            "act_v3 condition_mode must be none, frozen_feature, or learned_null"
+                        )
+                    condition_input_dim = policy["parameters"].get("condition_input_dim", 0)
+                    condition_input_dim = _integer(
+                        condition_input_dim,
+                        "policy.parameters.condition_input_dim",
+                    )
+                    if condition_mode == "none" and condition_input_dim != 0:
+                        raise ValueError("unconditioned act_v3 requires condition_input_dim=0")
+                    if condition_mode != "none" and condition_input_dim <= 0:
+                        raise ValueError("conditioned act_v3 requires positive condition_input_dim")
+                    if (
+                        condition_mode != "none"
+                        and policy["parameters"]["instruction_dim"] != condition_input_dim
+                    ):
+                        raise ValueError(
+                            "conditioned act_v3 instruction_dim must equal condition_input_dim"
+                        )
+                    policy["parameters"]["condition_mode"] = condition_mode
+                    policy["parameters"]["condition_input_dim"] = condition_input_dim
             if policy["type"] == "diffusion_v3":
                 parameters = policy["parameters"]
                 cameras = parameters["camera_features"]
@@ -387,8 +543,13 @@ class ExperimentConfig:
                     raise ValueError("diffusion_v3 camera_features cannot contain duplicates")
                 parameters["camera_features"] = camera_values
                 for name in (
-                    "n_action_steps", "num_train_timesteps", "num_inference_steps",
-                    "noise_seed", "kernel_size", "n_groups", "diffusion_step_embed_dim",
+                    "n_action_steps",
+                    "num_train_timesteps",
+                    "num_inference_steps",
+                    "noise_seed",
+                    "kernel_size",
+                    "n_groups",
+                    "diffusion_step_embed_dim",
                     "spatial_softmax_num_keypoints",
                 ):
                     default = {
@@ -415,8 +576,10 @@ class ExperimentConfig:
                 if parameters["num_inference_steps"] > parameters["num_train_timesteps"]:
                     raise ValueError("diffusion inference steps cannot exceed training timesteps")
                 for name in (
-                    "do_mask_loss_for_padding", "use_group_norm",
-                    "use_separate_rgb_encoder_per_camera", "clip_sample",
+                    "do_mask_loss_for_padding",
+                    "use_group_norm",
+                    "use_separate_rgb_encoder_per_camera",
+                    "clip_sample",
                 ):
                     parameters.setdefault(name, name != "use_group_norm")
                     if not isinstance(parameters[name], bool):
@@ -434,7 +597,9 @@ class ExperimentConfig:
                     raise ValueError("policy.parameters.down_dims cannot be empty")
                 factor = 2 ** len(parameters["down_dims"])
                 if parameters["horizon"] % factor:
-                    raise ValueError("diffusion_v3 horizon must match the U-Net downsampling factor")
+                    raise ValueError(
+                        "diffusion_v3 horizon must match the U-Net downsampling factor"
+                    )
                 for name, default in (
                     ("vision_backbone", "resnet18"),
                     ("pretrained_backbone_weights", None),
@@ -492,8 +657,7 @@ class ExperimentConfig:
                         raise ValueError(f"lerobot_smolvla {name} must be pinned to {expected}")
                 hashes = _mapping(parameters["file_hashes"], "policy.parameters.file_hashes")
                 if hashes != {
-                    "model.safetensors":
-                    "7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb"
+                    "model.safetensors": "7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb"
                 }:
                     raise ValueError("lerobot_smolvla model.safetensors hash is not pinned")
                 parameters["file_hashes"] = hashes
@@ -503,9 +667,7 @@ class ExperimentConfig:
                     raise ValueError("lerobot_smolvla must remain conformance_only in Alpha 2")
             if policy["type"].startswith("numpy_"):
                 unused = policy["parameters"].get("unused_modalities", [])
-                if isinstance(unused, (str, bytes, Mapping)) or not isinstance(
-                    unused, Sequence
-                ):
+                if isinstance(unused, (str, bytes, Mapping)) or not isinstance(unused, Sequence):
                     raise TypeError("policy.parameters.unused_modalities must be a sequence")
                 unused_values = list(unused)
                 if any(item not in {"image", "instruction"} for item in unused_values):
@@ -625,7 +787,10 @@ class ExperimentConfig:
                     shape = camera_features[name].shape
                     if len(shape) != 3 or shape[-1] != 3:
                         raise ValueError("lerobot_smolvla requires HWC RGB camera features")
-                if state_features[state_feature_name].shape[0] > policy["parameters"]["max_state_dim"]:
+                if (
+                    state_features[state_feature_name].shape[0]
+                    > policy["parameters"]["max_state_dim"]
+                ):
                     raise ValueError("SmolVLA state feature exceeds max_state_dim")
                 if action_features[0].shape[0] > policy["parameters"]["max_action_dim"]:
                     raise ValueError("SmolVLA action feature exceeds max_action_dim")
@@ -633,18 +798,20 @@ class ExperimentConfig:
         training = sections["training"]
         training["device"] = normalize_device(training["device"])
         training["seed"] = _integer(training["seed"], "training.seed")
-        training["batch_size"] = _integer(training["batch_size"], "training.batch_size", positive=True)
+        training["batch_size"] = _integer(
+            training["batch_size"], "training.batch_size", positive=True
+        )
         training["steps"] = _integer(training["steps"], "training.steps", positive=True)
-        training["learning_rate"] = _positive_float(training["learning_rate"], "training.learning_rate")
+        training["learning_rate"] = _positive_float(
+            training["learning_rate"], "training.learning_rate"
+        )
         optimizer = _mapping(training["optimizer"], "training.optimizer")
         _reject_unknown(optimizer, {"type", "parameters"}, "training.optimizer")
         if set(optimizer) != {"type", "parameters"}:
             raise ValueError("training.optimizer requires type and parameters")
         if optimizer["type"] not in {"sgd", "adam", "adamw"}:
             raise ValueError("training.optimizer.type must be sgd, adam, or adamw")
-        optimizer["parameters"] = _mapping(
-            optimizer["parameters"], "training.optimizer.parameters"
-        )
+        optimizer["parameters"] = _mapping(optimizer["parameters"], "training.optimizer.parameters")
         _reject_unknown(
             optimizer["parameters"],
             {"momentum", "weight_decay", "betas", "eps"},
@@ -656,11 +823,10 @@ class ExperimentConfig:
             raise ValueError("training.scheduler requires type and parameters")
         if scheduler["type"] not in {"constant", "linear", "cosine"}:
             raise ValueError("training.scheduler.type must be constant, linear, or cosine")
-        scheduler["parameters"] = _mapping(
-            scheduler["parameters"], "training.scheduler.parameters"
-        )
+        scheduler["parameters"] = _mapping(scheduler["parameters"], "training.scheduler.parameters")
         _reject_unknown(
-            scheduler["parameters"], {"warmup_steps", "min_learning_rate"},
+            scheduler["parameters"],
+            {"warmup_steps", "min_learning_rate"},
             "training.scheduler.parameters",
         )
         if training["precision"] not in {"float32", "float16", "bfloat16"}:
@@ -708,7 +874,8 @@ class ExperimentConfig:
             raise ValueError("diffusion_v3 requires optimizer.type=adamw")
         if policy["type"] == "diffusion_v3":
             _reject_unknown(
-                optimizer["parameters"], {"weight_decay", "betas", "eps"},
+                optimizer["parameters"],
+                {"weight_decay", "betas", "eps"},
                 "training.optimizer.parameters for diffusion_v3",
             )
             weight_decay = optimizer["parameters"].get("weight_decay", 1e-6)
@@ -718,7 +885,9 @@ class ExperimentConfig:
                 or not math.isfinite(float(weight_decay))
                 or float(weight_decay) < 0
             ):
-                raise ValueError("diffusion_v3 optimizer weight_decay must be finite and non-negative")
+                raise ValueError(
+                    "diffusion_v3 optimizer weight_decay must be finite and non-negative"
+                )
             optimizer["parameters"]["weight_decay"] = float(weight_decay)
             optimizer["parameters"]["eps"] = _positive_float(
                 optimizer["parameters"].get("eps", 1e-8),
@@ -745,11 +914,15 @@ class ExperimentConfig:
         if policy["type"] == "lerobot_smolvla" and optimizer["type"] != "adamw":
             raise ValueError("lerobot_smolvla conformance config requires optimizer.type=adamw")
         if policy["type"] == "lerobot_smolvla" and optimizer["parameters"]:
-            raise ValueError("lerobot_smolvla conformance config requires empty optimizer parameters")
+            raise ValueError(
+                "lerobot_smolvla conformance config requires empty optimizer parameters"
+            )
         if policy["type"] == "lerobot_smolvla" and scheduler["type"] != "constant":
             raise ValueError("lerobot_smolvla conformance config requires a constant scheduler")
         if policy["type"] == "lerobot_smolvla" and scheduler["parameters"]:
-            raise ValueError("lerobot_smolvla conformance config requires empty scheduler parameters")
+            raise ValueError(
+                "lerobot_smolvla conformance config requires empty scheduler parameters"
+            )
         if policy["type"] == "lerobot_smolvla" and training["precision"] != "float32":
             raise ValueError("lerobot_smolvla conformance config requires float32")
         if (
@@ -767,10 +940,16 @@ class ExperimentConfig:
 
         evaluation = sections["evaluation"]
         if evaluation["execution_mode"] not in _EXECUTION:
-            raise ValueError("evaluation.execution_mode must be open_loop_chunk or receding_horizon")
-        evaluation["episodes"] = _integer(evaluation["episodes"], "evaluation.episodes", positive=True)
+            raise ValueError(
+                "evaluation.execution_mode must be open_loop_chunk or receding_horizon"
+            )
+        evaluation["episodes"] = _integer(
+            evaluation["episodes"], "evaluation.episodes", positive=True
+        )
         evaluation["seed"] = _integer(evaluation["seed"], "evaluation.seed")
-        evaluation["max_steps"] = _integer(evaluation["max_steps"], "evaluation.max_steps", positive=True)
+        evaluation["max_steps"] = _integer(
+            evaluation["max_steps"], "evaluation.max_steps", positive=True
+        )
         seeds = evaluation["seeds"]
         if isinstance(seeds, (str, bytes, Mapping)) or not isinstance(seeds, Sequence):
             raise TypeError("evaluation.seeds must be a sequence")
@@ -836,7 +1015,9 @@ class ExperimentConfig:
         if mode not in _STATE_ROUTES:
             raise ValueError(f"unsupported routing.mode {mode!r}")
         route_features = routing["state_features"]
-        if isinstance(route_features, (str, bytes, Mapping)) or not isinstance(route_features, Sequence):
+        if isinstance(route_features, (str, bytes, Mapping)) or not isinstance(
+            route_features, Sequence
+        ):
             raise TypeError("routing.state_features must be a sequence")
         route_values = list(route_features)
         routing["state_features"] = route_values
@@ -852,7 +1033,10 @@ class ExperimentConfig:
             expected_cameras = tuple(str(item) for item in policy_parameters["camera_features"])
         elif "legacy" in parameters and policy_parameters.get("image_shape") is not None:
             expected_cameras = ("camera.primary",)
-        if raw_revision in {CONFIG_CONTRACT_REVISION, V31_CONFIG_CONTRACT_REVISION} and tuple(camera_values) != expected_cameras:
+        if (
+            raw_revision in {CONFIG_CONTRACT_REVISION, V31_CONFIG_CONTRACT_REVISION}
+            and tuple(camera_values) != expected_cameras
+        ):
             raise ValueError("prompt.camera_order must exactly match policy camera order")
         consumes_instruction = False
         if policy["type"] == "lerobot_smolvla":
@@ -863,7 +1047,9 @@ class ExperimentConfig:
             raise ValueError("prompt state routing requires an instruction-consuming policy")
         if mode in {"prompt_only", "dual"} and not prompt["enabled"]:
             raise ValueError("prompt state routing requires prompt.enabled=true")
-        if policy["type"] == "diffusion_v3" and (prompt["enabled"] or mode not in {"none", "expert_only"}):
+        if policy["type"] == "diffusion_v3" and (
+            prompt["enabled"] or mode not in {"none", "expert_only"}
+        ):
             raise ValueError("diffusion_v3 does not support prompt diagnostics")
         if diagnostics["enabled"]:
             if raw_revision not in {CONFIG_CONTRACT_REVISION, V31_CONFIG_CONTRACT_REVISION}:
@@ -872,7 +1058,10 @@ class ExperimentConfig:
                 raise ValueError("diagnostics require prompt.enabled=true")
             if evaluation["execution_mode"] != "receding_horizon":
                 raise ValueError("prompt/state diagnostics require receding_horizon")
-            if policy["type"] == "lerobot_smolvla" and policy_parameters.get("conformance_only") is True:
+            if (
+                policy["type"] == "lerobot_smolvla"
+                and policy_parameters.get("conformance_only") is True
+            ):
                 raise ValueError("conformance-only SmolVLA cannot run diagnostic training")
             if dataset["parameters"].get("instruction_variant") != "region_instruction_v1":
                 raise ValueError(
@@ -896,8 +1085,12 @@ class ExperimentConfig:
                 "feature_cache",
             )
             if set(feature_cache) != {"enabled", "root", "backend_spec_sha256", "read_only"}:
-                raise ValueError("feature_cache requires enabled, root, backend_spec_sha256, read_only")
-            if not isinstance(feature_cache["enabled"], bool) or not isinstance(feature_cache["read_only"], bool):
+                raise ValueError(
+                    "feature_cache requires enabled, root, backend_spec_sha256, read_only"
+                )
+            if not isinstance(feature_cache["enabled"], bool) or not isinstance(
+                feature_cache["read_only"], bool
+            ):
                 raise TypeError("feature_cache enabled and read_only must be boolean")
             cache_root = feature_cache["root"]
             if not isinstance(cache_root, str) or not cache_root.strip():
@@ -919,7 +1112,11 @@ class ExperimentConfig:
             if not isinstance(trace_path, str) or not trace_path.strip():
                 raise ValueError("trace.output_dir must be a non-empty string")
             parsed_trace_path = Path(trace_path)
-            if parsed_trace_path.is_absolute() or trace_path in {".", ".."} or ".." in parsed_trace_path.parts:
+            if (
+                parsed_trace_path.is_absolute()
+                or trace_path in {".", ".."}
+                or ".." in parsed_trace_path.parts
+            ):
                 raise ValueError("trace.output_dir must be a contained relative path")
             trace["output_dir"] = trace_path.strip()
             if trace["languages"] != ["en", "zh-CN"]:
@@ -928,7 +1125,19 @@ class ExperimentConfig:
                 raise ValueError("v3.1 training requires an enabled read-only frozen feature cache")
             if policy["type"] != "act_v3":
                 raise ValueError("contract_revision=4 requires policy.type=act_v3")
+            if policy["parameters"]["condition_mode"] not in {
+                "frozen_feature",
+                "learned_null",
+            }:
+                raise ValueError("contract_revision=4 requires an explicit conditioned ACT arm")
+            if policy["parameters"]["d_model"] != 64:
+                raise ValueError("v3.1 conditioned ACT requires d_model=64")
         else:
+            if (
+                policy["type"] == "act_v3"
+                and policy["parameters"].get("condition_mode", "none") != "none"
+            ):
+                raise ValueError("conditioned ACT requires contract_revision=4")
             vlm = {}
             feature_cache = {}
             task_suite = {}
@@ -971,10 +1180,23 @@ class ExperimentConfig:
         return cls.from_mapping(source)
 
     def to_dict(self) -> dict[str, Any]:
-        result = {name: _thaw(getattr(self, name)) for name in (
-            "schema_version", "project_name", "engine", "policy", "task", "dataset", "embodiment",
-            "features", "training", "evaluation", "diagnostics", "artifacts",
-        )}
+        result = {
+            name: _thaw(getattr(self, name))
+            for name in (
+                "schema_version",
+                "project_name",
+                "engine",
+                "policy",
+                "task",
+                "dataset",
+                "embodiment",
+                "features",
+                "training",
+                "evaluation",
+                "diagnostics",
+                "artifacts",
+            )
+        }
         if self.contract_revision in {CONFIG_CONTRACT_REVISION, V31_CONFIG_CONTRACT_REVISION}:
             result["contract_revision"] = self.contract_revision
             result["prompt"] = _thaw(self.prompt)
