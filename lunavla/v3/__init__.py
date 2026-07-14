@@ -42,6 +42,13 @@ from .v31_vlm import (
     run_qwen_observational_smoke,
     verify_frozen_feature_cache,
 )
+from .v31_evidence import (
+    V31_EVIDENCE_ARMS,
+    V31_EVIDENCE_STRATA,
+    V31_EVIDENCE_TASKS,
+    V31_TRAIN_SEEDS,
+    V31EvidenceDesignV1,
+)
 from .diagnostics import (
     DiagnosticDesignV1,
     DiagnosticTraceRowV1,
@@ -256,6 +263,11 @@ __all__ = [
     "TrainStepResultV3",
     "VLAPolicyV3",
     "VLMBackendSpecV1",
+    "V31EvidenceDesignV1",
+    "V31_EVIDENCE_ARMS",
+    "V31_EVIDENCE_STRATA",
+    "V31_EVIDENCE_TASKS",
+    "V31_TRAIN_SEEDS",
     "WeightLicenseStatusV1",
     "StableEvidenceDesignV1",
     "StableEvidenceRowV1",

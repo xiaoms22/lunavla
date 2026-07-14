@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Sequence
@@ -32,8 +33,10 @@ from .stable_contracts import (
 from .stable_executor import TeachingFixtureStableExecutor
 from .stable_workflow import run_stable_study, verify_stable_study
 from .v31_contracts import VLMBackendSpecV1
+from .v31_evidence import V31EvidenceDesignV1
 from .v31_tasks import make_v31_task_dataset
 from .v31_vlm import (
+    DeterministicFixtureExtractor,
     TransformersFrozenExtractor,
     build_frozen_feature_cache,
     preflight_local_model,
@@ -129,6 +132,11 @@ def _parser() -> argparse.ArgumentParser:
     qwen_smoke.add_argument("spec")
     qwen_smoke.add_argument("--model-root", required=True)
     qwen_smoke.add_argument("--out", required=True)
+    fixture_run = subparsers.add_parser("v31-fixture-run")
+    fixture_run.add_argument("config")
+    fixture_run.add_argument("--overwrite", action="store_true")
+    evidence_design = subparsers.add_parser("validate-v31-evidence-design")
+    evidence_design.add_argument("design")
     return parser
 
 
@@ -366,6 +374,57 @@ def main(argv: Sequence[str] | None = None) -> int:
             json.dumps(smoke.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
         print(json.dumps(smoke.to_dict(), sort_keys=True))
+        return 0
+    if arguments.command == "v31-fixture-run":
+        config = ExperimentConfig.load(arguments.config)
+        if config.task["id"] != "synthetic_vlm_suite":
+            raise ValueError("v31-fixture-run requires synthetic_vlm_suite")
+        dataset = make_v31_task_dataset(
+            data_seed=config.dataset["seed"],
+            train_per_task=int(config.dataset["parameters"]["train_per_task"]),
+            held_out_per_cell=int(config.dataset["parameters"]["held_out_per_cell"]),
+        )
+        spec = VLMBackendSpecV1.from_mapping(config.vlm)
+        repository_root = Path(__file__).resolve().parents[2]
+        cache_root = (repository_root / config.feature_cache["root"]).resolve()
+        if not cache_root.is_relative_to(repository_root):
+            raise ValueError("feature cache escapes the repository root")
+        device_hash = hashlib.sha256(b"lunavla-deterministic-fixture/cpu-v1").hexdigest()
+        build_frozen_feature_cache(
+            dataset,
+            spec,
+            DeterministicFixtureExtractor(int(config.policy["parameters"]["condition_input_dim"])),
+            cache_root,
+            processor_sha256=spec.processor_config_sha256,
+            device_environment_sha256=device_hash,
+            overwrite=arguments.overwrite,
+        )
+        result = run_alpha(config, overwrite=arguments.overwrite)
+        print(
+            json.dumps(
+                {
+                    "output_dir": str(result.output_dir),
+                    "rows": result.metrics["row_count"],
+                    "evaluation_type": result.metrics["evaluation_type"],
+                    "claim_allowed": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    if arguments.command == "validate-v31-evidence-design":
+        v31_design = V31EvidenceDesignV1.load(arguments.design)
+        print(
+            json.dumps(
+                {
+                    "valid": True,
+                    "expected_rows": v31_design.expected_rows,
+                    "design_sha256": v31_design.sha256(),
+                    "claim_allowed": False,
+                },
+                sort_keys=True,
+            )
+        )
         return 0
     raise AssertionError("unreachable command")
 

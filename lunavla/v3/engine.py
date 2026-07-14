@@ -42,6 +42,7 @@ from .policy import (
     VLAPolicyV3,
 )
 from .registry import PolicyRegistryV3
+from .v31_tasks import make_v31_task_dataset
 
 
 Float32Array = npt.NDArray[np.float32]
@@ -50,7 +51,9 @@ _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> Path:
-    path.write_text(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8"
+    )
     return path
 
 
@@ -170,9 +173,7 @@ class AlphaRunResult:
 
 
 class EngineV3:
-    def __init__(
-        self, config: ExperimentConfig, registry: PolicyRegistryV3 | None = None
-    ) -> None:
+    def __init__(self, config: ExperimentConfig, registry: PolicyRegistryV3 | None = None) -> None:
         self.config = config
         self.registry = registry or self._compat_registry()
         self.policy_spec: PolicySpecV3 | None = None
@@ -181,9 +182,7 @@ class EngineV3:
         self.training_state: Mapping[str, Any] = {}
         self.diagnostic_router: DiagnosticRouterV1 | None = None
 
-    def _diagnostic_call(
-        self, stage: str, origin: str, callback: Callable[[], Any]
-    ) -> Any:
+    def _diagnostic_call(self, stage: str, origin: str, callback: Callable[[], Any]) -> Any:
         try:
             return callback()
         except Exception as exc:
@@ -285,9 +284,7 @@ class EngineV3:
         target = checkpoint
         if checkpoint.is_dir():
             target = checkpoint / "policy" / str(config.artifacts["checkpoint_name"])
-        policy = default_policy_registry().load_checkpoint(
-            target, policy_id=config.policy["type"]
-        )
+        policy = default_policy_registry().load_checkpoint(target, policy_id=config.policy["type"])
         return V2PolicyBridge(
             policy,
             spec=spec,
@@ -323,9 +320,7 @@ class EngineV3:
 
             register_smolvla_policy(registry)
         else:
-            registry.register(
-                self.config.policy["type"], self._create_bridge, self._restore_bridge
-            )
+            registry.register(self.config.policy["type"], self._create_bridge, self._restore_bridge)
         return registry
 
     @staticmethod
@@ -362,9 +357,7 @@ class EngineV3:
                 available = observations[start : index + 1]
                 padding = history - len(available)
                 observation_history = (available[0],) * padding + tuple(available)
-                history_mask = np.asarray(
-                    [False] * padding + [True] * len(available), dtype=bool
-                )
+                history_mask = np.asarray([False] * padding + [True] * len(available), dtype=bool)
                 values = np.zeros((chunk_size, actions[0].shape[0]), dtype=np.float32)
                 mask = np.zeros(chunk_size, dtype=bool)
                 for offset in range(chunk_size):
@@ -388,15 +381,11 @@ class EngineV3:
         normalization = fit_normalization_stats(episodes, self.config.feature_schema)
         if self.config.diagnostics["enabled"]:
             self.diagnostic_router = DiagnosticRouterV1(self.config, normalization)
-            episodes = tuple(
-                self.diagnostic_router.route_episode(episode) for episode in episodes
-            )
+            episodes = tuple(self.diagnostic_router.route_episode(episode) for episode in episodes)
         spec = self._policy_spec()
         policy = self.registry.create(self.config, spec, normalization)
         supervision_steps = spec.horizon if spec.policy_id == "diffusion_v3" else spec.chunk_size
-        samples = self._samples(
-            episodes, history=spec.history, chunk_size=supervision_steps
-        )
+        samples = self._samples(episodes, history=spec.history, chunk_size=supervision_steps)
         rng = np.random.default_rng(self.config.training["seed"])
         results: list[TrainStepResultV3] = []
         policy.reset(self.config.training["seed"])
@@ -438,9 +427,7 @@ class EngineV3:
                 json.loads((checkpoint_path / "policy_spec.json").read_text(encoding="utf-8"))
             )
             loaded_normalization = NormalizationStatsV1.from_mapping(
-                json.loads(
-                    (checkpoint_path / "normalization.json").read_text(encoding="utf-8")
-                )
+                json.loads((checkpoint_path / "normalization.json").read_text(encoding="utf-8"))
             )
             if envelope["policy_id"] != loaded_spec.policy_id:
                 raise ValueError("checkpoint policy id does not match its policy spec")
@@ -460,9 +447,7 @@ class EngineV3:
             raise ValueError("restore requires fitted or checkpoint normalization statistics")
         if self.config.diagnostics["enabled"]:
             self.diagnostic_router = DiagnosticRouterV1(self.config, normalization)
-        policy = self.registry.restore(
-            checkpoint_path, self.config, spec, normalization
-        )
+        policy = self.registry.restore(checkpoint_path, self.config, spec, normalization)
         return policy
 
     def evaluate(
@@ -506,23 +491,20 @@ class EngineV3:
                 success = False
                 step_count = 0
                 while step_count < self.config.evaluation["max_steps"]:
+
                     def build_sample() -> PolicySampleV3:
                         padding = policy.spec.history - len(history)
                         window = history[-policy.spec.history :]
                         return PolicySampleV3(
                             (window[0],) * max(0, padding) + tuple(window),
-                            np.asarray(
-                                [False] * max(0, padding) + [True] * len(window)
-                            ),
+                            np.asarray([False] * max(0, padding) + [True] * len(window)),
                             None,
                             None,
                             observation.episode_id,
                             observation.step_index,
                         )
 
-                    sample = self._diagnostic_call(
-                        "preprocess", "engine", build_sample
-                    )
+                    sample = self._diagnostic_call("preprocess", "engine", build_sample)
                     chunk = self._diagnostic_call(
                         "predict", "policy", lambda: policy.predict_chunk(sample)
                     )
@@ -579,7 +561,11 @@ class EngineV3:
                         total_reward += transition.reward
                         step_count += 1
                         success = bool(transition.info.get("success", False))
-                        if transition.terminated or transition.truncated or step_count >= self.config.evaluation["max_steps"]:
+                        if (
+                            transition.terminated
+                            or transition.truncated
+                            or step_count >= self.config.evaluation["max_steps"]
+                        ):
                             stop = True
                             break
                     if stop:
@@ -596,16 +582,101 @@ class EngineV3:
             "mean_steps": float(np.mean(steps)),
         }
 
+    def evaluate_dataset(
+        self,
+        policy: VLAPolicyV3,
+        episodes: Sequence[EpisodeRecordV3],
+    ) -> dict[str, Any]:
+        """Evaluate the common policy path against held-out supervised transitions.
+
+        This is an offline connectivity metric, not an environment success metric.  It
+        deliberately uses the same PolicySampleV3 and predict_chunk path as rollout.
+        """
+        samples = self._samples(
+            episodes,
+            history=policy.spec.history,
+            chunk_size=policy.spec.chunk_size,
+        )
+        if not samples:
+            raise ValueError("offline evaluation requires at least one sample")
+        rows: list[dict[str, Any]] = []
+        policy.reset(self.config.evaluation["seeds"][0])
+        for sample in samples:
+            if sample.action_chunk is None or sample.valid_mask is None:
+                raise ValueError("offline evaluation sample lacks supervision")
+            chunk = policy.predict_chunk(sample)
+            if not chunk.valid_mask[0] or not sample.valid_mask[0]:
+                raise ValueError("offline evaluation requires a valid first action")
+            difference = chunk.values[0] - sample.action_chunk[0]
+            mse = float(np.mean(np.square(difference, dtype=np.float32)))
+            if not np.isfinite(mse):
+                raise FloatingPointError("offline evaluation produced non-finite MSE")
+            observation = sample.observation
+            donor_id = None
+            donors = getattr(policy, "last_feature_donors", None)
+            if isinstance(donors, Mapping):
+                donor_id = donors.get(
+                    json.dumps(
+                        [
+                            observation.metadata.get("split"),
+                            observation.metadata.get("task_id"),
+                            type(observation.episode_id).__name__,
+                            observation.episode_id,
+                            observation.step_index,
+                        ],
+                        separators=(",", ":"),
+                    )
+                )
+            rows.append(
+                {
+                    "task_id": observation.metadata.get("task_id"),
+                    "held_out_stratum": observation.metadata.get("held_out_stratum"),
+                    "episode_id": {
+                        "type": type(observation.episode_id).__name__,
+                        "value": observation.episode_id,
+                    },
+                    "step_index": observation.step_index,
+                    "first_action_mse": mse,
+                    "feature_intervention": self.config.policy["parameters"].get(
+                        "feature_intervention", "control"
+                    ),
+                    "feature_donor_id": donor_id,
+                }
+            )
+        task_ids = sorted({str(row["task_id"]) for row in rows})
+        strata = sorted({str(row["held_out_stratum"]) for row in rows})
+        return {
+            "evaluation_type": "offline_held_out_action_connectivity",
+            "rows": rows,
+            "row_count": len(rows),
+            "task_ids": task_ids,
+            "held_out_strata": strata,
+            "mean_first_action_mse": float(
+                np.mean([float(row["first_action_mse"]) for row in rows])
+            ),
+            "success_rate": None,
+            "claim_allowed": False,
+        }
+
 
 def dataset_for_config(config: ExperimentConfig) -> DatasetBundle:
+    if config.task["id"] == "synthetic_vlm_suite":
+        parameters = dict(config.dataset["parameters"])
+        return make_v31_task_dataset(
+            data_seed=config.dataset["seed"],
+            train_per_task=int(parameters["train_per_task"]),
+            held_out_per_cell=int(parameters["held_out_per_cell"]),
+        ).bundle
     if config.task["id"] not in {"fake_pusht", "fake_libero"}:
-        raise ValueError("Alpha data source supports fake_pusht and fake_libero only")
+        raise ValueError("unsupported v3 dataset/task combination")
     parameters = dict(config.dataset["parameters"])
     episode_count = int(parameters.get("episode_count", 6))
     steps = int(parameters.get("steps_per_episode", 5))
     episodes = make_fake_episodes(
-        task_id=config.task["id"], seed=config.dataset["seed"],
-        episode_count=episode_count, steps=steps,
+        task_id=config.task["id"],
+        seed=config.dataset["seed"],
+        episode_count=episode_count,
+        steps=steps,
         instruction_variant=str(parameters.get("instruction_variant", "constant_v1")),
     )
     split = split_episode_ids(episodes, seed=config.dataset["seed"])
@@ -625,14 +696,14 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
     config_path = _write_json(output / "resolved_config.json", config.to_dict())
     config_file_sha256 = sha256_file(config_path)
     policy_spec_path = _write_json(output / "policy_spec.json", engine.policy_spec.to_dict())
-    normalization_path = _write_json(
-        output / "normalization.json", engine.normalization.to_dict()
-    )
-    lock_source = _REPOSITORY_ROOT / Path(
-        "requirements-v3-diffusion-cpu.lock"
-        if engine.policy_spec.policy_id == "diffusion_v3"
-        else "requirements-v3-core-cpu.lock"
-    )
+    normalization_path = _write_json(output / "normalization.json", engine.normalization.to_dict())
+    if config.contract_revision == 4:
+        lock_name = "requirements-v3-vlm-cpu.lock"
+    elif engine.policy_spec.policy_id == "diffusion_v3":
+        lock_name = "requirements-v3-diffusion-cpu.lock"
+    else:
+        lock_name = "requirements-v3-core-cpu.lock"
+    lock_source = _REPOSITORY_ROOT / lock_name
     dependency_lock_path = _write_json(
         output / "dependency_lock.json",
         {"path": lock_source.name, "sha256": sha256_file(lock_source)},
@@ -659,7 +730,12 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
     processors_root.mkdir(parents=True)
     checkpoint = policy.save_checkpoint(
         policy_root / checkpoint_name,
-        metadata={"v3": {"config_sha256": config_file_sha256, "feature_schema_sha256": config.feature_schema.sha256()}},
+        metadata={
+            "v3": {
+                "config_sha256": config_file_sha256,
+                "feature_schema_sha256": config.feature_schema.sha256(),
+            }
+        },
     )
     checkpoint_policy_spec = _write_json(
         checkpoint_root / "policy_spec.json", engine.policy_spec.to_dict()
@@ -692,11 +768,7 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
                 checkpoint_dependency,
                 processor,
                 training_state,
-                *(
-                    path
-                    for path in (policy_root / checkpoint_name).rglob("*")
-                    if path.is_file()
-                ),
+                *(path for path in (policy_root / checkpoint_name).rglob("*") if path.is_file()),
             },
             key=lambda path: path.relative_to(checkpoint_root).as_posix(),
         )
@@ -709,23 +781,24 @@ def _execute_alpha(config: ExperimentConfig, output: Path) -> AlphaRunResult:
         feature_schema_sha256=config.feature_schema.sha256(),
         dependency_lock_sha256=sha256_file(dependency_lock_path),
         files=tuple(
-            ArtifactHashRecordV1(
-                path.relative_to(checkpoint_root).as_posix(), sha256_file(path)
-            )
+            ArtifactHashRecordV1(path.relative_to(checkpoint_root).as_posix(), sha256_file(path))
             for path in checkpoint_files
         ),
     )
     envelope_path = envelope.save(checkpoint_root / "checkpoint.v3.json")
     task_id = config.task["id"]
     restored_policy = engine.restore_policy(checkpoint_root)
-    metrics = engine.evaluate(
-        restored_policy,
-        FakePointEnvV3(
-            task_id,
-            config.evaluation["max_steps"],
-            str(config.dataset["parameters"].get("instruction_variant", "constant_v1")),
-        ),
-    )
+    if task_id == "synthetic_vlm_suite":
+        metrics = engine.evaluate_dataset(restored_policy, bundle.select("test"))
+    else:
+        metrics = engine.evaluate(
+            restored_policy,
+            FakePointEnvV3(
+                task_id,
+                config.evaluation["max_steps"],
+                str(config.dataset["parameters"].get("instruction_variant", "constant_v1")),
+            ),
+        )
     metrics = {**metrics, "final_loss": losses[-1], "claim_allowed": False}
     audit_path = bundle.audit.save(output / "data_audit.json")
     metrics_path = _write_json(output / "metrics.json", metrics)
