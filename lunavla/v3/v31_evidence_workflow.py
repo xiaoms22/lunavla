@@ -73,6 +73,7 @@ class V31ExecutionBatchV1:
     feature_source: str
     seed_checkpoint_sha256: dict[int, str]
     seed_metrics_sha256: dict[int, str]
+    scientific_eligible: bool = False
 
     def __post_init__(self) -> None:
         if not self.rows:
@@ -200,6 +201,7 @@ class DeterministicV31FixtureExecutor:
                 "metrics_sha256": metrics_hash,
                 "seed_checkpoint_sha256": seed_checkpoint_hashes,
                 "seed_metrics_sha256": seed_metrics_hashes,
+                "scientific_eligible": False,
             },
         )
         return V31ExecutionBatchV1(
@@ -209,6 +211,7 @@ class DeterministicV31FixtureExecutor:
             "deterministic_fixture",
             seed_checkpoint_hashes,
             seed_metrics_hashes,
+            False,
         )
 
 
@@ -279,6 +282,8 @@ def _execute(
         reasons.append("sentinel_failure")
     if source.feature_source == "deterministic_fixture":
         reasons.append("fixture_source")
+    if not source.scientific_eligible:
+        reasons.append("executor_not_scientifically_eligible")
     if not threshold_passed:
         reasons.append("claim_threshold_not_met")
     claim_gate = {
@@ -309,6 +314,7 @@ def _execute(
             and homogeneous
             and sentinel.verified
             and source.feature_source == "real_frozen_vlm"
+            and source.scientific_eligible
         ),
         gate_reasons=tuple(reasons),
     )
@@ -413,12 +419,12 @@ def verify_v31_evidence(output_dir: str | Path) -> V31EvidenceManifestV1:
     )
     _verify_batch(
         design,
-        V31ExecutionBatchV1(rows, "0" * 64, "0" * 64, manifest.feature_source, {}, {}),
+        V31ExecutionBatchV1(rows, "0" * 64, "0" * 64, manifest.feature_source, {}, {}, False),
         None,
     )
     _verify_batch(
         design,
-        V31ExecutionBatchV1(repeat, "0" * 64, "0" * 64, manifest.feature_source, {}, {}),
+        V31ExecutionBatchV1(repeat, "0" * 64, "0" * 64, manifest.feature_source, {}, {}, False),
         11,
     )
     if v31_row_inventory_sha256(rows) != manifest.row_inventory_sha256:
@@ -453,6 +459,7 @@ def verify_v31_evidence(output_dir: str | Path) -> V31EvidenceManifestV1:
         "metrics_sha256",
         "seed_checkpoint_sha256",
         "seed_metrics_sha256",
+        "scientific_eligible",
     }
     if set(source_execution) != execution_fields or set(repeat_execution) != execution_fields:
         raise ValueError("v3.1 execution contract fields are invalid")
@@ -461,6 +468,14 @@ def verify_v31_evidence(output_dir: str | Path) -> V31EvidenceManifestV1:
         or repeat_execution["feature_source"] != manifest.feature_source
     ):
         raise ValueError("v3.1 execution feature source does not match manifest")
+    source_eligible = source_execution["scientific_eligible"]
+    repeat_eligible = repeat_execution["scientific_eligible"]
+    if (
+        not isinstance(source_eligible, bool)
+        or not isinstance(repeat_eligible, bool)
+        or source_eligible != repeat_eligible
+    ):
+        raise ValueError("v3.1 execution scientific eligibility is invalid or inconsistent")
     if (
         source_execution["seed_checkpoint_sha256"]["11"] != sentinel.source_checkpoints_sha256
         or repeat_execution["seed_checkpoint_sha256"]["11"] != sentinel.repeat_checkpoints_sha256
@@ -477,6 +492,8 @@ def verify_v31_evidence(output_dir: str | Path) -> V31EvidenceManifestV1:
         expected_reasons.append("sentinel_failure")
     if manifest.feature_source == "deterministic_fixture":
         expected_reasons.append("fixture_source")
+    if not source_eligible:
+        expected_reasons.append("executor_not_scientifically_eligible")
     if not claim["threshold_passed"]:
         expected_reasons.append("claim_threshold_not_met")
     if tuple(expected_reasons) != manifest.gate_reasons:

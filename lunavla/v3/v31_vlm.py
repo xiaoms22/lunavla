@@ -256,10 +256,12 @@ class TransformersFrozenExtractor:
             ) from exc
         root = str(Path(local_model_root).resolve())
         self._torch = torch
+        self._spec = spec
         self._processor = AutoProcessor.from_pretrained(root, local_files_only=True)
-        self._model = AutoModelForImageTextToText.from_pretrained(
+        model: Any = AutoModelForImageTextToText.from_pretrained(
             root, local_files_only=True, torch_dtype=getattr(torch, spec.model_dtype)
         )
+        self._model = model
         self._model.eval()
         for parameter in self._model.parameters():
             parameter.requires_grad_(False)
@@ -272,26 +274,53 @@ class TransformersFrozenExtractor:
         return self._output_dim
 
     def extract(self, image: npt.NDArray[np.uint8], instruction: str) -> Float32Array:
-        messages = [
-            {
-                "role": "user",
-                "content": [{"type": "image"}, {"type": "text", "text": instruction}],
+        return self.extract_batch(((image, instruction),))[0]
+
+    def extract_batch(
+        self, values: tuple[tuple[npt.NDArray[np.uint8], str], ...]
+    ) -> tuple[Float32Array, ...]:
+        if not values:
+            raise ValueError("VLM extraction batch cannot be empty")
+        texts: list[str] = []
+        images: list[npt.NDArray[np.uint8]] = []
+        for image, instruction in values:
+            if np.asarray(image).shape != (96, 96, 3):
+                raise ValueError("VLM extraction requires 96x96 RGB images")
+            images.append(image)
+            messages = [
+                {
+                    "role": "user",
+                    "content": [{"type": "image"}, {"type": "text", "text": instruction}],
+                }
+            ]
+            texts.append(
+                self._processor.apply_chat_template(
+                    messages, tokenize=False, add_generation_prompt=True
+                )
+            )
+        processor_options: dict[str, Any] = {}
+        if self._spec.image_token_layout == "single_image_no_split_512":
+            processor_options = {
+                "do_image_splitting": False,
+                "size": {"longest_edge": 512},
             }
-        ]
-        text = self._processor.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
+        inputs = self._processor(
+            text=texts,
+            images=[[image] for image in images],
+            return_tensors="pt",
+            padding=True,
+            **processor_options,
         )
-        inputs = self._processor(text=[text], images=[image], return_tensors="pt")
         inputs = {name: value.to(self._device) for name, value in inputs.items()}
         with self._torch.inference_mode():
             outputs = self._model(**inputs, output_hidden_states=True, return_dict=True)
         hidden = outputs.hidden_states[-1]
         mask = inputs["attention_mask"].to(hidden.dtype).unsqueeze(-1)
         pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1)
-        result = pooled[0].detach().float().cpu().numpy().astype(np.float32, copy=True)
-        if result.shape != (self.output_dim,) or not np.all(np.isfinite(result)):
+        result = pooled.detach().float().cpu().numpy().astype(np.float32, copy=True)
+        if result.shape != (len(values), self.output_dim) or not np.all(np.isfinite(result)):
             raise ValueError("VLM returned an invalid pooled feature")
-        return result
+        return tuple(result[index] for index in range(len(values)))
 
 
 def preflight_local_model(
@@ -376,6 +405,7 @@ def build_frozen_feature_cache(
         identities: list[str] = []
         split_counts = {"train": 0, "validation": 0, "test": 0}
         total_bytes = 0
+        records: list[tuple[str, Any, str, str, Any, npt.NDArray[np.uint8], str, str]] = []
         for split in ("train", "validation", "test"):
             for episode in dataset.bundle.select(split):
                 task_id = str(episode.metadata["task_id"])
@@ -386,44 +416,69 @@ def build_frozen_feature_cache(
                     instruction = observation.instruction
                     if instruction is None:
                         raise ValueError("VLM cache requires an instruction")
-                    feature = np.asarray(extractor.extract(image, instruction), dtype=np.float32)
-                    if feature.shape != (extractor.output_dim,) or not np.all(np.isfinite(feature)):
-                        raise ValueError("extractor returned invalid feature")
                     identity = _identity(split, task_id, episode.episode_id, observation.step_index)
-                    if identity in identities:
-                        raise ValueError("duplicate typed cache identity")
-                    ordinal = len(identities)
-                    feature_name = f"{ordinal:08d}.npy"
-                    manifest_name = f"{ordinal:08d}.json"
-                    feature_path = feature_dir / feature_name
-                    np.save(feature_path, feature, allow_pickle=False)
-                    feature_hash = _sha256_file(feature_path)
-                    manifest = FrozenFeatureManifestV1(
-                        backend_spec_sha256=spec.sha256(),
-                        processor_sha256=processor_sha256,
-                        prompt_renderer_sha256=_sha256_bytes(instruction.encode("utf-8")),
-                        image_sha256=_sha256_bytes(image.tobytes(order="C")),
-                        sample_id=identity,
-                        episode_id=str(episode.episode_id),
-                        step_index=observation.step_index,
-                        split=split,
-                        task_id=task_id,
-                        held_out_stratum=stratum,
-                        hidden_layer=-1,
-                        pooling="attention_mask_mean",
-                        dtype="float32",
-                        device_environment_sha256=device_environment_sha256,
-                        output_shape=(extractor.output_dim,),
-                        finite=True,
-                        feature_sha256=feature_hash,
-                        deterministic=spec.deterministic,
-                        generation_command=("lunavla-v3", "vlm-cache"),
+                    records.append(
+                        (
+                            split,
+                            episode,
+                            task_id,
+                            stratum,
+                            observation,
+                            image,
+                            instruction,
+                            identity,
+                        )
                     )
-                    _write_json(manifest_dir / manifest_name, manifest.to_dict())
-                    manifest_hashes.append(manifest.sha256())
-                    identities.append(identity)
-                    split_counts[split] += 1
-                    total_bytes += feature_path.stat().st_size
+        batch_method = getattr(extractor, "extract_batch", None)
+        # Two samples stays below the 8 GiB Apple-Silicon Colima development
+        # ceiling while still amortizing processor/model overhead.
+        for batch_start in range(0, len(records), 2):
+            batch_records = records[batch_start : batch_start + 2]
+            inputs = tuple((item[5], item[6]) for item in batch_records)
+            features = (
+                batch_method(inputs)
+                if callable(batch_method)
+                else tuple(extractor.extract(image, instruction) for image, instruction in inputs)
+            )
+            if len(features) != len(batch_records):
+                raise ValueError("extractor batch result length is invalid")
+            for record, raw_feature in zip(batch_records, features, strict=True):
+                split, episode, task_id, stratum, observation, image, instruction, identity = record
+                feature = np.asarray(raw_feature, dtype=np.float32)
+                if feature.shape != (extractor.output_dim,) or not np.all(np.isfinite(feature)):
+                    raise ValueError("extractor returned invalid feature")
+                if identity in identities:
+                    raise ValueError("duplicate typed cache identity")
+                ordinal = len(identities)
+                feature_path = feature_dir / f"{ordinal:08d}.npy"
+                np.save(feature_path, feature, allow_pickle=False)
+                feature_hash = _sha256_file(feature_path)
+                manifest = FrozenFeatureManifestV1(
+                    backend_spec_sha256=spec.sha256(),
+                    processor_sha256=processor_sha256,
+                    prompt_renderer_sha256=_sha256_bytes(instruction.encode("utf-8")),
+                    image_sha256=_sha256_bytes(image.tobytes(order="C")),
+                    sample_id=identity,
+                    episode_id=str(episode.episode_id),
+                    step_index=observation.step_index,
+                    split=split,
+                    task_id=task_id,
+                    held_out_stratum=stratum,
+                    hidden_layer=-1,
+                    pooling="attention_mask_mean",
+                    dtype="float32",
+                    device_environment_sha256=device_environment_sha256,
+                    output_shape=(extractor.output_dim,),
+                    finite=True,
+                    feature_sha256=feature_hash,
+                    deterministic=spec.deterministic,
+                    generation_command=("lunavla-v3", "vlm-cache"),
+                )
+                _write_json(manifest_dir / f"{ordinal:08d}.json", manifest.to_dict())
+                manifest_hashes.append(manifest.sha256())
+                identities.append(identity)
+                split_counts[split] += 1
+                total_bytes += feature_path.stat().st_size
         index = FeatureCacheIndexV1(
             backend_spec_sha256=spec.sha256(),
             manifest_hashes=tuple(manifest_hashes),

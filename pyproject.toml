@@ -44,6 +44,7 @@ v3-vlm = [
   "torchvision==0.26.*",
   "transformers==5.5.4",
   "accelerate==1.14.0",
+  "num2words==0.5.14",
 ]
 v2 = [
   "torch==2.11.*",

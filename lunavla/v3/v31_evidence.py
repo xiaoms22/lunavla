@@ -378,6 +378,7 @@ class V31EvidenceManifestV1:
             "mixed_source",
             "sentinel_failure",
             "fixture_source",
+            "executor_not_scientifically_eligible",
             "claim_threshold_not_met",
         }
         if not set(self.gate_reasons).issubset(allowed):

@@ -43,6 +43,62 @@ _FORBIDDEN_OBSERVATION_KEYS = {
 }
 
 
+@dataclass(frozen=True)
+class _V31Scenario:
+    episode_id: str
+    task_id: str
+    split: str
+    stratum: str
+    color: str
+    shape: str
+    rgb: tuple[int, int, int]
+    start: Float32Array
+    target: Float32Array
+    waypoints: tuple[Float32Array, ...]
+    route: tuple[Float32Array, ...]
+    episode_seed: int
+
+
+def _scenario(
+    *, task_id: str, split: str, stratum: str, data_seed: int, index: int
+) -> _V31Scenario:
+    episode_seed = _seed(task_id, split, stratum, data_seed, index)
+    rng = np.random.default_rng(episode_seed)
+    color, shape, rgb = _combination(rng, held_out=stratum == "composition")
+    start = rng.uniform(0.12, 0.32, size=2).astype(np.float32)
+    target = rng.uniform(0.68, 0.88, size=2).astype(np.float32)
+    waypoints: tuple[Float32Array, ...]
+    route: tuple[Float32Array, ...]
+    if task_id == "waypoint_sequence":
+        waypoints = (
+            np.asarray([0.42, 0.30 + 0.25 * rng.random()], dtype=np.float32),
+            np.asarray([0.58, 0.50 + 0.20 * rng.random()], dtype=np.float32),
+        )
+        route = (*waypoints, target)
+    elif task_id == "failure_recovery":
+        disturbance = rng.uniform(-0.18, 0.18, size=2).astype(np.float32)
+        recovery = np.clip(start + disturbance, 0.08, 0.92).astype(np.float32)
+        route = (recovery, target)
+        waypoints = (recovery,)
+    else:
+        route = (target,)
+        waypoints = ()
+    return _V31Scenario(
+        f"v31-{split}-{task_id}-{stratum}-{episode_seed:016x}",
+        task_id,
+        split,
+        stratum,
+        color,
+        shape,
+        rgb,
+        start,
+        target,
+        waypoints,
+        route,
+        episode_seed,
+    )
+
+
 def task_suite_spec_v1() -> TaskSuiteSpecV1:
     return TaskSuiteSpecV1(
         suite_id="synthetic_vlm_v1",
@@ -196,28 +252,14 @@ def make_v31_episode(
         raise ValueError("data_seed must be a non-negative integer")
     if isinstance(index, bool) or not isinstance(index, int) or index < 0:
         raise ValueError("index must be a non-negative integer")
-    episode_seed = _seed(task_id, split, stratum, data_seed, index)
-    rng = np.random.default_rng(episode_seed)
-    color, shape, rgb = _combination(rng, held_out=stratum == "composition")
-    position = rng.uniform(0.12, 0.32, size=2).astype(np.float32)
-    target = rng.uniform(0.68, 0.88, size=2).astype(np.float32)
-    waypoints: tuple[Float32Array, ...]
-    route: tuple[Float32Array, ...]
-    if task_id == "waypoint_sequence":
-        waypoints = (
-            np.asarray([0.42, 0.30 + 0.25 * rng.random()], dtype=np.float32),
-            np.asarray([0.58, 0.50 + 0.20 * rng.random()], dtype=np.float32),
-        )
-        route = (*waypoints, target)
-    elif task_id == "failure_recovery":
-        disturbance = rng.uniform(-0.18, 0.18, size=2).astype(np.float32)
-        recovery = np.clip(position + disturbance, 0.08, 0.92).astype(np.float32)
-        route = (recovery, target)
-        waypoints = (recovery,)
-    else:
-        route = (target,)
-        waypoints = ()
-    episode_id = f"v31-{split}-{task_id}-{stratum}-{episode_seed:016x}"
+    scenario = _scenario(
+        task_id=task_id, split=split, stratum=stratum, data_seed=data_seed, index=index
+    )
+    episode_seed = scenario.episode_seed
+    color, shape, rgb = scenario.color, scenario.shape, scenario.rgb
+    position = np.array(scenario.start, copy=True)
+    target, waypoints, route = scenario.target, scenario.waypoints, scenario.route
+    episode_id = scenario.episode_id
     transitions: list[TransitionV3] = []
     step = 0
     gripper_state = 0.0
@@ -277,6 +319,116 @@ def make_v31_episode(
             "instruction_family": "paraphrase" if stratum == "paraphrase" else "canonical",
         },
     )
+
+
+class V31RolloutEnvV1:
+    """Dynamic three-task simulator using the exact registered dataset geometry.
+
+    Targets and waypoints remain environment-private.  The policy receives only
+    the image, proprioception, and instruction declared by FeatureSchema.
+    """
+
+    def __init__(
+        self,
+        *,
+        task_id: str,
+        stratum: str,
+        data_seed: int = 42,
+        episode_index: int = 0,
+        max_steps: int = 64,
+    ) -> None:
+        if task_id not in V31_TASK_IDS or stratum not in V31_HELD_OUT_STRATA:
+            raise ValueError("rollout task or held-out stratum is not registered")
+        if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps <= 0:
+            raise ValueError("max_steps must be a positive integer")
+        self._scenario = _scenario(
+            task_id=task_id,
+            split="test",
+            stratum=stratum,
+            data_seed=data_seed,
+            index=episode_index,
+        )
+        self._max_steps = max_steps
+        self._closed = False
+        self._started = False
+        self._position = np.array(self._scenario.start, copy=True)
+        self._phase = 0
+        self._gripper = 0.0
+        self._step = 0
+
+    def _observe(self) -> ObservationV3:
+        scenario = self._scenario
+        return _observation(
+            episode_id=scenario.episode_id,
+            step=self._step,
+            task_id=scenario.task_id,
+            split=scenario.split,
+            stratum=scenario.stratum,
+            color=scenario.color,
+            shape=scenario.shape,
+            rgb=scenario.rgb,
+            position=self._position,
+            target=scenario.target,
+            waypoints=scenario.waypoints,
+            gripper=self._gripper,
+            phase=self._phase / len(scenario.route),
+        )
+
+    def reset(self, *, seed: int) -> ObservationV3:
+        if self._closed:
+            raise RuntimeError("cannot reset a closed v3.1 rollout environment")
+        if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
+            raise ValueError("rollout seed must be a non-negative integer")
+        self._position = np.array(self._scenario.start, copy=True)
+        self._phase = 0
+        self._gripper = 0.0
+        self._step = 0
+        self._started = True
+        return self._observe()
+
+    def step(self, action: npt.NDArray[np.generic]) -> TransitionV3:
+        if self._closed or not self._started:
+            raise RuntimeError("rollout environment must be reset before step")
+        raw = np.asarray(action)
+        if raw.shape != (3,) or raw.dtype.kind not in "fiu" or not np.all(np.isfinite(raw)):
+            raise ValueError("v3.1 action must be finite [dx, dy, gripper]")
+        observation = self._observe()
+        clipped = np.clip(raw.astype(np.float32), -1, 1)
+        self._position = np.clip(self._position + np.clip(clipped[:2], -0.14, 0.14), 0, 1)
+        self._gripper = float(clipped[2] >= 0.5)
+        destination = self._scenario.route[self._phase]
+        reached = bool(np.linalg.norm(self._position - destination) <= 0.045)
+        if reached and self._phase + 1 < len(self._scenario.route):
+            self._phase += 1
+        final_distance = float(np.linalg.norm(self._position - self._scenario.target))
+        success = bool(
+            self._phase == len(self._scenario.route) - 1
+            and reached
+            and final_distance <= 0.045
+            and self._gripper == 1.0
+        )
+        self._step += 1
+        truncated = self._step >= self._max_steps and not success
+        return TransitionV3(
+            observation,
+            clipped,
+            -final_distance,
+            self._observe(),
+            success,
+            truncated,
+            {
+                "success": success,
+                "final_distance": final_distance,
+                "phase_index": self._phase,
+            },
+        )
+
+    def close(self) -> None:
+        self._closed = True
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
 
 
 @dataclass(frozen=True)
