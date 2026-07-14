@@ -66,6 +66,7 @@ from .v31_evidence_workflow import (
     run_v31_evidence,
     verify_v31_evidence,
 )
+from .v31_real_evidence import RealFrozenV31EvidenceExecutor
 from .diagnostics import (
     DiagnosticDesignV1,
     DiagnosticTraceRowV1,
@@ -290,6 +291,7 @@ __all__ = [
     "V31EvidenceExecutor",
     "V31ExecutionBatchV1",
     "DeterministicV31FixtureExecutor",
+    "RealFrozenV31EvidenceExecutor",
     "V31_EVIDENCE_ARMS",
     "V31_EVIDENCE_STRATA",
     "V31_EVIDENCE_TASKS",

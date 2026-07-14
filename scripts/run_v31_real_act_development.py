@@ -57,10 +57,14 @@ def main() -> int:
     parser.add_argument("--cache", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--steps", type=int, default=100)
+    parser.add_argument("--seeds", type=int, nargs="+", default=list(SEEDS))
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     if args.steps <= 0:
         raise ValueError("steps must be positive")
+    seeds = tuple(args.seeds)
+    if not seeds or len(seeds) != len(set(seeds)) or not set(seeds).issubset(SEEDS):
+        raise ValueError(f"seeds must be a unique subset of {SEEDS}")
     output = args.out.resolve()
     cache = args.cache.resolve()
     repository = Path(__file__).resolve().parents[1]
@@ -80,7 +84,7 @@ def main() -> int:
     sha, dirty = _git()
     records: list[dict[str, object]] = []
     try:
-        for seed in SEEDS:
+        for seed in seeds:
             for arm, mode in (("baseline", "learned_null"), ("smol_control", "frozen_feature")):
                 payload = copy.deepcopy(base)
                 payload["project_name"] = f"lunavla-v31-real-{arm}-seed-{seed}"
@@ -143,7 +147,7 @@ def main() -> int:
             "git_dirty": dirty,
             "feature_source": "real_frozen_vlm",
             "cache_index_sha256": index.sha256(),
-            "train_seeds": list(SEEDS),
+            "train_seeds": list(seeds),
             "training_runs": len(records),
             "claim_allowed": False,
             "release_eligible": False,

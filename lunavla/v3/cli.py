@@ -36,9 +36,11 @@ from .v31_contracts import VLMBackendSpecV1
 from .v31_evidence import V31EvidenceDesignV1
 from .v31_evidence_workflow import (
     DeterministicV31FixtureExecutor,
+    V31EvidenceExecutor,
     run_v31_evidence,
     verify_v31_evidence,
 )
+from .v31_real_evidence import RealFrozenV31EvidenceExecutor
 from .v31_tasks import make_v31_task_dataset
 from .v31_vlm import (
     DeterministicFixtureExtractor,
@@ -145,7 +147,16 @@ def _parser() -> argparse.ArgumentParser:
     evidence_run = subparsers.add_parser("v31-evidence-run")
     evidence_run.add_argument("design")
     evidence_run.add_argument("--out", required=True)
-    evidence_run.add_argument("--fixture", action="store_true")
+    evidence_source = evidence_run.add_mutually_exclusive_group(required=True)
+    evidence_source.add_argument("--fixture", action="store_true")
+    evidence_source.add_argument("--real", action="store_true")
+    evidence_run.add_argument("--source-training-root")
+    evidence_run.add_argument("--repeat-training-root")
+    evidence_run.add_argument("--backend-spec")
+    evidence_run.add_argument("--model-root")
+    evidence_run.add_argument("--base-cache")
+    evidence_run.add_argument("--processor-sha256")
+    evidence_run.add_argument("--device-environment-sha256")
     evidence_run.add_argument("--overwrite", action="store_true")
     evidence_verify = subparsers.add_parser("v31-evidence-verify")
     evidence_verify.add_argument("output_dir")
@@ -439,15 +450,30 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 0
     if arguments.command == "v31-evidence-run":
-        if not arguments.fixture:
-            raise ValueError(
-                "v31-evidence-run currently requires explicit --fixture; "
-                "real frozen-VLM execution is a separate external evidence gate"
-            )
+        real_arguments = {
+            "source_training_root": arguments.source_training_root,
+            "repeat_training_root": arguments.repeat_training_root,
+            "backend_spec": arguments.backend_spec,
+            "model_root": arguments.model_root,
+            "base_cache": arguments.base_cache,
+            "processor_sha256": arguments.processor_sha256,
+            "device_environment_sha256": arguments.device_environment_sha256,
+        }
+        if arguments.fixture and any(value is not None for value in real_arguments.values()):
+            raise ValueError("fixture evidence rejects real frozen-VLM arguments")
+        if arguments.real:
+            missing = sorted(key for key, value in real_arguments.items() if value is None)
+            if missing:
+                raise ValueError(
+                    "real frozen-VLM evidence requires: " + ", ".join(missing)
+                )
+            executor: V31EvidenceExecutor = RealFrozenV31EvidenceExecutor(**real_arguments)
+        else:
+            executor = DeterministicV31FixtureExecutor()
         output = run_v31_evidence(
             arguments.design,
             arguments.out,
-            DeterministicV31FixtureExecutor(),
+            executor,
             overwrite=arguments.overwrite,
         )
         v31_manifest = verify_v31_evidence(output)
