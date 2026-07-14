@@ -163,6 +163,9 @@ def test_revision4_config_round_trip_and_cross_contract_hash() -> None:
 
     base = Config.load("configs/v3/act_fake_libero_cpu.yaml").to_dict()
     base["contract_revision"] = V31_CONFIG_CONTRACT_REVISION
+    base["policy"]["parameters"]["instruction_dim"] = 16
+    base["policy"]["parameters"]["condition_mode"] = "frozen_feature"
+    base["policy"]["parameters"]["condition_input_dim"] = 16
     base["prompt"] = {
         "enabled": False,
         "renderer_id": "lunavla.canonical_json",

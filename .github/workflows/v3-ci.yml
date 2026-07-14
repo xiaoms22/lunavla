@@ -243,7 +243,9 @@ jobs:
           forbidden = forbidden_cpu_packages(installed)
           assert not forbidden, f"CUDA/NCCL/Triton packages installed: {sorted(forbidden)}"
           PY
-          uv run --no-sync pytest tests_v3/test_v31_vlm.py
+          uv run --no-sync pytest \
+            tests_v3/test_v31_vlm.py \
+            tests_v3/test_v31_conditioned_act.py
           uv run --no-sync lunavla-v3 vlm-preflight --help
           uv run --no-sync lunavla-v3 vlm-cache --help
           uv run --no-sync lunavla-v3 vlm-cache-verify --help

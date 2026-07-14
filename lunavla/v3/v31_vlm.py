@@ -138,6 +138,50 @@ class FrozenFeatureExtractor(Protocol):
     def extract(self, image: npt.NDArray[np.uint8], instruction: str) -> Float32Array: ...
 
 
+class FrozenFeatureCacheReaderV1:
+    """Read an already verified feature cache without exposing writable arrays."""
+
+    def __init__(self, root: str | Path) -> None:
+        self.root = Path(root).resolve()
+        self.index = verify_frozen_feature_cache(self.root)
+        self._features: dict[str, Float32Array] = {}
+        manifests = sorted((self.root / "manifests").glob("*.json"))
+        features = sorted((self.root / "features").glob("*.npy"))
+        for manifest_path, feature_path in zip(manifests, features, strict=True):
+            manifest = FrozenFeatureManifestV1.from_mapping(
+                json.loads(manifest_path.read_text(encoding="utf-8"))
+            )
+            value = np.load(feature_path, allow_pickle=False)
+            frozen = np.frombuffer(value.tobytes(order="C"), dtype=np.float32).reshape(value.shape)
+            frozen.setflags(write=False)
+            self._features[manifest.sample_id] = frozen
+        dimensions = {value.shape for value in self._features.values()}
+        if len(dimensions) != 1:
+            raise ValueError("frozen feature cache must use one output shape")
+        shape = next(iter(dimensions))
+        if len(shape) != 1:
+            raise ValueError("conditioned ACT requires one-dimensional frozen features")
+        self.output_dim = shape[0]
+
+    @staticmethod
+    def sample_identity(*, split: str, task_id: str, episode_id: str | int, step_index: int) -> str:
+        return _identity(split, task_id, episode_id, step_index)
+
+    def get(
+        self, *, split: str, task_id: str, episode_id: str | int, step_index: int
+    ) -> Float32Array:
+        identity = self.sample_identity(
+            split=split,
+            task_id=task_id,
+            episode_id=episode_id,
+            step_index=step_index,
+        )
+        try:
+            return self._features[identity]
+        except KeyError as exc:
+            raise KeyError(f"frozen feature cache has no sample {identity}") from exc
+
+
 @dataclass(frozen=True)
 class DeterministicFixtureExtractor:
     output_dim: int = 16
