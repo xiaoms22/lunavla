@@ -18,15 +18,15 @@ dependencies = [
 [project.optional-dependencies]
 v2-core = [
   "torch==2.11.*",
-  "torchvision==0.26.*",
+  "torchvision>=0.26,<0.29",
 ]
 v3-act = [
   "torch==2.11.*",
-  "torchvision==0.26.*",
+  "torchvision>=0.26,<0.29",
 ]
 v3-diffusion = [
   "torch==2.11.*",
-  "torchvision==0.26.*",
+  "torchvision>=0.26,<0.29",
   "lerobot[diffusion]==0.6.0",
   "diffusers==0.35.2",
   "transformers==5.5.4",
@@ -34,19 +34,19 @@ v3-diffusion = [
 ]
 v3-smolvla = [
   "torch==2.11.*",
-  "torchvision==0.26.*",
+  "torchvision>=0.26,<0.29",
   "lerobot==0.6.0",
   "transformers==5.5.4",
   "accelerate==1.14.0",
 ]
 v2 = [
   "torch==2.11.*",
-  "torchvision==0.26.*",
+  "torchvision>=0.26,<0.29",
   "lerobot[dataset]==0.6.*",
 ]
 v2-integration = [
   "torch==2.11.*",
-  "torchvision==0.26.*",
+  "torchvision>=0.26,<0.29",
   "lerobot[dataset,pusht]==0.6.*",
   "gym-pusht==0.1.6",
 ]
